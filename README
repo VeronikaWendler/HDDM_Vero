@@ -1,0 +1,72 @@
+## DockerHDDM model codes
+
+# structure:
+
+# /home/jovyan/OfficialTutorials/THESIS_HDDM
+#     ├── data_sets/
+#     │   └── GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv
+#     ├── data_sets_OV
+#     │   └── OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv
+#     ├── figures_dir_garcia_CCT/                                                ____
+#     │   └── garcia_replication_EE_n/                                               |
+#     │       ├── diagnostics/                                                       |
+#     │       │   ├── gelman_rubic.txt                                               |
+#     │       │   ├── DIC.txt                                                        |
+#     │       │   ├── results.csv                                                     \
+#     │       │   └── posteriors.pdf                                                  /   Experiment 1: 'Garcia' quasi-replication
+#     │   └── garcia_replication_ES_n/                                               |
+#     │   └── garcia_replication_ESEE_n/                                             | 
+#     │   └── garcia_replication_LEESEE_n/                                      _____|
+#     ├── figures_dir_garcia_CCT_2/   -->  Same as figures_garcia_CCT, but with fewer samples due to 16 GB RAM limit
+#     ├── figures_dir_OV_CCT/                                                    ____
+#     │   └── OV_replication_EE_n/                                                   |
+#     │       ├── diagnostics/                                                       |
+#     │       │   ├── gelman_rubic.txt                                               |
+#     │       │   ├── DIC.txt                                                        |
+#     │       │   ├── results.csv                                                     \
+#     │       │   └── posteriors.pdf                                                  /   Experiment 2: 'OV' experiment
+#     │   └── OV_replication_ES_n/                                                   |
+#     │   └── OV_replication_ESEE_n/                                                 | 
+#     │   └── OV_replication_LEESEE_n/                                           ____|
+#     ├── figures_dir_OV_CCT_2/     -->  Same as figures_OV_CCT, but with fewer samples due to 16 GB RAM limit
+#     ├── model_dir_garcia_CCT/
+#     │   ├── diagnostics/
+#     │       │   ├── EEn
+#     │       │   |   |──fitted_recov_hdi.png
+#     │       │   |   |──fitted_recov_curves.png
+#     │       │   |   |──parameter_recovery_summary_EE.csv
+#     │       │   |   |──posterior_predictive_summary_garcia_replication_EE_n_1.csv
+#     │       │   |   |──Response_Proportions_garcia_replication_EE_n_1.png           --> ppc accuracy
+#     │       │   |   |──RT_Distribution_garcia_replication_EE_n_1.png                --> ppc RT
+#     │       │   ├── ES5     --> same as above for the other models                                        
+#     │       │   ├── ESEE5                                             
+#     │       │   ├── LEESEE5                                             
+#     │   ├── garcia_replication_EE_n_0.hddm
+#     │   ├── garcia_replication_EE_n_0.nc
+#     │   ├── garcia_replication_EE_n_0.pkl
+#     │   ├── garcia_replication_EE_n_1.hddm
+#     │   ├── garcia_replication_EE_n_1.nc
+#     │   ├── garcia_replication_EE_n_1.pkl
+#     │   ├── garcia_replication_EE_n_2.hddm
+#     │   ├── garcia_replication_EE_n_2.nc
+#     │   ├── garcia_replication_EE_n_2.pkl
+#     │   ├── garcia_replication_EE_n_2.db0
+#     │   ├── garcia_replication_EE_n_2.db1
+#     │   ├── garcia_replication_EE_n_2.db2
+#     │   ├── mEE_5_recovery
+#     │   ├── mEE_5_recovery.nc
+#     │   ├── same for ES, ESEE, LEESEE models
+#     ├── model_dir_garcia_CCT_2/    -->  Same as model_dir_garcia_CCT, but with fewer samples due to 16 GB RAM limit
+#     ├── model_dir_OV_CCT/          -->  Same as model_dir_garcia_CCT, but for experiment 2 'OV'
+#     ├── model_dir_OV_CCT_2/        -->  Same as model_dir_garcia_CCT, but for experiment 2 'OV'and with fewer samples due to RAM limit
+#
+#     CCT_MAP_Garcia.py  --> group maximum posterior estimates of the aDDM params + parameter comparison for Exp1 - from Chih-Chung Ting
+#     CCT_MAP_OV.py      --> group maximum posterior estimates of the aDDM params + parameter comparison for Exp2 - from Chih-Chung Ting
+#     aDDM_Garcia_LE_ES_EE.py  --> aDDM code for Exp1
+#     aDDM_OV_LE_ES_EE.py      --> aDDM code for Exp2
+#     param_recovery_ESEE.ipynb    --> parameter recovery - phase model
+#     param_recovery_LEESEE.ipynb  --> parameter recovery - phase model (all phases)
+#     param_recovery_OVcate.ipynb  --> parameter recovery - overall value model
+#     README
+#     simulation_ppc.py            --> posterior predictive checks
+#     txt_tocsv.py                 --> some file that converts some txt files to csv files (don't really use it)
