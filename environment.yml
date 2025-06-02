@@ -1,4 +1,4 @@
-name: base
+name: veronika
 channels:
   - conda-forge
 dependencies:
