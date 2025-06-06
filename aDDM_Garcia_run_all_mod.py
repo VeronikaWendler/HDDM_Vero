@@ -11,6 +11,8 @@ import datetime
 import math
 import scipy as sp
 import matplotlib
+matplotlib.use("Agg")                   # for backend (does not require GUI)
+import os, pathlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 import glob
@@ -29,9 +31,6 @@ import arviz as az
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 # Plotting
-import matplotlib.pyplot as plt
-import matplotlib
-import seaborn as sns
 # Stats 
 from statsmodels.distributions.empirical_distribution import ECDF
 # HDDM
@@ -43,28 +42,7 @@ current_directory = os.getcwd()
 #import compact_models
 
 #------------------------------------------------------------------------------------------------------------------
-# Structure of saving:
 
-# /home/jovyan/OfficialTutorials/THESIS_HDDM
-#     ├── data_sets_garcia/
-#     │   └── GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv
-#     ├── model_dir_garcia_CCT/
-#     │   ├── EE_0 ...n
-#     │   ├── ES_0 ..n
-#     │   ├── ESEE_0 ...n
-#     │   ├── LEESEE_0 ...n
-#     ├── figures_garcia_CCT/
-#     │   └── garcia_replication_EE_n/
-#     │       ├── diagnostics/
-#     │       │   ├── gelman_rubic.txt
-#     │       │   ├── DIC.txt
-#     │       │   ├── results.csv
-#     │       │   └── posteriors.pdf
-#     │   └── garcia_replication_ES_n/
-#     │   └── garcia_replication_ESEE_n/
-#     │   └── garcia_replication_LEESEE_n/
-#     |   with_sub99_noRTcriteria - contains HDDM with no RT exclusion criteria + participant 99
-#     ├── other_script.py
 #------------------------------------------------------------------------------------------------------------------
 
 # addm regression formula
@@ -100,11 +78,14 @@ RUN_ALL_MODELS  = True                    # False = just load existing fits
 
 # selectivity
 start_phase = "LE"
-start_version = 3
+start_version = 0
 started = False
 
 # dir
-BASE_MODEL_DIR = '/home/jovyan/OfficialTutorials/For_Linux/models_dir_garcia'
+PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
+
+BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
+FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia"
 
 # ------------------------------------------------------------------
 
@@ -132,9 +113,9 @@ def quick_report(data, phase, version, model_name, phase_key):
 
 
 # ensure directory exists
-def ensure_dir(directory):
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+#def ensure_dir(directory):
+#    if not os.path.exists(directory):
+#        os.makedirs(directory)
 
 
 
@@ -166,7 +147,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
     import hddm
     from patsy import dmatrix  
 
-    ensure_dir(model_dir)   
+   # ensure_dir(model_dir)   
     
     depends_on = {}
     
@@ -1400,9 +1381,10 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     parameters.to_csv(os.path.join(fig_dir, 'diagnostics', 'params_of_interest_s.csv'))
 
 # directories
-model_dir = 'models_dir_garcia/'
-ensure_dir(model_dir)
+#model_dir = 'models_dir_garcia/'
+#ensure_dir(model_dir)
 
+model_dir = BASE_MODEL_DIR
 
 
 # ==================================================================
