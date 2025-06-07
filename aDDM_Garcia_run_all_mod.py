@@ -27,6 +27,8 @@ from patsy import dmatrix
 from joblib import Parallel, delayed
 import time
 import arviz as az
+import dill as pickle
+
 # warning settings
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -1384,12 +1386,11 @@ model_dir = BASE_MODEL_DIR
 
 if __name__ == "__main__":
 
-    # csv
-    data_full = pd.read_csv(
-        (PROJECT_DIR / "data_sets" / "data_sets_Garcia" /
-         "GarciaParticipants_…csv").as_posix(),
-        sep=",")
+    data_csv = PROJECT_DIR / "data_sets" / "data_sets_Garcia" / \
+               "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"
+    data_full = pd.read_csv(data_csv.as_posix(), sep=",")
 
+    
     # loop over phases and versions
     for phase in PHASE_RUN_ORDER:
         if phase in SKIP_PHASES:
