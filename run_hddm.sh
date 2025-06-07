@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH --partition=cpu                 # CPU partition
+#SBATCH --partition=compute                 # CPU partition
 #SBATCH --cpus-per-task=8               # number of CPU cores for your chains
 #SBATCH --mem=248G                      # total memory for the job
-#SBATCH -o logs/slurm.%j.out           # STDOUT goes to this file
-#SBATCH -e logs/slurm.%j.err           # STDERR goes to this file
-#SBATCH --mail-type=END,FAIL            # email when job ends or fails
+#SBATCH -o logs/slurm.%j.out            # STDOUT goes to this file
+#SBATCH -e logs/slurm.%j.err            # STDERR goes to this file
+#SBATCH --mail-type=ALL                 # email when job ends or fails
 #SBATCH --mail-user=u04vw21@abdn.ac.uk  # your university email
 
 # ── 1) Load the Singularity module ────────────────────────────────────────────
