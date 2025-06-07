@@ -1,9 +1,7 @@
 #!/bin/bash
-#SBATCH --job-name=hddm_fit            # a short name
-#SBATCH --partition=standard           # GPU partition
+#SBATCH --partition=cpu                 # CPU partition
 #SBATCH --cpus-per-task=8               # number of CPU cores for your chains
-#SBATCH --mem=128G                      # total memory for the job
-#SBATCH --time=23:30:00                # walltime hh:mm:ss
+#SBATCH --mem=248G                      # total memory for the job
 #SBATCH -o logs/slurm.%j.out           # STDOUT goes to this file
 #SBATCH -e logs/slurm.%j.err           # STDERR goes to this file
 #SBATCH --mail-type=END,FAIL            # email when job ends or fails
