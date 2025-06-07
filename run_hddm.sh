@@ -7,17 +7,17 @@
 #SBATCH --mail-type=ALL                 # email when job ends or fails
 #SBATCH --mail-user=u04vw21@abdn.ac.uk  # your university email
 
-# ── 1) Load the Singularity module ────────────────────────────────────────────
+# Load the Singularity module 
 module load singularity/3.8.5
 
-# ── 2) Define variables ───────────────────────────────────────────────────────
+# Define variables 
 IMAGE=$HOME/containers/hddm_latest.sif
 PROJECT=$HOME/sharedscratch/HDDM_Vero
 
 export PROJECT_DIR=/workspace
 export MPLBACKEND=Agg
 
-# ── 3) Run inside the container, with GPU support ─────────────────────────────
+# Run inside the container
 singularity exec \
     --bind ${PROJECT}:/workspace \
     ${IMAGE} \

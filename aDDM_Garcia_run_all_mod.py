@@ -36,9 +36,15 @@ from statsmodels.distributions.empirical_distribution import ECDF
 # HDDM
 from hddm.simulators.hddm_dataset_generators import simulator_h_c
 
+from pathlib import Path
+
 # Import my own libraries - I don't really use it anymore 
-#current_directory = os.getcwd()
+#current_directory = os.getcwd()    # we don't use this on the cluster
+
 PROJECT_DIR = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace"))
+
+def ensure_dir(path):
+    Path(path).mkdir(parents=True, exist_ok=True)
 
 #from helper_functions_2 import prepare_data
 #import compact_models
@@ -1279,108 +1285,91 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Drift InattentionW:C(phase)[EE]',
             ]
             
-    # Gelman-Rubin diagnostic
+    # diagnistics
+    diag_dir = Path(fig_dir) / "diagnostics"
+    ensure_dir(diag_dir)
+    
+    # Gelman-Rubin
     gr = hddm.analyze.gelman_rubin(models)
-    ensure_dir(os.path.join(fig_dir, 'diagnostics'))
-    with open(os.path.join(fig_dir, 'diagnostics', 'gelman_rubin.txt'), 'w') as text_file:
-        for p in gr.items():
-            text_file.write(f"{p[0]}: {p[1]}\n")
+    with open(diag_dir / "gelman_rubin.txt", "w") as f:
+        for param, val in gr.items():
+            f.write(f"{param}: {val}\n")
 
     # DIC
     dic = combined_model.dic
-    with open(os.path.join(fig_dir, 'diagnostics', 'DIC.txt'), 'w') as text_file:
-        text_file.write(f"DIC: {dic}\n")
-        
-    # Plots
+    (diag_dir / "DIC.txt").write_text(f"DIC: {dic}\n")
+
     size_plot = len(combined_model.data.subj_idx.unique()) / 3.0 * 1.5
-    combined_model.plot_posterior_predictive(samples=10, bins=100, figsize=(6, size_plot), save=True, path=os.path.join(fig_dir, 'diagnostics'), format='pdf')
-    matplotlib.rcParams.update({'font.size': 6}) 
-    combined_model.plot_posteriors(save=True, path=os.path.join(fig_dir, 'diagnostics'), format='pdf')
+    combined_model.plot_posterior_predictive(samples=10, bins=100, figsize=(6, size_plot), save=True, path=str(diag_dir), format="pdf")
     
-    matplotlib.rcParams.update({'font.size': 12})
+    # shrink font for the next set of plots
+    matplotlib.rcParams.update({"font.size": 6})
+    combined_model.plot_posteriors(save=True,
+                                   path=str(diag_dir),
+                                   format="pdf")
+    matplotlib.rcParams.update({"font.size": 12})
 
-    # results
+    # stats table
     results = combined_model.gen_stats()
-    results.to_csv(os.path.join(fig_dir, 'diagnostics', 'results.csv'))
+    results.to_csv(diag_dir / "results.csv")
     
-    # Posterior analysis and fixed starting point as in J.W. de Gee code
+    # Posterior‐trace KDEs
     traces = [combined_model.nodes_db.node[p].trace() for p in params_of_interest]
-    #traces[0] = 1 / (1 + np.exp(-(traces[0])))
+    # optional alpha‐transform if RL is used for instance
+    if "alpha" in params_of_interest:
+        idx = params_of_interest.index("alpha")
+        traces[idx] = np.exp(traces[idx]) / (1 + np.exp(traces[idx]))
     
-    # If 'alpha' is among the parameters, transform its trace
-    if 'alpha' in params_of_interest:
-        alpha_idx = params_of_interest.index('alpha')
-        # Transform using the inverse logit: np.exp(alpha)/(1+np.exp(alpha))
-        traces[alpha_idx] = np.exp(traces[alpha_idx]) / (1 + np.exp(traces[alpha_idx]))
-    
-    #Posterior Statistics for parameter traces, significance testing
-    stats = []
-    for trace in traces:
-        stat = min(np.mean(trace > 0), np.mean(trace < 0))
-        stats.append(min(stat, 1 - stat))
-    stats = np.array(stats)
-    
+    stats = [min(np.mean(t>0), np.mean(t<0)) for t in traces]
     n_cols = 5
-    n_rows = int(np.ceil(len(params_of_interest) / n_cols))
-
-    fig, axes = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 3, n_rows * 4))
+    n_rows = int(np.ceil(len(traces) / n_cols))
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols*3, n_rows*4))
     axes = axes.flatten()
-
-    for ax_nr, (trace, title) in enumerate(zip(traces, titles)):
-        sns.kdeplot(trace, vertical=True, shade=True, color='purple', ax=axes[ax_nr])
-        if ax_nr % n_cols == 0:
-            axes[ax_nr].set_ylabel('Parameter estimate (a.u.)')
-        if ax_nr >= len(params_of_interest) - n_cols:
-            axes[ax_nr].set_xlabel('Posterior probability')
-        axes[ax_nr].set_title(f'{title}\np={round(stats[ax_nr], 3)}', fontsize=6)  
-        axes[ax_nr].set_xlim(xmin=0)
-        for axis in ['top', 'bottom', 'left', 'right']:
-            axes[ax_nr].spines[axis].set_linewidth(0.5)
-            axes[ax_nr].tick_params(width=0.5, labelsize=6)  
-
-    for ax in axes[len(params_of_interest):]:
+    
+    for i, (trace, title) in enumerate(zip(traces, titles)):
+        sns.kdeplot(trace, vertical=True, shade=True, color='purple', ax=axes[i])
+        axes[i].set_title(f"{title}\np={stats[i]:.3f}", fontsize=6)
+        axes[i].set_xlim(left=0)
+        if i % n_cols == 0:
+            axes[i].set_ylabel("Parameter estimate (a.u.)")
+        if i >= len(traces) - n_cols:
+            axes[i].set_xlabel("Posterior probability")
+        for side in ["top","bottom","left","right"]:
+            axes[i].spines[side].set_linewidth(0.5)
+            axes[i].tick_params(width=0.5, labelsize=6)   
+            
+    # drop extra axes
+    for ax in axes[len(traces):]:
         fig.delaxes(ax)
-
     sns.despine(offset=10, trim=True)
     plt.tight_layout()
-    fig.savefig(os.path.join(fig_dir, 'posteriors.pdf'), bbox_inches='tight') 
-
-        
-    # parameters = []
-    # for p in params_of_interest_s:
-    #     param_values = []
-    #     for s in np.unique(combined_model.data.subj_idx):
-    #         param_name = f"{p}.{s}"
-    #         try:
-    #             param_value = results.loc[results.index == param_name, 'mean'].values
-    #             if len(param_value) > 0:
-    #                 param_values.append(param_value[0])
-    #         except KeyError:
-    #             print(f"Param {param_name} missing. Skipping...")
-    #             continue
-    #     parameters.append(param_values)
+    fig.savefig(diag_dir / "posteriors.pdf", bbox_inches="tight")
+    plt.close(fig) 
     
+    
+    # save per‐subject parameters
     parameters = []
     for p in params_of_interest_s:
         param_values = []
         for s in np.unique(combined_model.data.subj_idx):
             param_name = f"{p}.{s}"
             try:
-                param_value = results.loc[results.index == param_name, 'mean'].values
-                if len(param_value) > 0:
-                    value = param_value[0]
-                    # If this parameter is alpha (or subject-level alpha), transform it
+                val = results.loc[results.index == param_name, 'mean'].values
+                if len(val):
+                    v = val[0]
                     if 'alpha' in p:
-                        value = np.exp(value) / (1 + np.exp(value))
-                    param_values.append(value)
+                        # inverse‐logit transform for any alpha‐params
+                        v = np.exp(v) / (1 + np.exp(v))
+                    param_values.append(v)
             except KeyError:
-                print(f"Param {param_name} missing. Skipping...")
-                continue
+                print(f"Param {param_name} missing. Skipping…")
         parameters.append(param_values)
 
-    parameters = pd.DataFrame(parameters).T
-    parameters.columns = params_of_interest_s
-    parameters.to_csv(os.path.join(fig_dir, 'diagnostics', 'params_of_interest_s.csv'))
+    # turn into DataFrame, transpose so each subj is a row, then save
+    param_df = pd.DataFrame(parameters).T
+    param_df.columns = params_of_interest_s
+    param_df.to_csv(diag_dir / "params_of_interest_s.csv", index=False)
+    
 
 # directories
 #model_dir = 'models_dir_garcia/'
@@ -1397,10 +1386,9 @@ if __name__ == "__main__":
 
     # csv
     data_full = pd.read_csv(
-        PROJECT_DIR / "data_sets" / "data_sets_Garcia" /
-        "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
-        sep=","
-        )
+        (PROJECT_DIR / "data_sets" / "data_sets_Garcia" /
+         "GarciaParticipants_…csv").as_posix(),
+        sep=",")
 
     # loop over phases and versions
     for phase in PHASE_RUN_ORDER:
@@ -1455,8 +1443,11 @@ if __name__ == "__main__":
             # gives you a quick report at the start
             quick_report(data, phase, version, model_name, phase_key)
 
-            fig_dir = os.path.join("figures_dir_garcia", full_model_name)
-            ensure_dir(os.path.join(fig_dir, "diagnostics"))
+            # fig_dir = os.path.join("figures_dir_garcia", full_model_name)
+            # ensure_dir(os.path.join(fig_dir, "diagnostics"))
+            
+            fig_dir = FIG_DIR_ROOT / full_model_name
+            ensure_dir(fig_dir / "diagnostics")
 
             # run hddm function ------------------------------------------
             drift_diffusion_hddm(
