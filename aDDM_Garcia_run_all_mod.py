@@ -37,7 +37,9 @@ from statsmodels.distributions.empirical_distribution import ECDF
 from hddm.simulators.hddm_dataset_generators import simulator_h_c
 
 # Import my own libraries - I don't really use it anymore 
-current_directory = os.getcwd()
+#current_directory = os.getcwd()
+PROJECT_DIR = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace"))
+
 #from helper_functions_2 import prepare_data
 #import compact_models
 
@@ -1395,11 +1397,10 @@ if __name__ == "__main__":
 
     # csv
     data_full = pd.read_csv(
-        os.path.join(current_directory,
-                     "data_sets/data_sets_Garcia",
-                     "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
+        PROJECT_DIR / "data_sets" / "data_sets_Garcia" /
+        "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
         sep=","
-    )
+        )
 
     # loop over phases and versions
     for phase in PHASE_RUN_ORDER:
