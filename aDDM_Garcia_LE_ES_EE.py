@@ -67,7 +67,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 4       # Defines which version you want
+version = 5       # Defines which version you want
 run = False        # if True, the the models run, if False the models load
 
 phase = ['LE']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
