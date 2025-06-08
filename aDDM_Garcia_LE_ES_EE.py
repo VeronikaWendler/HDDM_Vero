@@ -100,7 +100,7 @@ FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia"
 model_base_name = "garcia_replication_"
 
 model_versions = {
-    'LE': ['LE_1', 'LE_2', 'LE_3', 'LE_4', 'LE_5', 'LE_6'],
+    'LE': ['LE_1', 'LE_2', 'LE_3', 'LE_4', 'LE_5', 'LE_6', 'LE_7'],
     'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4', 'ES_5', 'ES_6'],
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
