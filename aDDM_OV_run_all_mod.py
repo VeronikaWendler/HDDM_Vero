@@ -196,7 +196,15 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         elif version == 4: # r5 r4 non-fixated options weights varies by OV level and ndt
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(cond)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            depends_on={'t': 'cond'}   
+            depends_on={'t': 'cond'}
+        elif version == 5: # r5 r4 non-fixated options weights varies by OV level and ndt
+            v_reg = {'model': 'v ~ 1 + AttentionW:C(cond) + InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'a': 'cond'}
+        elif version == 6: # r5 r4 non-fixated options weights varies by OV level and ndt
+            v_reg = {'model': 'v ~ 1 + AttentionW:C(cond) + InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'t': 'cond'}         
         else:
             raise ValueError(f"check version {version} ??")
 
