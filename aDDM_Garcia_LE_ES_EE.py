@@ -820,18 +820,57 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             
         elif version == 5:
             params_of_interest = [
+            't',
+            'a(0)',
+            'a(1)',
+            'a(2)',
+            'a(3)',
+            'v_Intercept',
+            'v_InattentionW',
+            'v_AttentionW:C(cond)[0]',
+            'v_AttentionW:C(cond)[1]',
+            'v_AttentionW:C(cond)[2]',
+            'v_AttentionW:C(cond)[3]',
+            ]
+            params_of_interest_s = [
+            't_subj',
+            'a(0)_subj',
+            'a(1)_subj',
+            'a(2)_subj',
+            'a(3)_subj',
+            'v_Intercept_subj',
+            'v_InattentionW_subj',
+            'v_AttentionW:C(cond)[0]_subj',
+            'v_AttentionW:C(cond)[1]_subj',
+            'v_AttentionW:C(cond)[2]_subj',
+            'v_AttentionW:C(cond)[3]_subj',
+            ]
+            titles = [
+            'Non-dec. time',
+            'Boundary sep. (0)',
+            'Boundary sep. (1)',
+            'Boundary sep. (2)',
+            'Boundary sep. (3)',
+            'Intercept drift rate',
+            'Drift InattentionW',
+            'Drift AttentionW:C(cond)[90/10]',
+            'Drift AttentionW:C(cond)[80/20]',
+            'Drift AttentionW:C(cond)[70/30]',
+            'Drift AttentionW:C(cond)[60/40]',
+            ]
+        elif version == 6:
+            params_of_interest = [
             'a',
             't(0)',
             't(1)',
             't(2)',
             't(3)',
             'v_Intercept',
-            'v_AttentionW',
-            'v_InattentionW:C(cond)[0]',
-            'v_InattentionW:C(cond)[1]',
-            'v_InattentionW:C(cond)[2]',
-            'v_InattentionW:C(cond)[3]',
-
+            'v_InattentionW',
+            'v_AttentionW:C(cond)[0]',
+            'v_AttentionW:C(cond)[1]',
+            'v_AttentionW:C(cond)[2]',
+            'v_AttentionW:C(cond)[3]',
             ]
             params_of_interest_s = [
             'a_subj',
@@ -840,11 +879,11 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             't(2)_subj',
             't(3)_subj',
             'v_Intercept_subj',
-            'v_AttentionW_subj',
-            'v_InattentionW:C(cond)[0]_subj',
-            'v_InattentionW:C(cond)[1]_subj',
-            'v_InattentionW:C(cond)[2]_subj',
-            'v_InattentionW:C(cond)[3]_subj',
+            'v_InattentionW_subj',
+            'v_AttentionW:C(cond)[0]_subj',
+            'v_AttentionW:C(cond)[1]_subj',
+            'v_AttentionW:C(cond)[2]_subj',
+            'v_AttentionW:C(cond)[3]_subj',
             ]
             titles = [
             'Boundary sep.',
@@ -853,11 +892,11 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Non-dec. time (2)',
             'Non-dec. time (3)',
             'Intercept drift rate',
-            'Drift AttentionW',
-            'Drift InattentionW:C(cond)[90/10]',
-            'Drift InattentionW:C(cond)[80/20]',
-            'Drift InattentionW:C(cond)[70/30]',
-            'Drift InattentionW:C(cond)[60/40]',
+            'Drift InattentionW',
+            'Drift AttentionW:C(cond)[90/10]',
+            'Drift AttentionW:C(cond)[80/20]',
+            'Drift AttentionW:C(cond)[70/30]',
+            'Drift AttentionW:C(cond)[60/40]',
             ]
     if phase == 'ES':
         if version == 0:
