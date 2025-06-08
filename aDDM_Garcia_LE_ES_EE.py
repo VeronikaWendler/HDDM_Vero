@@ -28,7 +28,7 @@ from joblib import Parallel, delayed
 import time
 import arviz as az
 import dill as pickle
-
+import re
 # warning settings
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -44,6 +44,10 @@ PROJECT_DIR = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace"))
 
 def ensure_dir(path):
     Path(path).mkdir(parents=True, exist_ok=True)
+
+# sanitizing the saving function:
+import re
+from pathlib import Path
 
 
 #------------------------------------------------------------------------------------------------------------------
@@ -221,6 +225,15 @@ def sanitize_infdata(infdata):
                         values[mask] = np.nan
                         dataset[var].values = values
     return infdata
+
+
+def _sanitize_filename(fname):
+    # replace any of : ( ) [ ] , with underscore
+    safe = re.sub(r'[:\(\)\[\],]', '_', fname)
+    # collapse runs of underscores to a single underscore
+    safe = re.sub(r'_+', '_', safe)
+    return safe
+
 
 fig_dir = FIG_DIR_ROOT / f"{model_base_name}{model_name}"
 ensure_dir(fig_dir / "diagnostics")
@@ -1505,6 +1518,16 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     param_df = pd.DataFrame(parameters).T
     param_df.columns = params_of_interest_s
     param_df.to_csv(diag_dir / "params_of_interest_s.csv", index=False)
+    
+    
+    
+    for f in os.listdir(diag_dir):
+        if not f.endswith('.pdf') and not f.endswith('.csv'):
+            continue
+        safe = _sanitize_filename(f)
+        if safe != f:
+            os.rename(diag_dir / f, diag_dir / safe)
+
     
 model_dir = BASE_MODEL_DIR
 ensure_dir(model_dir)
