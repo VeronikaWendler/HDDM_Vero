@@ -11,6 +11,8 @@ import datetime
 import math
 import scipy as sp
 import matplotlib
+matplotlib.use("Agg")                   # for backend (does not require GUI)
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 import glob
@@ -29,42 +31,21 @@ import arviz as az
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 # Plotting
-import matplotlib.pyplot as plt
-import matplotlib
-import seaborn as sns
-# Stats functionality
+# Stats 
 from statsmodels.distributions.empirical_distribution import ECDF
 # HDDM
 from hddm.simulators.hddm_dataset_generators import simulator_h_c
 
-# import own libraries
-current_directory = os.getcwd()
-#from helper_functions_2 import prepare_data  # not using this atm
-#import compact_models
+from pathlib import Path
 
-#------------------------------------------------------------------------------------------------------------------
-# Structure of saving (experiment 2. called OV)
-# experiment 2 manipulates overall option value already during learning
+PROJECT_DIR = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace"))
 
-# /home/jovyan/OfficialTutorials/THESIS_HDDM
-#     ├── data_sets_OV/
-#     │   └── OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv
-#     ├── model_dir_OV_CCT/
-#     │   ├── EE_0 ...n
-#     │   ├── ES_0 ..n
-#     │   ├── ESEE_0 ...n
-#     │   ├── LEESEE_0 ...n
-#     ├── figures_OV_CCT/
-#     │   └── OV_replication_EE_n/
-#     │       ├── diagnostics/
-#     │       │   ├── gelman_rubic.txt
-#     │       │   ├── DIC.txt
-#     │       │   ├── results.csv
-#     │       │   └── posteriors.pdf
-#     │   └── OV_replication_ES_n/
-#     │   └── OV_replication_ESEE_n/
-#     │   └── OV_replication_LEESEE_n/
-#     ├── other_script.py
+def ensure_dir(path):
+    Path(path).mkdir(parents=True, exist_ok=True)
+
+# sanitizing the saving function:
+import re
+from pathlib import Path
 #------------------------------------------------------------------------------------------------------------------
 
 # addm regression formula: this is how v is influenced by the value, behavioural data and gaze
@@ -94,10 +75,17 @@ nr_models = 5
 nr_samples = 2100
 parallel = True
 
+# dir
+PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
+
+BASE_MODEL_DIR = PROJECT_DIR / "models_dir_OV"
+FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_OV"
+
+
 model_base_name = 'OV_replication_'
 
 model_versions = {
-    'LE': ['LE_1', 'LE_2', 'LE_3', 'LE_4', 'LE_5'],
+    'LE': ['LE_1', 'LE_2', 'LE_3', 'LE_4', 'LE_5', 'LE_6', 'LE_7'],
     'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4', 'ES_5', 'ES_6', 'ES_7'],
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
@@ -109,9 +97,7 @@ if phase not in model_versions:
 
 model_name = model_versions[phase][version]
 
-# path
-data_path1 = os.path.join(current_directory, 'data_sets/data_sets_OV', 'OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv') 
-data = pd.read_csv(data_path1, sep=',')
+data = pd.read_csv((PROJECT_DIR / "data_sets" / "data_sets_OV" / "OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix(), sep=",")
 
 #data filtering
 if phase == 'ESEE':
@@ -190,10 +176,13 @@ print(f"Data Shape After Filtering: {data.shape}")
     
 # RT distributions plot
 fig = plt.figure(figsize=(12, 8))
-ax = fig.add_subplot(111, xlabel='RT', ylabel='count', title='RT distributions')
-for i, subj_data in data.groupby('subj_idx'):
+ax  = fig.add_subplot(111, xlabel='RT', ylabel='count', title='RT distributions')
+for _, subj_data in data.groupby('subj_idx'):
     subj_data.rt.hist(bins=20, histtype='step', ax=ax)
-plt.show()
+# instead of plt.show():
+fig.savefig((FIG_DIR_ROOT / f"{model_base_name}{model_name}" / "diagnostics" / "rt_distributions.pdf").as_posix(),
+            bbox_inches="tight")
+plt.close(fig)
 
 # ensure directory exists
 def ensure_dir(directory):
@@ -201,7 +190,7 @@ def ensure_dir(directory):
         os.makedirs(directory)
 
 # model dir:
-model_dir = 'models_dir_OV/'
+model_dir = BASE_MODEL_DIR
 ensure_dir(model_dir)
 
 # make data genuinely numeric (so that nans are also detected)
@@ -222,13 +211,17 @@ def sanitize_infdata(infdata):
     return infdata
 
 
-# figures dir:
-fig_dir = os.path.join('figures_dir_OV', model_base_name + model_name)
-try:
-    os.system('mkdir {}'.format(fig_dir))
-    os.system('mkdir {}'.format(os.path.join(fig_dir, 'diagnostics')))
-except:
-    pass
+def _sanitize_filename(fname):
+    # replace any of : ( ) [ ] , with underscore
+    safe = re.sub(r'[:\(\)\[\],]', '_', fname)
+    # collapse runs of underscores to a single underscore
+    safe = re.sub(r'_+', '_', safe)
+    return safe
+
+
+fig_dir = FIG_DIR_ROOT / f"{model_base_name}{model_name}"
+ensure_dir(fig_dir / "diagnostics")
+
 
 # subjects:
 subjects = np.unique(data.subj_idx)
@@ -267,21 +260,21 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=2100, accu
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(cond)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on = {'a': 'cond'}      
-        elif version == 4: # r5 non-fixated option weights varies by OV levle and non-decision time
+        elif version == 4: # r5 r4 non-fixated options weights varies by OV level and ndt
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(cond)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            depends_on={'t': 'cond'}   
+            depends_on={'t': 'cond'}
+        elif version == 5: # r5 r4 non-fixated options weights varies by OV level and ndt
+            v_reg = {'model': 'v ~ 1 + AttentionW:C(cond) + InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'a': 'cond'}
+        elif version == 6: # r5 r4 non-fixated options weights varies by OV level and ndt
+            v_reg = {'model': 'v ~ 1 + AttentionW:C(cond) + InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'t': 'cond'}         
         else:
-            m = hddm.HDDMrl(data, 
-                            dual = True,
-                            include=['a', 't', 'v'],
-                            p_outlier=.05,
-                            trace_subjs=True,
-                            is_group_model=True)
-            m.find_starting_values()
-            m.sample(samples, burn=1000, dbname=os.path.join(model_dir, model_name + '_db{}'.format(trace_id)), db='pickle')
-            return m             
-        
+            raise ValueError(f"check version {version} ??")
+
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     depends_on=depends_on, 
@@ -290,12 +283,14 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=2100, accu
                                     group_only_regressors=False,
                                     keep_regressor_trace=True)
         m.find_starting_values()
-        m.sample(samples,
-                 burn=1000,
-                 dbname=os.path.join(model_dir, model_name + '_db{}'.format(trace_id)), 
-                 db='pickle', return_infdata = True,loglike = True, ppc = True)
+        infdata = m.sample(samples,
+                   burn=1000,      #is variable
+                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                   db='pickle',
+                   return_infdata=True, loglike=True, ppc=True)
 
-        return m
+        return m, infdata
+    
     
     elif phase == 'ES':
         accuracy_coding = True
@@ -469,8 +464,8 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=2100, accu
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=2100,
-                         n_jobs=3,
+                         samples=6000,
+                         n_jobs=5,
                          run=True,
                          parallel=True,
                          model_name='model',
@@ -799,18 +794,57 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             
         elif version == 5:
             params_of_interest = [
+            't',
+            'a(0)',
+            'a(1)',
+            'a(2)',
+            'a(3)',
+            'v_Intercept',
+            'v_InattentionW',
+            'v_AttentionW:C(cond)[0]',
+            'v_AttentionW:C(cond)[1]',
+            'v_AttentionW:C(cond)[2]',
+            'v_AttentionW:C(cond)[3]',
+            ]
+            params_of_interest_s = [
+            't_subj',
+            'a(0)_subj',
+            'a(1)_subj',
+            'a(2)_subj',
+            'a(3)_subj',
+            'v_Intercept_subj',
+            'v_InattentionW_subj',
+            'v_AttentionW:C(cond)[0]_subj',
+            'v_AttentionW:C(cond)[1]_subj',
+            'v_AttentionW:C(cond)[2]_subj',
+            'v_AttentionW:C(cond)[3]_subj',
+            ]
+            titles = [
+            'Non-dec. time',
+            'Boundary sep. (0)',
+            'Boundary sep. (1)',
+            'Boundary sep. (2)',
+            'Boundary sep. (3)',
+            'Intercept drift rate',
+            'Drift InattentionW',
+            'Drift AttentionW:C(cond)[90/70]',
+            'Drift AttentionW:C(cond)[80/40]',
+            'Drift AttentionW:C(cond)[60/20]',
+            'Drift AttentionW:C(cond)[30/10]',
+            ]
+        elif version == 6:
+            params_of_interest = [
             'a',
             't(0)',
             't(1)',
             't(2)',
             't(3)',
             'v_Intercept',
-            'v_AttentionW',
-            'v_InattentionW:C(cond)[0]',
-            'v_InattentionW:C(cond)[1]',
-            'v_InattentionW:C(cond)[2]',
-            'v_InattentionW:C(cond)[3]',
-
+            'v_InattentionW',
+            'v_AttentionW:C(cond)[0]',
+            'v_AttentionW:C(cond)[1]',
+            'v_AttentionW:C(cond)[2]',
+            'v_AttentionW:C(cond)[3]',
             ]
             params_of_interest_s = [
             'a_subj',
@@ -819,11 +853,11 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             't(2)_subj',
             't(3)_subj',
             'v_Intercept_subj',
-            'v_AttentionW_subj',
-            'v_InattentionW:C(cond)[0]_subj',
-            'v_InattentionW:C(cond)[1]_subj',
-            'v_InattentionW:C(cond)[2]_subj',
-            'v_InattentionW:C(cond)[3]_subj',
+            'v_InattentionW_subj',
+            'v_AttentionW:C(cond)[0]_subj',
+            'v_AttentionW:C(cond)[1]_subj',
+            'v_AttentionW:C(cond)[2]_subj',
+            'v_AttentionW:C(cond)[3]_subj',
             ]
             titles = [
             'Boundary sep.',
@@ -832,13 +866,12 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Non-dec. time (2)',
             'Non-dec. time (3)',
             'Intercept drift rate',
-            'Drift AttentionW',
-            'Drift InattentionW:C(cond)[90/70]',
-            'Drift InattentionW:C(cond)[80/40]',
-            'Drift InattentionW:C(cond)[60/20]',
-            'Drift InattentionW:C(cond)[30/10]',
+            'Drift InattentionW',
+            'Drift AttentionW:C(cond)[90/70]',
+            'Drift AttentionW:C(cond)[80/40]',
+            'Drift AttentionW:C(cond)[60/20]',
+            'Drift AttentionW:C(cond)[30/10]',
             ]
-            
     if phase == 'ES':
         if version == 0:
             params_of_interest = [
@@ -1482,119 +1515,108 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Drift InattentionW:C(phase)[EE]',
             ]
             
-    # Gelman-Rubin diagnostic
+   # diagnistics
+    diag_dir = Path(fig_dir) / "diagnostics"
+    ensure_dir(diag_dir)
+    
+    # Gelman-Rubin
     gr = hddm.analyze.gelman_rubin(models)
-    ensure_dir(os.path.join(fig_dir, 'diagnostics'))
-    with open(os.path.join(fig_dir, 'diagnostics', 'gelman_rubin.txt'), 'w') as text_file:
-        for p in gr.items():
-            text_file.write(f"{p[0]}: {p[1]}\n")
-            
+    with open(diag_dir / "gelman_rubin.txt", "w") as f:
+        for param, val in gr.items():
+            f.write(f"{param}: {val}\n")
+
     # DIC
     dic = combined_model.dic
-    with open(os.path.join(fig_dir, 'diagnostics', 'DIC.txt'), 'w') as text_file:
-        text_file.write(f"DIC: {dic}\n")
-        
-    # Plots
+    (diag_dir / "DIC.txt").write_text(f"DIC: {dic}\n")
+
     size_plot = len(combined_model.data.subj_idx.unique()) / 3.0 * 1.5
-    combined_model.plot_posterior_predictive(samples=10, bins=100, figsize=(6, size_plot), save=True, path=os.path.join(fig_dir, 'diagnostics'), format='pdf')
-    matplotlib.rcParams.update({'font.size': 6}) 
-    combined_model.plot_posteriors(save=True, path=os.path.join(fig_dir, 'diagnostics'), format='pdf')
+    combined_model.plot_posterior_predictive(samples=10, bins=100, figsize=(6, size_plot), save=True, path=str(diag_dir), format="pdf")
     
-    # font size
-    matplotlib.rcParams.update({'font.size': 12})
-    
-    # results
+    # shrink font for the next set of plots
+    matplotlib.rcParams.update({"font.size": 6})
+    combined_model.plot_posteriors(save=True,
+                                   path=str(diag_dir),
+                                   format="pdf")
+    matplotlib.rcParams.update({"font.size": 12})
+
+    # stats table
     results = combined_model.gen_stats()
-    results.to_csv(os.path.join(fig_dir, 'diagnostics', 'results.csv'))
+    results.to_csv(diag_dir / "results.csv")
     
-    # Posterior analysis and fixed starting point as in J.W. de Gee code - not doing it as we are not interested in z atm (similar to CCT)
+    # Posterior‐trace KDEs
     traces = [combined_model.nodes_db.node[p].trace() for p in params_of_interest]
-    #traces[0] = 1 / (1 + np.exp(-(traces[0])))
+    # optional alpha‐transform if RL is used for instance
+    if "alpha" in params_of_interest:
+        idx = params_of_interest.index("alpha")
+        traces[idx] = np.exp(traces[idx]) / (1 + np.exp(traces[idx]))
     
-    # If 'alpha' is among the parameters, transform its trace (only for RL models, not for addm)
-    if 'alpha' in params_of_interest:
-        alpha_idx = params_of_interest.index('alpha')
-        # Transform using the inverse logit: np.exp(alpha)/(1+np.exp(alpha))
-        traces[alpha_idx] = np.exp(traces[alpha_idx]) / (1 + np.exp(traces[alpha_idx]))
-    
-    #Posterior Statistics for parameter traces, significance testing
-    stats = []
-    for trace in traces:
-        stat = min(np.mean(trace > 0), np.mean(trace < 0))
-        stats.append(min(stat, 1 - stat))
-    stats = np.array(stats)
-    
+    stats = [min(np.mean(t>0), np.mean(t<0)) for t in traces]
     n_cols = 5
-    n_rows = int(np.ceil(len(params_of_interest) / n_cols))
-
-    fig, axes = plt.subplots(nrows=n_rows, ncols=n_cols, figsize=(n_cols * 3, n_rows * 4))
+    n_rows = int(np.ceil(len(traces) / n_cols))
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(n_cols*3, n_rows*4))
     axes = axes.flatten()
-
-    for ax_nr, (trace, title) in enumerate(zip(traces, titles)):
-        sns.kdeplot(trace, vertical=True, shade=True, color='purple', ax=axes[ax_nr])  # variable obviously, I like purple
-        if ax_nr % n_cols == 0:
-            axes[ax_nr].set_ylabel('Parameter estimate (a.u.)')
-        if ax_nr >= len(params_of_interest) - n_cols:
-            axes[ax_nr].set_xlabel('Posterior probability')
-        axes[ax_nr].set_title(f'{title}\np={round(stats[ax_nr], 3)}', fontsize=6)  
-        axes[ax_nr].set_xlim(xmin=0)
-        for axis in ['top', 'bottom', 'left', 'right']:
-            axes[ax_nr].spines[axis].set_linewidth(0.5)
-            axes[ax_nr].tick_params(width=0.5, labelsize=6)  
-
-    for ax in axes[len(params_of_interest):]:
+    
+    for i, (trace, title) in enumerate(zip(traces, titles)):
+        sns.kdeplot(trace, vertical=True, shade=True, color='purple', ax=axes[i])
+        axes[i].set_title(f"{title}\np={stats[i]:.3f}", fontsize=6)
+        axes[i].set_xlim(left=0)
+        if i % n_cols == 0:
+            axes[i].set_ylabel("Parameter estimate (a.u.)")
+        if i >= len(traces) - n_cols:
+            axes[i].set_xlabel("Posterior probability")
+        for side in ["top","bottom","left","right"]:
+            axes[i].spines[side].set_linewidth(0.5)
+            axes[i].tick_params(width=0.5, labelsize=6)   
+            
+    # drop extra axes
+    for ax in axes[len(traces):]:
         fig.delaxes(ax)
-
     sns.despine(offset=10, trim=True)
     plt.tight_layout()
-    fig.savefig(os.path.join(fig_dir, 'posteriors.pdf'), bbox_inches='tight') 
-
-        
-    # parameters = []
-    # for p in params_of_interest_s:
-    #     param_values = []
-    #     for s in np.unique(combined_model.data.subj_idx):
-    #         param_name = f"{p}.{s}"
-    #         try:
-    #             param_value = results.loc[results.index == param_name, 'mean'].values
-    #             if len(param_value) > 0:
-    #                 param_values.append(param_value[0])
-    #         except KeyError:
-    #             print(f"Param {param_name} missing. skipping...")
-    #             continue
-    #     parameters.append(param_values)
+    fig.savefig(diag_dir / "posteriors.pdf", bbox_inches="tight")
+    plt.close(fig) 
     
-    # cancled out the above as this one here includes learning rate functionality
+    
+    # save per‐subject parameters
     parameters = []
     for p in params_of_interest_s:
         param_values = []
         for s in np.unique(combined_model.data.subj_idx):
             param_name = f"{p}.{s}"
             try:
-                param_value = results.loc[results.index == param_name, 'mean'].values
-                if len(param_value) > 0:
-                    value = param_value[0]
-                    # If this parameter is alpha (or subject-level alpha), transform it.
+                val = results.loc[results.index == param_name, 'mean'].values
+                if len(val):
+                    v = val[0]
                     if 'alpha' in p:
-                        value = np.exp(value) / (1 + np.exp(value))
-                    param_values.append(value)
+                        # inverse‐logit transform for any alpha‐params
+                        v = np.exp(v) / (1 + np.exp(v))
+                    param_values.append(v)
             except KeyError:
-                print(f"Param {param_name} missing. Skipping...")
-                continue
+                print(f"Param {param_name} missing. Skipping…")
         parameters.append(param_values)
 
-    parameters = pd.DataFrame(parameters).T
-    parameters.columns = params_of_interest_s
-    parameters.to_csv(os.path.join(fig_dir, 'diagnostics', 'params_of_interest_s.csv'))
+    # turn into DataFrame, transpose so each subj is a row, then save
+    param_df = pd.DataFrame(parameters).T
+    param_df.columns = params_of_interest_s
+    param_df.to_csv(diag_dir / "params_of_interest_s.csv", index=False)
+    
+    
+    
+    for f in os.listdir(diag_dir):
+        if not f.endswith('.pdf') and not f.endswith('.csv'):
+            continue
+        safe = _sanitize_filename(f)
+        if safe != f:
+            os.rename(diag_dir / f, diag_dir / safe)
 
-# directories
-model_dir = 'models_dir_OV/'
+    
+model_dir = BASE_MODEL_DIR
 ensure_dir(model_dir)
 
 
-# here we call the ddm function if run == True
+# this calls our ddm functions depending on whether we run or load models
 if run:
-    if phase == 'EE' or phase == 'ES':        # this applies either to the 'ES' or 'EE' phase
+    if phase == 'EE' or phase == 'ES':
         print(f'Running DDM... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,
@@ -1605,11 +1627,11 @@ if run:
             model_name=model_base_name + model_name,
             model_dir=model_dir,
             version=version,
-            phase=phase,  
+            phase=phase,  # Use updated phase key
             accuracy_coding=True
         )
     
-    elif phase == 'ESEE':  # this condition runs only for the combined model
+    elif phase == 'ESEE':  # Ensure this condition runs only for the combined model
         print(f'Running Combined Model (ES+EE)... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,
@@ -1623,7 +1645,7 @@ if run:
             phase=phase,  
             accuracy_coding=True
         )
-    elif phase == 'LEESEE': # same here only for the combined large model
+    elif phase == 'LEESEE': 
         print(f'Running Combined Model (LE+ES+EE)... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,
@@ -1634,7 +1656,7 @@ if run:
             model_name=model_base_name + model_name,
             model_dir=model_dir,
             version=version,
-            phase=phase,  # Use updated phase key
+            phase=phase,  
             accuracy_coding=True
         )
     else:
@@ -1650,7 +1672,6 @@ if run:
             version=version,
             phase=phase,  
         )
-# if run == False, we load them modelzzz        
 else:
     if phase == 'EE' or phase == 'ES':
         print(f'loading DDM... {model_base_name + model_name}')
@@ -1668,7 +1689,7 @@ else:
         )
         analyze_model(models, fig_dir, nr_models, version, phase)
 
-    elif phase == 'ESEE':  # combined model
+    elif phase == 'ESEE':  
         print(f'loading Combined DDM Model (ES+EE)... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,
@@ -1684,7 +1705,7 @@ else:
         )
         analyze_model(models, fig_dir, nr_models, version, phase)
         
-    elif phase == 'LEESEE':  # combined model
+    elif phase == 'LEESEE':  
         print(f'loading Combined DDM Model (LE+ES+EE)... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,
@@ -1711,10 +1732,12 @@ else:
             model_name=model_base_name + model_name,
             model_dir=model_dir,
             version=version,
-            phase=phase,  
+            phase=phase, 
         )
         analyze_model(models, fig_dir, nr_models, version, phase)
     
+
+
 
 
 
