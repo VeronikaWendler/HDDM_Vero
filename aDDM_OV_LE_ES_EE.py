@@ -55,7 +55,7 @@ from pathlib import Path
 
 
 # params:
-version = 4     # set which version you want to run
+version = 5     # set which version you want to run
 run = False       # if True, the the models run, if False the models load
 
 phase = ['LE']  #['ES', 'EE']  
