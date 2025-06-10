@@ -12,7 +12,7 @@ import math
 import scipy as sp
 import matplotlib
 matplotlib.use("Agg")                   # for backend (does not require GUI)
-
+import os, pathlib
 import matplotlib.pyplot as plt
 import seaborn as sns
 import glob
@@ -27,6 +27,8 @@ from patsy import dmatrix
 from joblib import Parallel, delayed
 import time
 import arviz as az
+import dill as pickle
+import re
 # warning settings
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
