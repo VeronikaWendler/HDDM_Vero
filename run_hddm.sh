@@ -1,13 +1,13 @@
 #!/bin/bash
 #SBATCH --partition=compute                 # CPU partition
-#SBATCH --cpus-per-task=8               # number of CPU cores for your chains
-#SBATCH --mem=200G                      # total memory for the job
-#SBATCH -o logs/slurm.%j.out            # STDOUT goes to this file
-#SBATCH -e logs/slurm.%j.err            # STDERR goes to this file
-#SBATCH --mail-type=ALL                 # email when job ends or fails
-#SBATCH --mail-user=u04vw21@abdn.ac.uk  # your university email
+#SBATCH --cpus-per-task=8                   # number of CPU cores for chains
+#SBATCH --mem=200G                          # total memory for the job
+#SBATCH -o logs/slurm.%j.out                # STDOUT goes to this file
+#SBATCH -e logs/slurm.%j.err                # STDERR goes to this file
+#SBATCH --mail-type=ALL                     # email when job ends or fails
+#SBATCH --mail-user=u04vw21@abdn.ac.uk      # university email
 
-# Load the Singularity module 
+#Singularity module 
 module load singularity/3.8.5
 
 # Define variables 
