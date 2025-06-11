@@ -73,7 +73,7 @@ nr_samples      = 6000      # samples per chain
 parallel        = True     # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
-    "LE":     ["LE_1","LE_2","LE_3","LE_4","LE_5","LE_6","LE_7"],
+    "LE":     ["LE_1","LE_2","LE_3","LE_4"],     #"LE_5","LE_6","LE_7"
     "ES":     ["ES_1","ES_2","ES_3","ES_4","ES_5"],
     "EE":     ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":   ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
@@ -82,13 +82,13 @@ model_versions  = {
 
 # ------------------------------------------------------------------
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["LE"]               # order
+PHASE_RUN_ORDER = ["LE"]                                         # order
 SKIP_PHASES     = {"ES", "EE", "ESEE", "LEESEE"}                 # ignored this phase
-RUN_ALL_MODELS  = True                    # False = just load existing fits
+RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
 start_phase = "LE"
-start_version = 4
+start_version = 0
 started = False
 
 # dir
