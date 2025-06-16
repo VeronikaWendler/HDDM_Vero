@@ -178,7 +178,7 @@ print("\nOVcate Category Counts:\n", category_counts)
 print(f"Selected phase_key: {phase_key}")
 print(f"Model to run: {model_base_name + model_name}")
 print(f"Filtered Data Unique Phases: {data['phase'].unique()}")
-print(f"Data Shape After Filtering: {data.shape}")
+print(f"Data Shape After Filtering: {data.shape}")   
 
 
 # this is the response histogram for correct and incorrect responses
