@@ -85,7 +85,7 @@ else:
     raise ValueError(f"Invalid phase: {phase}")
 
 # update the phase variable so the rest of the code works seamlessly
-phase = phase_key
+phase = phase_key   
 #hard coded
 nr_models = 5         # Nr of chains -> 5 in Ting & Gluth (2025)
 nr_samples = 6000     # Nr of samples ->  6000 with 1000 burn-in in T&G (2025) + Krajbich etc...
