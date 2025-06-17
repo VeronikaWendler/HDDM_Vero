@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 3       # Defines which version you want
+version = 0       # Defines which version you want
 run = False        # if True, the the models run, if False the models load
 
 phase = ['LE']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -88,7 +88,7 @@ else:
 phase = phase_key   
 #hard coded
 nr_models = 5         # Nr of chains -> 5 in Ting & Gluth (2025)
-nr_samples = 6000     # Nr of samples ->  6000 with 1000 burn-in in T&G (2025) + Krajbich etc...
+nr_samples = 11000     # Nr of samples ->  6000 with 1000 burn-in in T&G (2025) + Krajbich etc...
 parallel = True      
 
 # dir
@@ -262,7 +262,7 @@ print(subjects)
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, samples=6000, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, samples=11000, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -484,7 +484,7 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=6000, accu
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=6000,
+                         samples=11000,
                          n_jobs=5,
                          run=True,
                          parallel=True,
@@ -568,7 +568,7 @@ def drift_diffusion_hddm(data,
 import dill as pickle
 
 def drift_diffusion_hddmRL(data, 
-                         samples=6000, #6000
+                         samples=11000, #6000
                          n_jobs=5,
                          run=True,
                          parallel=True,

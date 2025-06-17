@@ -88,7 +88,7 @@ def ensure_dir(path):
 
 # hard-coded 
 nr_models       = 5         # number of MCMC chains
-nr_samples      = 6000      # samples per chain
+nr_samples      = 11000      # samples per chain
 parallel        = True     # parallel
 model_base_name = "OV_replication_"
 model_versions  = {
@@ -169,7 +169,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=6000, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=11000, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -391,7 +391,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=6000,
+                         samples=11000,
                          n_jobs=5,
                          run=True,
                          parallel=True,
@@ -455,7 +455,7 @@ def drift_diffusion_hddm(data,
 import dill as pickle
 
 def drift_diffusion_hddmRL(data, 
-                         samples=6000, 
+                         samples=11000, 
                          n_jobs=5,
                          run=True,
                          parallel=True,

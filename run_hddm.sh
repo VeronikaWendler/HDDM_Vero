@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --partition=compute                 # CPU partition
+#SBATCH --partition=compute                 # CPU partition (on MacLeod, not sure about Maxwell)
 #SBATCH --cpus-per-task=8                   # number of CPU cores for chains
 #SBATCH --mem=200G                          # total memory for the job
 #SBATCH -o logs/slurm.%j.out                # STDOUT goes to this file
@@ -21,4 +21,4 @@ export MPLBACKEND=Agg
 singularity exec \
     --bind ${PROJECT}:/workspace \
     ${IMAGE} \
-    python /workspace/aDDM_Garcia_LE_ES_EE.py
+    python /workspace/aDDM_OV_run_all_mod.py
