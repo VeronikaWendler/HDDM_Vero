@@ -133,7 +133,7 @@ def quick_report(data, phase, version, model_name, phase_key):
     for _, d in data.groupby('subj_idx'):
         d['rt'].hist(bins=20, histtype='step', ax=ax, alpha=.4)
     ax.set(
-        title=f"RT distribution – {phase} v{version}",
+        title=f"RT distribution - {phase} v{version}",
         xlabel="RT (s)",
         ylabel="count"
     )
