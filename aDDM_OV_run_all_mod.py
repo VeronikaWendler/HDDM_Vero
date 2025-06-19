@@ -107,7 +107,7 @@ RUN_ALL_MODELS  = True                                        # False = just loa
 
 # selectivity
 start_phase = "LE"
-start_version = 0
+start_version = 4
 started = False
 
 # dir
