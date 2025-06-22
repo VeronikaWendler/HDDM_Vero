@@ -1532,7 +1532,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     (diag_dir / "DIC.txt").write_text(f"DIC: {dic}\n")
 
     size_plot = len(combined_model.data.subj_idx.unique()) / 3.0 * 1.5
-    combined_model.plot_posterior_predictive(samples=200, bins=100, figsize=(6, size_plot), save=True, path=str(diag_dir), format="pdf")
+    combined_model.plot_posterior_predictive(samples=50, bins=100, figsize=(6, size_plot), save=True, path=str(diag_dir), format="pdf")
     
     # shrink font for the next set of plots
     matplotlib.rcParams.update({"font.size": 6})
