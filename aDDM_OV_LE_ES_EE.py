@@ -55,7 +55,7 @@ from pathlib import Path
 
 
 # params:
-version = 3     # set which version you want to run
+version = 0     # set which version you want to run
 run = False       # if True, the the models run, if False the models load
 
 phase = ['LE']  #['ES', 'EE']  
@@ -74,7 +74,7 @@ else:
 phase = phase_key
 
 nr_models = 5 
-nr_samples = 6000
+nr_samples = 11000
 parallel = True
 
 # dir
@@ -238,7 +238,7 @@ print(subjects)
 #------------------------------------------------------------------------------------------------------------------
 # function that runs the different versions of DDM regressions
 
-def run_model(trace_id, data, model_dir, model_name, version, samples=2100, accuracy_coding=True):  #shoukd be 5000 samples but can be changed depending on computing capacities
+def run_model(trace_id, data, model_dir, model_name, version, samples=11000, accuracy_coding=True):  #shoukd be 5000 samples but can be changed depending on computing capacities
     import os
     import numpy as np
     import hddm
@@ -411,7 +411,7 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=2100, accu
                                     )
         m.find_starting_values()
         infdata = m.sample(samples,
-                   burn=100,
+                   burn=1000,
                    dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                    db='pickle',
                    return_infdata=True, loglike=True, ppc=True)
@@ -466,7 +466,7 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=2100, accu
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=6000,
+                         samples=11000,
                          n_jobs=5,
                          run=True,
                          parallel=True,
@@ -549,7 +549,7 @@ def drift_diffusion_hddm(data,
 import dill as pickle
 
 def drift_diffusion_hddmRL(data, 
-                         samples=6000, #5000
+                         samples=11000, #5000
                          n_jobs=5,
                          run=True,
                          parallel=True,
