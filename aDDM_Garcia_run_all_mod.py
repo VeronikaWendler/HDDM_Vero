@@ -87,8 +87,8 @@ SKIP_PHASES     = {"ES", "EE", "ESEE", "LEESEE"}                 # ignored this 
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "LE"
-start_version = 5
+start_phase = "ES"
+start_version = 4
 started = False
 
 # dir
