@@ -83,7 +83,7 @@ model_versions  = {
 # ------------------------------------------------------------------
 # BATCH-RUN CONTROL
 PHASE_RUN_ORDER = ["ES"]                                         # order
-SKIP_PHASES     = {"ES", "EE", "ESEE", "LEESEE"}                 # ignored this phase
+SKIP_PHASES     = {"EE", "ESEE", "LEESEE"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
