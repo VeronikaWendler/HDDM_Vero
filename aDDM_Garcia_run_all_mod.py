@@ -69,12 +69,12 @@ def ensure_dir(path):
 
 # hard-coded 
 nr_models       = 5         # number of MCMC chains
-nr_samples      = 6000      # samples per chain
+nr_samples      = 11000      # samples per chain
 parallel        = True     # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
     "LE":     ["LE_1","LE_2","LE_3","LE_4"],     #"LE_5","LE_6","LE_7"
-    "ES":     ["ES_1","ES_2","ES_3","ES_4","ES_5"],
+    "ES":     ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11"],
     "EE":     ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":   ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE": ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
@@ -82,13 +82,13 @@ model_versions  = {
 
 # ------------------------------------------------------------------
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["LE"]                                         # order
+PHASE_RUN_ORDER = ["ES"]                                         # order
 SKIP_PHASES     = {"ES", "EE", "ESEE", "LEESEE"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
 start_phase = "LE"
-start_version = 0
+start_version = 5
 started = False
 
 # dir
@@ -151,7 +151,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=6000, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=11000, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -395,7 +395,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=6000,
+                         samples=11000,
                          n_jobs=5,
                          run=True,
                          parallel=True,
@@ -459,7 +459,7 @@ def drift_diffusion_hddm(data,
 import dill as pickle
 
 def drift_diffusion_hddmRL(data, 
-                         samples=6000, 
+                         samples=11000, 
                          n_jobs=5,
                          run=True,
                          parallel=True,
@@ -1442,7 +1442,8 @@ if __name__ == "__main__":
                 data = data_full[data_full["phase"] == phase].copy()
 
             # ---------------- preprocessing ---------------
-
+            data["gazeCI"]  = pd.to_numeric(data["gazeCI"],  errors="coerce")
+            data["gazeSE"]= pd.to_numeric(data["gazeSE"],errors="coerce")
             data["phase"]       = data["phase"].astype("category")
             data["rt"]          = pd.to_numeric(data["rtime"], errors="coerce")
             data                = data[data["rt"] > 0.250]
@@ -1456,7 +1457,7 @@ if __name__ == "__main__":
             data["subj_idx"]    = data["sub_id"]
             data = data[~data["subj_idx"].isin({1,4,5,6,14,99})]
             data = data.dropna(subset=["rt","response","OVcate","Abscate",
-                                       "subj_idx","AttentionW","InattentionW","cond"])
+                                       "subj_idx","AttentionW","InattentionW","cond","gazeSE","gazeCI"])
             
             # ------------------------------------------------------------
             # gives you a quick report at the start
