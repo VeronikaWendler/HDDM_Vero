@@ -52,7 +52,8 @@ from pathlib import Path
 
 # addm regression formula: this is how v is influenced by the value, behavioural data and gaze
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2,low ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ϵ
-
+# v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2,low ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ β3 x (gazeopt -gazesub)
+# v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2,low ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ β3 x (gazeS -gazeE)
 
 # params:
 version = 6     # set which version you want to run
@@ -274,6 +275,17 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=11000, acc
             v_reg = {'model': 'v ~ 1 + AttentionW:C(cond) + InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on={'t': 'cond'}         
+        elif version == 7:
+            v_reg = {'model': 'v ~ 1 + AttentionW:C + InattentionW:C(cond) + gazeCI', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 8:
+            v_reg = {'model': 'v ~ 1 + AttentionW:C + InattentionW:C + gazeCI:C(cond)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'a': 'cond'}
+        elif version == 9:
+            v_reg = {'model': 'v ~ 1 + AttentionW:C + InattentionW:C + gazeSE:C(cond)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'a': 'cond'}
         else:
             raise ValueError(f"check version {version} ??")
 
