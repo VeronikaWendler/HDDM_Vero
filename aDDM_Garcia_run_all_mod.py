@@ -88,7 +88,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 7
+start_version = 4
 started = False
 
 # dir
@@ -226,27 +226,27 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=110
             reg_descr = [v_reg]
             depends_on={'t': 'OVcate'} 
         elif version == 5:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(cond) + gazeCI', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate) + gazeCI', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         elif version == 6:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeCI:C(cond)', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeCI:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            depends_on={'a': 'cond'}
+            depends_on={'a': 'OVcate'}
         elif version == 7:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeCI:C(cond)', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeCI:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            depends_on={'t': 'cond'}
+            depends_on={'t': 'OVcate'}
         elif version == 8:
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeSE', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         elif version == 9:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeSE:C(cond)', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeSE:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            depends_on={'a': 'cond'}
+            depends_on={'a': 'OVcate'}
         elif version == 10:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeSE:C(cond)', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeSE:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            depends_on={'t': 'cond'}
+            depends_on={'t': 'OVcate'}
         else:
             raise ValueError(f"check version {version} ??")
      
