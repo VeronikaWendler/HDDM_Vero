@@ -69,10 +69,10 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 0       # Defines which version you want
+version = 4       # Defines which version you want
 run = False        # if True, the the models run, if False the models load
 
-phase = ['LE']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
+phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
 
 # Determines whether to use a single phase or the combined ESEE model
 if set(phase) == {'ES', 'EE'}:
@@ -336,10 +336,31 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=11000, acc
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on={'t': 'OVcate'} 
-        else: # r6   I don't use this one
-            v_reg = {'model': 'v ~ 1 + AttentionW:C(Abscate) + InattentionW', 'link_func': lambda x: x}
+        elif version == 5:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(cond) + gazeCI', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-       
+        elif version == 6:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeCI:C(cond)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'a': 'cond'}
+        elif version == 7:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeCI:C(cond)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'t': 'cond'}
+        elif version == 8:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeSE', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 9:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeSE:C(cond)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'a': 'cond'}
+        elif version == 10:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeSE:C(cond)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'t': 'cond'}
+        else:
+            raise ValueError(f"check version {version} ??")
+     
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     depends_on=depends_on, 
@@ -1046,6 +1067,163 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Drift InattentionW:C(OVcate)[low]',
             'Drift InattentionW:C(OVcate)[medium]',
             'Drift InattentionW:C(OVcate)[high]',
+            ]
+        elif version == 5:
+            params_of_interest = [
+                'a', 't',
+                'v_Intercept',
+                'v_AttentionW',
+                'v_InattentionW:C(cond)[0]',
+                'v_InattentionW:C(cond)[1]',
+                'v_InattentionW:C(cond)[2]',
+                'v_InattentionW:C(cond)[3]',
+                'v_gazeCI',
+            ]
+            params_of_interest_s = [
+                f'{p}_subj' for p in params_of_interest
+            ]
+            titles = [
+                'Boundary sep.',
+                'Non-dec. time',
+                'Intercept drift rate',
+                'Drift AttentionW',
+                'Drift InattentionW (90/10)',
+                'Drift InattentionW (80/20)',
+                'Drift InattentionW (70/30)',
+                'Drift InattentionW (60/40)',
+                'Drift gazeCI',
+            ]
+
+        elif version == 6:
+            params_of_interest = [
+                'a(0)', 'a(1)', 'a(2)', 'a(3)',
+                't',
+                'v_Intercept',
+                'v_AttentionW',
+                'v_InattentionW',
+                'v_gazeCI:C(cond)[0]',
+                'v_gazeCI:C(cond)[1]',
+                'v_gazeCI:C(cond)[2]',
+                'v_gazeCI:C(cond)[3]',
+            ]
+            params_of_interest_s = [
+                f'{p}_subj' for p in params_of_interest
+            ]
+            titles = [
+                'Bound.sep. (90/10)', 'Bound.sep. (80/20)',
+                'Bound.sep. (70/30)', 'Bound.sep. (60/40)',
+                'Non-dec. time',
+                'Intercept drift rate',
+                'Drift AttentionW',
+                'Drift InattentionW',
+                'Drift gazeCI (90/10)',
+                'Drift gazeCI (80/20)',
+                'Drift gazeCI (70/30)',
+                'Drift gazeCI (60/40)',
+            ]
+
+        elif version == 7:
+            params_of_interest = [
+                'a',
+                't(0)', 't(1)', 't(2)', 't(3)',
+                'v_Intercept',
+                'v_AttentionW',
+                'v_InattentionW',
+                'v_gazeCI:C(cond)[0]',
+                'v_gazeCI:C(cond)[1]',
+                'v_gazeCI:C(cond)[2]',
+                'v_gazeCI:C(cond)[3]',
+            ]
+            params_of_interest_s = [
+                f'{p}_subj' for p in params_of_interest
+            ]
+            titles = [
+                'Boundary sep.',
+                'Non-dec. time (90/10)', 'Non-dec. time (80/20)',
+                'Non-dec. time (70/30)', 'Non-dec. time (60/40)',
+                'Intercept drift rate',
+                'Drift AttentionW',
+                'Drift InattentionW',
+                'Drift gazeCI (90/10)',
+                'Drift gazeCI (80/20)',
+                'Drift gazeCI (70/30)',
+                'Drift gazeCI (60/40)',
+            ]
+
+        elif version == 8:
+            params_of_interest = [
+                'a', 't',
+                'v_Intercept',
+                'v_AttentionW',
+                'v_InattentionW',
+                'v_gazeSE',
+            ]
+            params_of_interest_s = [
+                f'{p}_subj' for p in params_of_interest
+            ]
+            titles = [
+                'Boundary sep.',
+                'Non-dec. time',
+                'Intercept drift rate',
+                'Drift AttentionW',
+                'Drift InattentionW',
+                'Drift gazeSE',
+            ]
+
+        elif version == 9:
+            params_of_interest = [
+                'a(0)', 'a(1)', 'a(2)', 'a(3)',
+                't',
+                'v_Intercept',
+                'v_AttentionW',
+                'v_InattentionW',
+                'v_gazeSE:C(cond)[0]',
+                'v_gazeSE:C(cond)[1]',
+                'v_gazeSE:C(cond)[2]',
+                'v_gazeSE:C(cond)[3]',
+            ]
+            params_of_interest_s = [
+                f'{p}_subj' for p in params_of_interest
+            ]
+            titles = [
+                'Bound.sep. (90/10)', 'Bound.sep. (80/20)',
+                'Bound.sep. (70/30)', 'Bound.sep. (60/40)',
+                'Non-dec. time',
+                'Intercept drift rate',
+                'Drift AttentionW',
+                'Drift InattentionW',
+                'Drift gazeSE (90/10)',
+                'Drift gazeSE (80/20)',
+                'Drift gazeSE (70/30)',
+                'Drift gazeSE (60/40)',
+            ]
+
+        elif version == 10:
+            params_of_interest = [
+                'a',
+                't(0)', 't(1)', 't(2)', 't(3)',
+                'v_Intercept',
+                'v_AttentionW',
+                'v_InattentionW',
+                'v_gazeSE:C(cond)[0]',
+                'v_gazeSE:C(cond)[1]',
+                'v_gazeSE:C(cond)[2]',
+                'v_gazeSE:C(cond)[3]',
+            ]
+            params_of_interest_s = [
+                f'{p}_subj' for p in params_of_interest
+            ]
+            titles = [
+                'Boundary sep.',
+                'Non-dec. time (90/10)', 'Non-dec. time (80/20)',
+                'Non-dec. time (70/30)', 'Non-dec. time (60/40)',
+                'Intercept drift rate',
+                'Drift AttentionW',
+                'Drift InattentionW',
+                'Drift gazeSE (90/10)',
+                'Drift gazeSE (80/20)',
+                'Drift gazeSE (70/30)',
+                'Drift gazeSE (60/40)',
             ]
     if phase == 'EE':
         if version == 0:
