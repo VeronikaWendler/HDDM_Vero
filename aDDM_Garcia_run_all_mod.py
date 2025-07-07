@@ -88,7 +88,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 7
+start_version = 9
 started = False
 
 # dir
