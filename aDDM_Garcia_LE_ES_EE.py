@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 4       # Defines which version you want
+version = 5       # Defines which version you want
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -1071,13 +1071,13 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             ]
         elif version == 5:
             params_of_interest = [
-                'a', 't',
+                'a', 
+                't',
                 'v_Intercept',
                 'v_AttentionW',
-                'v_InattentionW:C(cond)[0]',
-                'v_InattentionW:C(cond)[1]',
-                'v_InattentionW:C(cond)[2]',
-                'v_InattentionW:C(cond)[3]',
+                'v_InattentionW:C(OVcate)[low]',
+                'v_InattentionW:C(OVcate)[medium]',
+                'v_InattentionW:C(OVcate)[high]',
                 'v_gazeCI',
             ]
             params_of_interest_s = [
@@ -1088,72 +1088,74 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Non-dec. time',
                 'Intercept drift rate',
                 'Drift AttentionW',
-                'Drift InattentionW (90/10)',
-                'Drift InattentionW (80/20)',
-                'Drift InattentionW (70/30)',
-                'Drift InattentionW (60/40)',
+                'Drift InattentionW low',
+                'Drift InattentionW medium',
+                'Drift InattentionW high',
                 'Drift gazeCI',
             ]
 
         elif version == 6:
             params_of_interest = [
-                'a(0)', 'a(1)', 'a(2)', 'a(3)',
+                'a(low)',
+                'a(medium)',
+                'a(high)',
                 't',
                 'v_Intercept',
                 'v_AttentionW',
                 'v_InattentionW',
-                'v_gazeCI:C(cond)[0]',
-                'v_gazeCI:C(cond)[1]',
-                'v_gazeCI:C(cond)[2]',
-                'v_gazeCI:C(cond)[3]',
+                'v_gazeCI:C(OVcate)[low]',
+                'v_gazeCI:C(OVcate)[medium]',
+                'v_gazeCI:C(OVcate)[high]',
             ]
             params_of_interest_s = [
                 f'{p}_subj' for p in params_of_interest
             ]
             titles = [
-                'Bound.sep. (90/10)', 'Bound.sep. (80/20)',
-                'Bound.sep. (70/30)', 'Bound.sep. (60/40)',
+                'Bound.sep. (low)',
+                'Bound.sep. (medium)',
+                'Bound.sep. (high)',
                 'Non-dec. time',
                 'Intercept drift rate',
                 'Drift AttentionW',
                 'Drift InattentionW',
-                'Drift gazeCI (90/10)',
-                'Drift gazeCI (80/20)',
-                'Drift gazeCI (70/30)',
-                'Drift gazeCI (60/40)',
+                'Drift gazeCI low',
+                'Drift gazeCI medium',
+                'Drift gazeCI high',
             ]
 
         elif version == 7:
             params_of_interest = [
                 'a',
-                't(0)', 't(1)', 't(2)', 't(3)',
+                't(low)',
+                't(medium)',
+                't(high)',
                 'v_Intercept',
                 'v_AttentionW',
                 'v_InattentionW',
-                'v_gazeCI:C(cond)[0]',
-                'v_gazeCI:C(cond)[1]',
-                'v_gazeCI:C(cond)[2]',
-                'v_gazeCI:C(cond)[3]',
+                'v_gazeCI:C(OVcate)[low]',
+                'v_gazeCI:C(OVcate)[medium]',
+                'v_gazeCI:C(OVcate)[high]',
             ]
             params_of_interest_s = [
                 f'{p}_subj' for p in params_of_interest
             ]
             titles = [
                 'Boundary sep.',
-                'Non-dec. time (90/10)', 'Non-dec. time (80/20)',
-                'Non-dec. time (70/30)', 'Non-dec. time (60/40)',
+                'Non-dec. time (low)',
+                'Non-dec. time (medium)',
+                'Non-dec. time (high)',
                 'Intercept drift rate',
                 'Drift AttentionW',
                 'Drift InattentionW',
-                'Drift gazeCI (90/10)',
-                'Drift gazeCI (80/20)',
-                'Drift gazeCI (70/30)',
-                'Drift gazeCI (60/40)',
+                'Drift gazeCI low',
+                'Drift gazeCI medium',
+                'Drift gazeCI high',
             ]
 
         elif version == 8:
             params_of_interest = [
-                'a', 't',
+                'a',
+                't',
                 'v_Intercept',
                 'v_AttentionW',
                 'v_InattentionW',
@@ -1173,58 +1175,60 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
 
         elif version == 9:
             params_of_interest = [
-                'a(0)', 'a(1)', 'a(2)', 'a(3)',
+                'a(low)',
+                'a(medium)',
+                'a(high)',
                 't',
                 'v_Intercept',
                 'v_AttentionW',
                 'v_InattentionW',
-                'v_gazeSE:C(cond)[0]',
-                'v_gazeSE:C(cond)[1]',
-                'v_gazeSE:C(cond)[2]',
-                'v_gazeSE:C(cond)[3]',
+                'v_gazeSE:C(OVcate)[low]',
+                'v_gazeSE:C(OVcate)[medium]',
+                'v_gazeSE:C(OVcate)[high]',
             ]
             params_of_interest_s = [
                 f'{p}_subj' for p in params_of_interest
             ]
             titles = [
-                'Bound.sep. (90/10)', 'Bound.sep. (80/20)',
-                'Bound.sep. (70/30)', 'Bound.sep. (60/40)',
+                'Bound.sep. (low)',
+                'Bound.sep. (medium)',
+                'Bound.sep. (high)',
                 'Non-dec. time',
                 'Intercept drift rate',
                 'Drift AttentionW',
                 'Drift InattentionW',
-                'Drift gazeSE (90/10)',
-                'Drift gazeSE (80/20)',
-                'Drift gazeSE (70/30)',
-                'Drift gazeSE (60/40)',
+                'Drift gazeSE low',
+                'Drift gazeSE medium',
+                'Drift gazeSE high',
             ]
 
         elif version == 10:
             params_of_interest = [
                 'a',
-                't(0)', 't(1)', 't(2)', 't(3)',
+                't(low)'
+                't(medium)',
+                't(high)',
                 'v_Intercept',
                 'v_AttentionW',
                 'v_InattentionW',
-                'v_gazeSE:C(cond)[0]',
-                'v_gazeSE:C(cond)[1]',
-                'v_gazeSE:C(cond)[2]',
-                'v_gazeSE:C(cond)[3]',
+                'v_gazeSE:C(OVcate)[low]',
+                'v_gazeSE:C(OVcate)[medium]',
+                'v_gazeSE:C(OVcate)[high]',
             ]
             params_of_interest_s = [
                 f'{p}_subj' for p in params_of_interest
             ]
             titles = [
                 'Boundary sep.',
-                'Non-dec. time (90/10)', 'Non-dec. time (80/20)',
-                'Non-dec. time (70/30)', 'Non-dec. time (60/40)',
+                'Non-dec. time (low)',
+                'Non-dec. time (medium)',
+                'Non-dec. time (high)',
                 'Intercept drift rate',
                 'Drift AttentionW',
                 'Drift InattentionW',
-                'Drift gazeSE (90/10)',
-                'Drift gazeSE (80/20)',
-                'Drift gazeSE (70/30)',
-                'Drift gazeSE (60/40)',
+                'Drift gazeSE (low)',
+                'Drift gazeSE (medium)',
+                'Drift gazeSE (high)',
             ]
     if phase == 'EE':
         if version == 0:
