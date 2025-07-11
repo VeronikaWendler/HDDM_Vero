@@ -1230,6 +1230,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Drift gazeSE (medium)',
                 'Drift gazeSE (high)',
             ]
+            
     if phase == 'EE':
         if version == 0:
             params_of_interest = [
