@@ -1863,7 +1863,7 @@ ensure_dir(model_dir)
 
 
 
-single model running version - use for manual
+#ingle model running version - use for manual
 # this calls our ddm functions depending on whether we run or load models
 if run:
     if phase == 'EE' or phase == 'ES':
