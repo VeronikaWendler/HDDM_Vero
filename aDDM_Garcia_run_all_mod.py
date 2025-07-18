@@ -384,6 +384,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=110
                    return_infdata=True, loglike=True, ppc=True)
 
         return m, infdata
+    
+    elif phase == 'ES_stim':
+        if version == 0:
+            
 
 
 ###############################################################################################################    
