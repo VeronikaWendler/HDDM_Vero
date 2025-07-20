@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 10       # defining version
+version = 0       # defining version
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES_ZBIAS']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -134,7 +134,7 @@ if phase == 'ESEE':
 elif phase == 'LEESEE':
     data = data[data['phase'].isin(['LE', 'ES', 'EE'])] # include LE ES and EE phases if these are all selected
 else:
-    data = data[data['phase'] == phase]  # include only one phase
+    data = data[data['phase'] == source_phase]
 
 
 data["phase"] = data["phase"].astype("category")
@@ -150,7 +150,10 @@ print("Min RT after filtering:", data['rt'].min())
 print("Max RT after filtering:", data['rt'].max())
 
 # to ensure that the proper types align with the modeling framework
-data['response'] = pd.to_numeric(data['corr'], errors = 'coerce')
+if phase == "ES_ZBIAS":
+    data["response"] = pd.to_numeric(data["chose_left"], errors="coerce")
+else:
+    data["response"] = pd.to_numeric(data["corr"], errors="coerce")
 data["OVcate"] = data['OVcate_2'].astype("category")                     # OVcate_2 = tertile binning instead of quantile binning
 data["Abscate"] = data['Abscate_2'].astype("category")
 data["cond"] = data["cond"].fillna(-1)
@@ -158,7 +161,8 @@ data["cond"] = data["cond"].astype("int")
 data["AttentionW"] = pd.to_numeric(data["AttentionW"], errors = 'coerce')
 data["InattentionW"] = pd.to_numeric(data["InattentionW"], errors = 'coerce')
 data["subj_idx"] = data['sub_id']
-
+data["ES_AttentionW"]  = pd.to_numeric(data["ES_AttentionW"],  errors="coerce")
+data["ES_InattentionW"]= pd.to_numeric(data["ES_InattentionW"],errors="coerce")
 # data["feedback"] = pd.to_numeric(data["feedback"], errors = 'coerce')
 # data["feedback"] = data["feedback"].astype(float)
 ### LE phase specific (use only when running a RL model)
@@ -271,7 +275,7 @@ print(subjects)
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, samples=11000, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, samples=600, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -578,8 +582,8 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=11000, acc
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=11000,
-                         n_jobs=5,
+                         samples=600,
+                         n_jobs=3,
                          run=True,
                          parallel=True,
                          model_name='model',
@@ -721,6 +725,13 @@ def drift_diffusion_hddmRL(data,
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 # Analyzing the models
+
+full_model_name = model_base_name + model_name
+fig_dir        = FIG_DIR_ROOT / full_model_name
+ensure_dir(fig_dir)
+ensure_dir(fig_dir/"diagnostics")
+
+
 
 def analyze_model(models, fig_dir, nr_models, version, phase):
     # 'sns.set_theme(style='darkgrid', font='sans-serif', font_scale=0.5)
@@ -2131,6 +2142,20 @@ if run:
             phase=phase,  
             accuracy_coding=True
         )
+    elif phase == 'ES_ZBIAS':
+        print(f'Running ES_ZBIAS DDM… {model_base_name + model_name}')
+        models = drift_diffusion_hddm(
+            data=data,
+            samples=nr_samples,
+            n_jobs=nr_models,
+            run=run,
+            parallel=parallel,
+            model_name=model_base_name + model_name,
+            model_dir=model_dir,
+            version=version,
+            phase=phase,
+            accuracy_coding=True
+        )
     else:
         print(f'Running HDDMRL... {model_base_name + model_name}')
         models = drift_diffusion_hddmRL(
@@ -2179,6 +2204,20 @@ else:
         
     elif phase == 'LEESEE':  
         print(f'loading Combined DDM Model (LE+ES+EE)... {model_base_name + model_name}')
+        models = drift_diffusion_hddm(
+            data=data,
+            samples=nr_samples,
+            n_jobs=nr_models,
+            run=run,
+            parallel=parallel,
+            model_name=model_base_name + model_name,
+            model_dir=model_dir,
+            version=version,
+            phase=phase,  
+            accuracy_coding=True
+        )
+    elif phase == 'ES_ZBIAS':  
+        print(f'loading DDM Model (ES_ZBIAS)... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,
             samples=nr_samples,
