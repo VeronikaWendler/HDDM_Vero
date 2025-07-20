@@ -10,6 +10,9 @@
 #Singularity module 
 module load singularity/3.8.5
 
+export PYTHONUNBUFFERED=1                     # prints appear immediately
+
+
 # Define variables 
 IMAGE=$HOME/containers/hddm_latest.sif
 PROJECT=$HOME/sharedscratch/HDDM_Vero
