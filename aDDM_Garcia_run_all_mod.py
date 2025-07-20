@@ -91,7 +91,11 @@ model_versions  = {
     "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4"],
 }
 
-# ------------------------------------------------------------------
+
+PHASE_TO_SOURCE = {
+    "ES_ZBIAS": "ES",     
+}
+
 # BATCH-RUN CONTROL
 PHASE_RUN_ORDER = ["ES_ZBIAS"]                                         # order
 SKIP_PHASES     = {"LE","ES","EE", "ESEE", "LEESEE"}                 # ignored this phase
@@ -1507,12 +1511,18 @@ if __name__ == "__main__":
             print(f"\n===  PHASE {phase} : {model_name}  ===")
 
             # --------------- filter data for this phase ---------------
+            source_phase = PHASE_TO_SOURCE.get(phase, phase)   #assignes ES_ZBIAS
+
             if phase == "ESEE":
                 data = data_full[data_full["phase"].isin(["ES", "EE"])].copy()
             elif phase == "LEESEE":
                 data = data_full[data_full["phase"].isin(["LE", "ES", "EE"])].copy()
             else:
-                data = data_full[data_full["phase"] == phase].copy()
+                data = data_full[data_full["phase"] == source_phase].copy() 
+            
+            if data.empty:
+                raise ValueError(f"No rows left after filtering for phase '{phase}' "
+                                 f"(source = '{source_phase}')")
 
             # ---------------- preprocessing ---------------
             data["gazeCI"]  = pd.to_numeric(data["gazeCI"],  errors="coerce")
