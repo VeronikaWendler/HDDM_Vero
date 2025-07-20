@@ -94,7 +94,7 @@ model_versions  = {
 # ------------------------------------------------------------------
 # BATCH-RUN CONTROL
 PHASE_RUN_ORDER = ["ES_ZBIAS"]                                         # order
-SKIP_PHASES     = {"LE","EE", "ESEE", "LEESEE", "ES"}                 # ignored this phase
+SKIP_PHASES     = {"LE","ES","EE", "ESEE", "LEESEE"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
@@ -415,52 +415,49 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             reg_descr = [v_reg]
             depends_on={'t': 'OVcate'}      
             
-        # --------------------------------------------------------------
         #  Fix z at 0.55 
         from copy import deepcopy
         cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
-        idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t']
+        idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
         cfg['params_default'][idx_z] = 0.55     # slight bias towards E
-        # --------------------------------------------------------------
+        
+        #checking if z is really fixed at .55
+        assert cfg['params_default'][idx_z] == 0.55
+        print(f"[DEBUG] z fixed to {cfg['params_default'][idx_z]} "
+              f"(include list = ['a','t','v'])")
+        
 
-        m = hddm.models.HDDMRegressor(
-            data,
-            reg_descr,
-            depends_on=depends_on,
-            p_outlier=.05,
-            include=['a', 't', 'v'],  
-            group_only_regressors=False,
-            keep_regressor_trace=True,
-            model_config=cfg            
-            )
+        m = hddm.models.HDDMRegressor(data,
+                                    reg_descr,
+                                    depends_on=depends_on,
+                                    p_outlier=.05,
+                                    include=['a', 't', 'v'],  
+                                    group_only_regressors=False,
+                                    keep_regressor_trace=True,
+                                    model_config=cfg
+                                    )
+        
+        if phase == "ES_ZBIAS":
+            # should print an empty list: []
+            free_z_nodes = [n for n in m.nodes_db.index if n.startswith('z')]
+            print("[DEBUG] free z nodes:", free_z_nodes)
+        
         m.find_starting_values()
         infdata = m.sample(samples,
                            burn=100,
-                           dbname=os.path.join(model_dir,
-                                               f"{model_name}_db{trace_id}"),
+                           dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                            db='pickle',
                            return_infdata=True,
                            loglike=True,
                            ppc=True)
-    return m, infdata
         
-        m = hddm.models.HDDMRegressor(data, 
-                                    reg_descr,
-                                    depends_on=depends_on, 
-                                    p_outlier=.05, 
-                                    include=['a', 't', 'v'],
-                                    group_only_regressors=False,
-                                    keep_regressor_trace=True
-                                    )
-        m.find_starting_values()
-        infdata = m.sample(samples,
-                   burn=100,
-                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
-                   db='pickle',
-                   return_infdata=True, loglike=True, ppc=True)
-
+        if phase == "ES_ZBIAS":
+            # assert will crash early if z got into the posterior by mistake
+            assert "z" not in infdata.posterior.data_vars
+            print("[DEBUG] z absent from posterior - confirmed fixed.")
+        
         return m, infdata
-
+        
 
 ###############################################################################################################    
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1529,7 +1526,10 @@ if __name__ == "__main__":
                 data["response"] = pd.to_numeric(data["chose_left"], errors="coerce")
             else:
                 data["response"] = pd.to_numeric(data["corr"], errors="coerce")
-
+            
+            print(f"[DEBUG] phase={phase}  response counts:\n",
+            data["response"].value_counts(dropna=False).head())
+            
             data["OVcate"]      = data["OVcate_2"].astype("category")
             data["Abscate"]     = data["Abscate_2"].astype("category")
             data["cond"]     = data["cond"].fillna(-1)
