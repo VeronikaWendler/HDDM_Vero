@@ -105,7 +105,7 @@ model_versions = {
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
     'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5'],
-    "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4"],
+    "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5"],
 }
 
 # debugging, tip, python starts at 0, unlike Matlab
@@ -1797,7 +1797,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'a',
             't',
             'v_Intercept',
-            'v_AttentionW',
+            'v_ES_AttentionW',
             'v_ES_InattentionW:C(OVcate)[low]',
             'v_ES_InattentionW:C(OVcate)[medium]', 
             'v_ES_InattentionW:C(OVcate)[high]',
