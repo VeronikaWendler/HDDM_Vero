@@ -28,6 +28,7 @@ from joblib import Parallel, delayed
 import time
 import arviz as az
 import dill as pickle
+from copy import deepcopy   # for modfiying z to be 0.55 (like in Sebastian's Matlab)
 
 # warning settings
 import warnings
@@ -66,29 +67,39 @@ def ensure_dir(path):
 # V_opt​ = value if the better option
 # V_sub = value of the worse option
 
+# Importantly, this is now for the regression models where we are interested in the z bias towards E and a drift formula similar to Sebastian's matlab code, see below:
+# the Sebastian drift rate regression - p1 is value on the left and p2 is value on the right ...this is how we get teh attntional and inattentional parameters..
+# v = b0 + b1(PropDwell_Right * p2 - PropDwell_Left * p1) + b2(PropDwell_Right* p1 - PropDwell_Left*p2) + e
+
+# created these new columns
+#data['ES_AttentionW'] = (data['PropDwell_Right'] * data['p2']) - (data['PropDwell_Left'] * data['p1'])
+#data['ES_InattentionW'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwell_Right'] * data['p1'])
+#data['ES_AttentionW'] = data['ES_AttentionW'].round(3)
+#data['ES_InattentionW'] = data['ES_InattentionW'].round(3)
 
 # hard-coded 
-nr_models       = 5         # number of MCMC chains
-nr_samples      = 11000      # samples per chain
+nr_models       = 3         # number of MCMC chains
+nr_samples      = 600      # samples per chain - do 11000 but for now for a quick one we do 600
 parallel        = True     # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
-    "LE":     ["LE_1","LE_2","LE_3","LE_4"],     #"LE_5","LE_6","LE_7"
-    "ES":     ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11"],
-    "EE":     ["EE_1","EE_2","EE_3","EE_4","EE_5"],
-    "ESEE":   ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
-    "LEESEE": ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
+    "LE":      ["LE_1","LE_2","LE_3","LE_4"],     #"LE_5","LE_6","LE_7"
+    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11"],
+    "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
+    "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
+    "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
+    "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4"],
 }
 
 # ------------------------------------------------------------------
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["ES"]                                         # order
-SKIP_PHASES     = {"LE","EE", "ESEE", "LEESEE"}                 # ignored this phase
+PHASE_RUN_ORDER = ["ES_ZBIAS"]                                         # order
+SKIP_PHASES     = {"LE","EE", "ESEE", "LEESEE", "ES"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "ES"
-start_version = 9
+start_phase = "ES_ZBIAS"
+start_version = 0
 started = False
 
 # dir
@@ -151,7 +162,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=11000, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -385,9 +396,70 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=110
 
         return m, infdata
     
-    elif phase == 'ES_stim':
-        if version == 0:
+    elif phase == 'ES_ZBIAS':
+        if version == 0:   
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 1:  
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW:C(OVcate) + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 2: 
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]       
+        elif version == 3: 
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'}      
+        elif version == 4: 
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'t': 'OVcate'}      
             
+        # --------------------------------------------------------------
+        #  Fix z at 0.55 
+        from copy import deepcopy
+        cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
+        idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t']
+        cfg['params_default'][idx_z] = 0.55     # slight bias towards E
+        # --------------------------------------------------------------
+
+        m = hddm.models.HDDMRegressor(
+            data,
+            reg_descr,
+            depends_on=depends_on,
+            p_outlier=.05,
+            include=['a', 't', 'v'],  
+            group_only_regressors=False,
+            keep_regressor_trace=True,
+            model_config=cfg            
+            )
+        m.find_starting_values()
+        infdata = m.sample(samples,
+                           burn=100,
+                           dbname=os.path.join(model_dir,
+                                               f"{model_name}_db{trace_id}"),
+                           db='pickle',
+                           return_infdata=True,
+                           loglike=True,
+                           ppc=True)
+    return m, infdata
+        
+        m = hddm.models.HDDMRegressor(data, 
+                                    reg_descr,
+                                    depends_on=depends_on, 
+                                    p_outlier=.05, 
+                                    include=['a', 't', 'v'],
+                                    group_only_regressors=False,
+                                    keep_regressor_trace=True
+                                    )
+        m.find_starting_values()
+        infdata = m.sample(samples,
+                   burn=100,
+                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                   db='pickle',
+                   return_infdata=True, loglike=True, ppc=True)
+
+        return m, infdata
 
 
 ###############################################################################################################    
@@ -399,7 +471,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=110
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=11000,
+                         samples=600,
                          n_jobs=5,
                          run=True,
                          parallel=True,
@@ -1451,17 +1523,35 @@ if __name__ == "__main__":
             data["phase"]       = data["phase"].astype("category")
             data["rt"]          = pd.to_numeric(data["rtime"], errors="coerce")
             data                = data[data["rt"] > 0.250]
-            data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
+            # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
+            # ------------------------------------------------------------------
+            if phase == "ES_ZBIAS":
+                data["response"] = pd.to_numeric(data["chose_left"], errors="coerce")
+            else:
+                data["response"] = pd.to_numeric(data["corr"], errors="coerce")
+
             data["OVcate"]      = data["OVcate_2"].astype("category")
             data["Abscate"]     = data["Abscate_2"].astype("category")
             data["cond"]     = data["cond"].fillna(-1)
             data["cond"]     = data["cond"].astype("int")
             data["AttentionW"]  = pd.to_numeric(data["AttentionW"],  errors="coerce")
             data["InattentionW"]= pd.to_numeric(data["InattentionW"],errors="coerce")
+            data["ES_AttentionW"]  = pd.to_numeric(data["ES_AttentionW"],  errors="coerce")
+            data["ES_InattentionW"]= pd.to_numeric(data["ES_InattentionW"],errors="coerce")
             data["subj_idx"]    = data["sub_id"]
             data = data[~data["subj_idx"].isin({1,4,5,6,14,99})]
-            data = data.dropna(subset=["rt","response","OVcate","Abscate",
-                                       "subj_idx","AttentionW","InattentionW","cond","gazeSE","gazeCI"])
+            data = data.dropna(subset=["rt",
+                                       "response",
+                                       "OVcate",
+                                       "Abscate",
+                                       "subj_idx",
+                                       "AttentionW",
+                                       "InattentionW",
+                                       "cond",
+                                       "gazeSE",
+                                       "gazeCI",
+                                       "ES_AttentionW",
+                                       "ES_InattentionW"])
             
             # ------------------------------------------------------------
             # gives you a quick report at the start

@@ -61,8 +61,8 @@ data['EE_middle'] = (data['MiddleDominantLoc_Left'] & data['FinalFix_Left']).ast
 # computing regressors for the stim coded addm according to Sebastian:
 #driftRate = driftConstant*((fix(t,f)==1)*(choiceSet(t,1)-theta*choiceSet(t,2))+...
 #                                   (fix(t,f)==0)*(theta*choiceSet(t,1)-choiceSet(t,2)));
-# the Sebastian drift rate regression
-# v = b0 + b1(PropDwell_Left * p1 - PropDwell_Right * p2) + b2(PropDwell_Right* p1 - PropDwell_Left*p2) + e
+# the Sebastian drift rate regression - p1 is value on the left and p2 is value on the right ...this is how we get teh attntional and inattentional parameters..
+# v = b0 + b1(PropDwell_Right * p2 - PropDwell_Left * p1) + b2(PropDwell_Right* p1 - PropDwell_Left*p2) + e
 
 data['ES_AttentionW'] = (data['PropDwell_Right'] * data['p2']) - (data['PropDwell_Left'] * data['p1'])
 data['ES_InattentionW'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwell_Right'] * data['p1'])
