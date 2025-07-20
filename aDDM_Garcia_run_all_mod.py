@@ -29,6 +29,7 @@ import time
 import arviz as az
 import dill as pickle
 from copy import deepcopy   # for modfiying z to be 0.55 (like in Sebastian's Matlab)
+import argparse
 
 # warning settings
 import warnings
@@ -529,7 +530,6 @@ def drift_diffusion_hddm(data,
         print('Loading existing models')
         models = [hddm.load(os.path.join(model_dir, f"{model_name}_{i}.hddm")) for i in range(n_jobs)]
         return models
-    
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 # for the RL models (if used)

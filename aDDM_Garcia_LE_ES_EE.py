@@ -72,7 +72,7 @@ from pathlib import Path
 version = 10       # defining version
 run = False        # if True, the the models run, if False the models load
 
-phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
+phase = ['ES_ZBIAS']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
 
 # Determines whether to use a single phase or the combined ESEE model
 if set(phase) == {'ES', 'EE'}:
@@ -87,8 +87,8 @@ else:
 # update the phase variable so the rest of the code works seamlessly
 phase = phase_key   
 #hard coded
-nr_models = 5         # Nr of chains -> 5 in Ting & Gluth (2025)
-nr_samples = 11000     # Nr of samples ->  6000 with 1000 burn-in in T&G (2025) + Krajbich etc...
+nr_models = 3         # Nr of chains -> 5 in Ting & Gluth (2025)
+nr_samples = 600     # Nr of samples ->  6000 with 1000 burn-in in T&G (2025) + Krajbich etc...
 parallel = True      
 
 # dir
@@ -104,12 +104,17 @@ model_versions = {
     'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4','ES_5', 'ES_6', 'ES_7', 'ES_8', 'ES_9', 'ES_10', 'ES_11'],   
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
-    'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5']
+    'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5'],
+    "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4"],
 }
 
 # debugging, tip, python starts at 0, unlike Matlab
 if phase not in model_versions:
     raise ValueError(f"Invalid phase '{phase}'. Choose from: {list(model_versions.keys())}")
+
+PHASE_TO_SOURCE = {
+    "ES_ZBIAS": "ES",     
+}
 
 model_name = model_versions[phase][version]
 
@@ -119,6 +124,9 @@ model_name = model_versions[phase][version]
 #data = pd.read_csv(data_path1, sep=',')
 
 data = pd.read_csv((PROJECT_DIR / "data_sets" / "data_sets_Garcia" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix(), sep=",")
+
+source_phase = PHASE_TO_SOURCE.get(phase, phase)   #assignes ES_ZBIAS
+
 
 # correct data filtering
 if phase == 'ESEE':
@@ -495,6 +503,70 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=11000, acc
                    return_infdata=True, loglike=True, ppc=True)
 
         return m, infdata
+    
+    elif phase == 'ES_ZBIAS':
+        if version == 0:   
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 1:  
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW:C(OVcate) + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 2: 
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]       
+        elif version == 3: 
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'}      
+        elif version == 4: 
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'t': 'OVcate'}      
+            
+        #  Fix z at 0.55 
+        from copy import deepcopy
+        cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
+        idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
+        cfg['params_default'][idx_z] = 0.55     # slight bias towards E
+        
+        #checking if z is really fixed at .55
+        assert cfg['params_default'][idx_z] == 0.55
+        print(f"[DEBUG] z fixed to {cfg['params_default'][idx_z]} "
+              f"(include list = ['a','t','v'])")
+        
+
+        m = hddm.models.HDDMRegressor(data,
+                                    reg_descr,
+                                    depends_on=depends_on,
+                                    p_outlier=.05,
+                                    include=['a', 't', 'v'],  
+                                    group_only_regressors=False,
+                                    keep_regressor_trace=True,
+                                    model_config=cfg
+                                    )
+        
+        if phase == "ES_ZBIAS":
+            # should print an empty list: []
+            free_z_nodes = [n for n in m.nodes_db.index if n.startswith('z')]
+            print("[DEBUG] free z nodes:", free_z_nodes)
+        
+        m.find_starting_values()
+        infdata = m.sample(samples,
+                           burn=100,
+                           dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                           db='pickle',
+                           return_infdata=True,
+                           loglike=True,
+                           ppc=True)
+        
+        if phase == "ES_ZBIAS":
+            # assert will crash early if z got into the posterior by mistake
+            assert "z" not in infdata.posterior.data_vars
+            print("[DEBUG] z absent from posterior - confirmed fixed.")
+        
+        return m, infdata
+        
+
 
 
 ###############################################################################################################    
@@ -922,7 +994,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Drift AttentionW:C(cond)[70/30]',
             'Drift AttentionW:C(cond)[60/40]',
             ]
-    if phase == 'ES':
+    elif phase == 'ES':
         if version == 0:
             params_of_interest = [
                 'a',
@@ -1231,7 +1303,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Drift gazeSE (high)',
             ]
             
-    if phase == 'EE':
+    elif phase == 'EE':
         if version == 0:
             params_of_interest = [
                 'a',
@@ -1380,7 +1452,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Drift InattentionW:C(OVcate)[high]',
             ]
             
-    if phase == 'ESEE':
+    elif phase == 'ESEE':
         if version == 0:
             params_of_interest = [
                 'a',
@@ -1511,7 +1583,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             ]
             
             
-    if phase == 'LEESEE':
+    elif phase == 'LEESEE':
         if version == 0:
             params_of_interest = [
                 'a',
@@ -1658,6 +1730,155 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Drift InattentionW:C(phase)[ES]',
             'Drift InattentionW:C(phase)[EE]',
             ]
+    elif phase == 'ES_ZBIAS':
+        if version == 0:
+            params_of_interest = [
+                'a',
+                't',
+                'v_Intercept',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW',
+                ]
+            params_of_interest_s = [
+                'a_subj', 
+                't_subj', 
+                'v_Intercept_subj',
+                'v_ES_AttentionW_subj',
+                'v_ES_InattentionW_subj', 
+                ]
+            titles = [
+                'Boundary sep.',
+                'Non-dec. time',
+                'Intercept drift rate',
+                'Drift ES_AttentionW',
+                'Drift ES_InattentionW',
+            ]
+        elif version == 1:
+            params_of_interest = [
+            'a',
+            't', 
+            'v_Intercept',
+            'v_ES_AttentionW:C(OVcate)[low]',
+            'v_ES_AttentionW:C(OVcate)[medium]',
+            'v_ES_AttentionW:C(OVcate)[high]',
+            'v_ES_InattentionW',
+            ]
+            params_of_interest_s = [
+            'a_subj',
+            't_subj', 
+            'v_Intercept_subj',
+            'v_ES_AttentionW:C(OVcate)[low]_subj', 
+            'v_ES_AttentionW:C(OVcate)[medium]_subj',
+            'v_ES_AttentionW:C(OVcate)[high]_subj',
+            'v_ES_InattentionW_subj'
+            ]
+            titles = [
+            'Boundary sep.',
+            'Non-dec. time',
+            'Intercept drift rate',
+            'Drift ES_AttentionW:C(OVcate)[low]',
+            'Drift ES_AttentionW:C(OVcate)[medium]', 
+            'Drift ES_AttentionW:C(OVcate)[high]',
+            'Drift ES_InattentionW', 
+            ]
+        elif version == 2:
+            params_of_interest = [
+            'a',
+            't',
+            'v_Intercept',
+            'v_AttentionW',
+            'v_ES_InattentionW:C(OVcate)[low]',
+            'v_ES_InattentionW:C(OVcate)[medium]', 
+            'v_ES_InattentionW:C(OVcate)[high]',
+            ]
+            params_of_interest_s = [
+            'a_subj', 
+            't_subj', 
+            'v_Intercept_subj',
+            'v_ES_AttentionW_subj',
+            'v_ES_InattentionW:C(OVcate)[low]_subj',
+            'v_ES_InattentionW:C(OVcate)[medium]_subj', 
+            'v_ES_InattentionW:C(OVcate)[high]_subj',
+            ]
+            titles = [
+            'Boundary sep.',
+            'Non-dec. time',
+            'Intercept drift rate',
+            'Drift ES_AttentionW',
+            'Drift ES_InattentionW:C(OVcate)[low]',
+            'Drift ES_InattentionW:C(OVcate)[medium]',
+            'Drift ES_InattentionW:C(OVcate)[high]',
+            ]
+        elif version == 3:
+            params_of_interest = [
+            'a(low)',
+            'a(medium)',
+            'a(high)',
+            't',
+            'v_Intercept',
+            'v_ES_AttentionW',
+            'v_ES_InattentionW:C(OVcate)[low]',
+            'v_ES_InattentionW:C(OVcate)[medium]',
+            'v_ES_InattentionW:C(OVcate)[high]',
+            ]
+            params_of_interest_s = [
+            'a(low)_subj',
+            'a(medium)_subj',
+            'a(high)_subj',
+            't_subj',
+            'v_Intercept_subj',
+            'v_ES_AttentionW_subj',
+            'v_ES_InattentionW:C(OVcate)[low]_subj',
+            'v_ES_InattentionW:C(OVcate)[medium]_subj',
+            'v_ES_InattentionW:C(OVcate)[high]_subj'
+            
+            ]
+            titles = [
+            'Boundary sep. (low OVcate)',
+            'Boundary sep. (medium OVcate)',
+            'Boundary sep. (high OVcate)',
+            'Non-dec. time',
+            'Intercept drift rate',
+            'Drift ES_AttentionW',
+            'Drift ES_InattentionW:C(OVcate)[low]',
+            'Drift ES_InattentionW:C(OVcate)[medium]',
+            'Drift ES_InattentionW:C(OVcate)[high]',
+            ]
+        elif version == 4:
+            params_of_interest = [
+            'a',
+            't(low)',
+            't(medium)',
+            't(high)',
+            'v_Intercept',
+            'v_ES_AttentionW',
+            'v_ES_InattentionW:C(OVcate)[low]',
+            'v_ES_InattentionW:C(OVcate)[medium]',
+            'v_ES_InattentionW:C(OVcate)[high]',
+            ]
+            params_of_interest_s = [
+            'a_subj',
+            't(low)_subj',
+            't(medium)_subj',
+            't(high)_subj',
+            'v_Intercept_subj',
+            'v_ES_AttentionW_subj',
+            'v_ES_InattentionW:C(OVcate)[low]_subj',
+            'v_ES_InattentionW:C(OVcate)[medium]_subj',
+            'v_ES_InattentionW:C(OVcate)[high]_subj',
+            ]
+            titles = [
+            'Boundary sep.',
+            'Non-dec. time (low OVcate)',
+            'Non-dec. time (medium OVcate)',
+            'Non-dec. time (high OVcate)',
+            'Intercept drift rate',
+            'Drift ES_AttentionW',
+            'Drift ES_InattentionW:C(OVcate)[low]',
+            'Drift ES_InattentionW:C(OVcate)[medium]',
+            'Drift ES_InattentionW:C(OVcate)[high]',
+            ]
+        
             
     # diagnistics
     diag_dir = Path(fig_dir) / "diagnostics"
