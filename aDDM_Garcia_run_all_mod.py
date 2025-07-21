@@ -104,7 +104,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES_ZBIAS"
-start_version = 4
+start_version = 0
 started = False
 
 # dir
@@ -426,6 +426,12 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
         cfg['params_default'][idx_z] = 0.55     # slight bias towards E
         
+        # 1) sanity‐check the config itself:
+        assert cfg['params'][idx_z] == 'z'
+        assert cfg['params_default'][idx_z] == 0.55, \
+            f"z default not 0.55 but {cfg['params_default'][idx_z]}"
+ 
+        
         #checking if z is really fixed at .55
         assert cfg['params_default'][idx_z] == 0.55
         print(f"[DEBUG] z fixed to {cfg['params_default'][idx_z]} "
@@ -441,6 +447,16 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
                                     keep_regressor_trace=True,
                                     model_config=cfg
                                     )
+        
+
+        print("\n[ZBIAS DEBUG] entire model_config.params list:")
+        print(m.model_config.params)
+        print("\n[ZBIAS DEBUG] entire model_config.params_default list:")
+        print(m.model_config.params_default)
+
+        # find the index of 'z' and show its default:
+        zi = m.model_config.params.index('z')
+        print(f"\n[ZBIAS DEBUG] default for z  = {m.model_config.params_default[zi]}")
         
         if phase == "ES_ZBIAS":
             # should print an empty list: []
@@ -1534,6 +1550,14 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             if phase == "ES_ZBIAS":
                 data["response"] = pd.to_numeric(data["chose_left"], errors="coerce")
+                print("[ZBIAS DEBUG] head of response mapping:")
+                print(data[["chose_left","corr","response"]].head(5).to_string(index=False))
+                print("counts:", data["response"].value_counts(dropna=False).to_dict())
+
+                # ----- sanity assert -----
+                # we expect response exactly equals chose_left for every row
+                mismatches = (data["response"] != data["chose_left"]).sum()
+                assert mismatches == 0, f"{mismatches} rows where response ≠ chose_left!"
             else:
                 data["response"] = pd.to_numeric(data["corr"], errors="coerce")
             
