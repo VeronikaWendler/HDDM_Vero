@@ -426,57 +426,50 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
         cfg['params_default'][idx_z] = 0.55     # slight bias towards E
         
-        # 1) sanity‐check the config itself:
+        # SANITY‐CHECK 
         assert cfg['params'][idx_z] == 'z'
         assert cfg['params_default'][idx_z] == 0.55, \
             f"z default not 0.55 but {cfg['params_default'][idx_z]}"
- 
-        
-        #checking if z is really fixed at .55
-        assert cfg['params_default'][idx_z] == 0.55
-        print(f"[DEBUG] z fixed to {cfg['params_default'][idx_z]} "
-              f"(include list = ['a','t','v'])")
-        
 
-        m = hddm.models.HDDMRegressor(data,
-                                    reg_descr,
-                                    depends_on=depends_on,
-                                    p_outlier=.05,
-                                    include=['a', 't', 'v'],  
-                                    group_only_regressors=False,
-                                    keep_regressor_trace=True,
-                                    model_config=cfg
-                                    )
-        
+        # build the model
+        m = hddm.models.HDDMRegressor(
+            data,
+            reg_descr,
+            depends_on=depends_on,
+            p_outlier=.05,
+            include=['a', 't', 'v'],     #  z is not in include becuase not a free param
+            group_only_regressors=False,
+            keep_regressor_trace=True,
+            model_config=cfg
+        )
 
-        print("\n[ZBIAS DEBUG] entire model_config.params list:")
-        print(m.model_config.params)
-        print("\n[ZBIAS DEBUG] entire model_config.params_default list:")
-        print(m.model_config.params_default)
-
-        # find the index of 'z' and show its default:
+        # ——— DEBUG OUTPUT ———
+        print("\n[ZBIAS DEBUG] model_config.params       =", m.model_config.params)
+        print("[ZBIAS DEBUG] model_config.params_default =", m.model_config.params_default)
         zi = m.model_config.params.index('z')
-        print(f"\n[ZBIAS DEBUG] default for z  = {m.model_config.params_default[zi]}")
-        
-        if phase == "ES_ZBIAS":
-            # should print an empty list: []
-            free_z_nodes = [n for n in m.nodes_db.index if n.startswith('z')]
-            print("[DEBUG] free z nodes:", free_z_nodes)
-        
+        print(f"[ZBIAS DEBUG] default for 'z' = {m.model_config.params_default[zi]}\n")
+
+        # show exactly which nodes this model will sample
+        print("[ZBIAS DEBUG] sampling nodes in m.nodes_db:\n",
+              [n for n in m.nodes_db.index if n.split('_')[0] in ['a','t','v','z']])
+
+
         m.find_starting_values()
-        infdata = m.sample(samples,
-                           burn=100,
-                           dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
-                           db='pickle',
-                           return_infdata=True,
-                           loglike=True,
-                           ppc=True)
-        
-        if phase == "ES_ZBIAS":
-            # assert will crash early if z got into the posterior by mistake
-            assert "z" not in infdata.posterior.data_vars
-            print("[DEBUG] z absent from posterior - confirmed fixed.")
-        
+        infdata = m.sample(
+            samples,
+            burn=100,
+            dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'),
+            db='pickle',
+            return_infdata=True,
+            loglike=True,
+            ppc=True
+        )
+
+        # final check that z never got sampled
+        assert "z" not in infdata.posterior.data_vars, \
+            "ERROR: 'z' appeared in the posterior!"
+        print("[DEBUG] z absent from posterior - confirmed fixed.")
+
         return m, infdata
         
 
