@@ -443,13 +443,11 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             model_config=cfg
         )
 
-        # ——— DEBUG OUTPUT ———
-        print("\n[ZBIAS DEBUG] model_config.params       =", m.model_config.params)
-        print("[ZBIAS DEBUG] model_config.params_default =", m.model_config.params_default)
-        zi = m.model_config.params.index('z')
-        print(f"[ZBIAS DEBUG] default for 'z' = {m.model_config.params_default[zi]}\n")
-
-        # show exactly which nodes this model will sample
+        print("\n[ZBIAS DEBUG] model_config['params']       =", m.model_config['params'])
+        print("[ZBIAS DEBUG] model_config['params_default'] =", m.model_config['params_default'])
+        zi = m.model_config['params'].index('z')
+        print(f"[ZBIAS DEBUG] default for 'z' = {m.model_config['params_default'][zi]}\n")  
+        
         print("[ZBIAS DEBUG] sampling nodes in m.nodes_db:\n",
               [n for n in m.nodes_db.index if n.split('_')[0] in ['a','t','v','z']])
 
