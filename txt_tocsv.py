@@ -4,8 +4,8 @@
 
 import pandas as pd
 
-input_file = "/home/jovyan/OfficialTutorials/THESIS_HDDM/figures_garcia/garcia_replication_EE_5/diagnostics/gelman_rubin.txt"  # Adjust the path
-output_file = "/home/jovyan/OfficialTutorials/THESIS_HDDM/figures_garcia/garcia_replication_EE_5/diagnostics/gelman_rubin_EE_m5.csv"
+input_file = "C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/macleod_cluster_out/garcia_replication_ES_ZBIAS_1/diagnostics/gelman_rubin.txt"  # Adjust the path
+output_file = "C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/macleod_cluster_out/garcia_replication_ES_ZBIAS_1/diagnostics/gelman_rubin_ES_ZBIAS_m1.csv"
 
 data = []
 with open(input_file, "r") as file:
