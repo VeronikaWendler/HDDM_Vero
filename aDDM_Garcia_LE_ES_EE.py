@@ -1313,6 +1313,14 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Drift gazeSE (medium)',
                 'Drift gazeSE (high)',
             ]
+                   elif version == 11:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            a_reg = {'model': 'a ~ 1 + C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg, a_reg]
+        elif version == 12:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg, t_reg]
         elif version == 11:
             params_of_interest = [
             't',
@@ -1322,9 +1330,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'v_InattentionW:C(OVcate)[medium]',
             'v_InattentionW:C(OVcate)[high]',
             'a_Intercept',
-            'a_C(OVcate)[T.low]',
-            'a_C(OVcate)[T.medium]',
-            'a_C(OVcate)[T.high]',
             'a_C(OVcate)[low]',
             'a_C(OVcate)[medium]',
             'a_C(OVcate)[high]',
@@ -1337,9 +1342,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'v_InattentionW:C(OVcate)[medium]_subj',
             'v_InattentionW:C(OVcate)[high]_subj',
             'a_Intercept_subj',
-            'a_C(OVcate)[T.low]_subj',
-            'a_C(OVcate)[T.medium]_subj',
-            'a_C(OVcate)[T.high]_subj',
             'a_C(OVcate)[low]_subj',
             'a_C(OVcate)[medium]_subj',
             'a_C(OVcate)[high]_subj',
