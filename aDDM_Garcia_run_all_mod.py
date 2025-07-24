@@ -57,6 +57,16 @@ def ensure_dir(path):
 from scipy.special import expit   # for inverse‑logit treans
 
 
+# ---------- z‑bias link helper (put this once, near other imports) ----------
+
+def make_z_link(df):
+    """Return a one‑argument function HDDM can call for the z parameter."""
+    def z_link(x):
+        z = expit(x)                       # maps (-∞,∞) → (0,1)
+        flip = df.loc[x.index, "stimulus"].eq(0)
+        return np.where(flip, 1.0 - z, z)  # flip start‑point if stimulus==0
+    return z_link
+# ----------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------
 
@@ -1677,13 +1687,6 @@ if __name__ == "__main__":
                                        "ES_InattentionW",
                                        "stimulus"])
             # put this near the top of the file, right after you finish preparing `data_full`
-
-            def make_z_link(dataframe):
-                def _z_link(x, data=dataframe):
-                    z_mag = expit(x)                 # inverse‑logit → (0,1)
-                    flip  = (data.loc[x.index, "stimulus"] == 0)
-                    return np.where(flip, 1.0 - z_mag, z_mag)
-                return _z_link
 
 
             # ------------------------------------------------------------
