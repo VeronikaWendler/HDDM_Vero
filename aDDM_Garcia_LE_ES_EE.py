@@ -1321,9 +1321,11 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'v_InattentionW:C(OVcate)[low]',
             'v_InattentionW:C(OVcate)[medium]',
             'v_InattentionW:C(OVcate)[high]',
-            'a_OVcate[low]',
-            'a_OVcate[medium]',
-            'a_OVcate[high]',
+            'a_Intercept',
+            'a_C(OVcate)[low]',
+            'a_C(OVcate)[medium]',
+            'a_C(OVcate)[high]',
+
             ]
             params_of_interest_s = [
             't_subj',
@@ -1332,9 +1334,11 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'v_InattentionW:C(OVcate)[low]_subj',
             'v_InattentionW:C(OVcate)[medium]_subj',
             'v_InattentionW:C(OVcate)[high]_subj',
-            'a_OVcate[low]_subj',
-            'a_OVcate[medium]_subj',
-            'a_OVcate[high]_subj',
+            'a_Intercept_subj',
+            'a_C(OVcate)[low]_subj',
+            'a_C(OVcate)[medium]_subj',
+            'a_C(OVcate)[high]_subj',
+
             ]
             titles = [
             'Non-dec. time',
