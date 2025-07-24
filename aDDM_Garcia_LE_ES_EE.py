@@ -69,10 +69,10 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 4       # defining version
+version = 11       # defining version
 run = False        # if True, the the models run, if False the models load
 
-phase = ['ES_ZBIAS']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
+phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
 
 # Determines whether to use a single phase or the combined ESEE model
 if set(phase) == {'ES', 'EE'}:
@@ -101,7 +101,7 @@ model_base_name = "garcia_replication_"
 
 model_versions = {
     'LE': ['LE_1', 'LE_2', 'LE_3', 'LE_4', 'LE_5', 'LE_6', 'LE_7'],
-    'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4','ES_5', 'ES_6', 'ES_7', 'ES_8', 'ES_9', 'ES_10', 'ES_11'],   
+    'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4','ES_5', 'ES_6', 'ES_7', 'ES_8', 'ES_9', 'ES_10', 'ES_11','ES_12', 'ES_13'],   
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
     'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5'],
@@ -1312,6 +1312,44 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Drift gazeSE (low)',
                 'Drift gazeSE (medium)',
                 'Drift gazeSE (high)',
+            ]
+        elif version == 11:
+            params_of_interest = [
+            't',
+            'v_Intercept',
+            'v_AttentionW',
+            'v_InattentionW:C(OVcate)[low]',
+            'v_InattentionW:C(OVcate)[medium]',
+            'v_InattentionW:C(OVcate)[high]',
+            'a_Intercept',
+            'a_C(OVcate)[T.low]',
+            'a_C(OVcate)[T.medium]',
+            'a_C(OVcate)[T.high]',
+
+            ]
+            params_of_interest_s = [
+            't_subj',
+            'v_Intercept_subj',
+            'v_AttentionW_subj',
+            'v_InattentionW:C(OVcate)[low]_subj',
+            'v_InattentionW:C(OVcate)[medium]_subj',
+            'v_InattentionW:C(OVcate)[high]_subj',
+            'a_Intercept_subj',
+            'a_C(OVcate)[T.low]_subj',
+            'a_C(OVcate)[T.medium]_subj',
+            'a_C(OVcate)[T.high]_subj',
+
+            ]
+            titles = [
+            'Non-dec. time',
+            'Intercept drift rate',
+            'Drift AttentionW',
+            'Drift InattentionW:C(OVcate)[low]',
+            'Drift InattentionW:C(OVcate)[medium]',
+            'Drift InattentionW:C(OVcate)[high]',
+            'boundary sep. OVcate[low]',
+            'boundary sep. OVcate[medium]',
+            'boundary sep. OVcate[high]',
             ]
             
     elif phase == 'EE':
