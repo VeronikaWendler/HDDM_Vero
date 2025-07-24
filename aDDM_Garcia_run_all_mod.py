@@ -59,13 +59,25 @@ from scipy.special import expit   # for inverse‑logit treans
 
 # ---------- z‑bias link helper (put this once, near other imports) ----------
 
-def make_z_link(df):
-    """Return a one‑argument function HDDM can call for the z parameter."""
-    def z_link(x):
-        z = expit(x)                       # maps (-∞,∞) → (0,1)
-        flip = df.loc[x.index, "stimulus"].eq(0)
-        return np.where(flip, 1.0 - z, z)  # flip start‑point if stimulus==0
+# ---------- z‑bias link helper (safe for NumPy arrays) ----------
+def make_z_link(stimulus_vec):
+    """
+    Parameters
+    ----------
+    stimulus_vec : 1‑D NumPy array (or Series.values) in the SAME
+                   trial order as the design matrix that HDDM builds.
+                   0  → flip start point to the *right* bound
+                   1  → keep start point on the *left* bound
+    """
+    stim = np.asarray(stimulus_vec, dtype=int)
+
+    def z_link(x):                       # x is a NumPy array
+        z = expit(x)                    # (-inf,inf) → (0,1)
+        return np.where(stim == 0, 1.0 - z, z)
+
     return z_link
+# ----------------------------------------------------------------
+
 # ----------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------
@@ -287,22 +299,22 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg, t_reg]
         elif version == 13:
-            z_link = make_z_link(data)
+            z_link = make_z_link(data["stimulus"].values)   # <- fix
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 14:
-            z_link = make_z_link(data)
+            z_link = make_z_link(data["stimulus"].values)   # <- fix
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 15:
-            z_link = make_z_link(data)
+            z_link = make_z_link(data["stimulus"].values)   # <- fix
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 16:
-            z_link = make_z_link(data)
+            z_link = make_z_link(data["stimulus"].values)   # <- fix
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link}
             t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
