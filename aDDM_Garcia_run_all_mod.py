@@ -278,19 +278,19 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             reg_descr = [v_reg, t_reg]
         elif version == 13:
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW', 'link_func': lambda x: x}
-            z_reg = {'model': 'z ~ 1', 'link_func': z_link_func}
+            z_reg = {'model': 'z ~ 1', 'link_func': make_z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 14:
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            z_reg = {'model': 'z ~ 1', 'link_func': z_link_func}
+            z_reg = {'model': 'z ~ 1', 'link_func': make_z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 15:
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link_func}
+            z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': make_z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 16:
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link_func}
+            z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': make_z_link}
             t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg, z_reg, t_reg]
         else:
@@ -1673,10 +1673,15 @@ if __name__ == "__main__":
                                        "ES_AttentionW",
                                        "ES_InattentionW",
                                        "stimulus"])
-            def z_link_func(x, data):
-                z_mag = expit(x)                                 
-                flip  = (data.loc[x.index, "stimulus"] == 0)    
-                return np.where(flip, 1.0 - z_mag, z_mag)
+            # put this near the top of the file, right after you finish preparing `data_full`
+
+            def make_z_link(dataframe):
+                def _z_link(x, data=dataframe):
+                    z_mag = expit(x)                 # inverse‑logit → (0,1)
+                    flip  = (data.loc[x.index, "stimulus"] == 0)
+                    return np.where(flip, 1.0 - z_mag, z_mag)
+                return _z_link
+
 
             # ------------------------------------------------------------
             # gives you a quick report at the start
