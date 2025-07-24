@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 11       # defining version
+version = 12       # defining version
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -1356,7 +1356,65 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'boundary sep. OVcate[medium]',
             'boundary sep. OVcate[high]',
             ]
-            
+        elif version == 12:
+            params_of_interest = [
+            # non‑hierarchical (group) parameters
+            't',
+            'v_Intercept',
+            'v_AttentionW',
+            'v_InattentionW:C(OVcate)[low]',
+            'v_InattentionW:C(OVcate)[medium]',
+            'v_InattentionW:C(OVcate)[high]',
+            'a_Intercept',
+            'a_C(OVcate)[low]',
+            'a_C(OVcate)[medium]',
+            'a_C(OVcate)[high]',
+            ]
+
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+
+            titles = [
+            'Non-dec. time',
+            'Intercept drift rate',
+            'Drift AttentionW',
+            'Drift InattentionW (low)',
+            'Drift InattentionW (medium)',
+            'Drift InattentionW (high)',
+            'Boundary sep. (intercept)',
+            'Boundary sep. (low)',
+            'Boundary sep. (medium)',
+            'Boundary sep. (high)',
+            ]
+        
+        elif version == 13:
+            params_of_interest = [
+            'a',
+            't_Intercept',
+            't_C(OVcate)[low]',
+            't_C(OVcate)[medium]',
+            't_C(OVcate)[high]',
+            'v_Intercept',
+            'v_AttentionW',
+            'v_InattentionW:C(OVcate)[low]',
+            'v_InattentionW:C(OVcate)[medium]',
+            'v_InattentionW:C(OVcate)[high]',
+            ]
+
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+
+            titles = [
+            'Boundary sep.',
+            'Non dec. time (intercept)',
+            'Non dec. time (low)',
+            'Non dec. time (medium)',
+            'Non dec. time (high)',
+            'Intercept drift rate',
+            'Drift AttentionW',
+            'Drift InattentionW (low)',
+            'Drift InattentionW (medium)',
+            'Drift InattentionW (high)',
+            ]
+
     elif phase == 'EE':
         if version == 0:
             params_of_interest = [

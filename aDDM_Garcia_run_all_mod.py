@@ -53,6 +53,18 @@ def ensure_dir(path):
 #from helper_functions_2 import prepare_data
 #import compact_models
 
+# for Z bias coding
+from scipy.special import expit   # for inverse‑logit treans
+
+def z_link_func(x, data):
+    """
+    Returns z for E‑correct trials and 1‑z for S‑correct trials.
+    """
+    z_mag = expit(x)                                 
+    flip  = (data.loc[x.index, "stimulus"] == 0)    
+    return np.where(flip, 1.0 - z_mag, z_mag)
+
+
 #------------------------------------------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------
@@ -173,7 +185,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
     import hddm
     from patsy import dmatrix  
 
-   # ensure_dir(model_dir)   
+    # ensure_dir(model_dir)   
     
     depends_on = {}
     
@@ -265,24 +277,50 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             depends_on={'t': 'OVcate'}
         elif version == 11:
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-
             a_reg = {'model': 'a ~ 1 + C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg, a_reg]
         elif version == 12:
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg, t_reg]
+        elif version == 13:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW', 'link_func': lambda x: x}
+            z_reg = {'model': 'z ~ 1', 'link_func': z_link_func}
+            reg_descr = [v_reg, z_reg]
+        elif version == 14:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            z_reg = {'model': 'z ~ 1', 'link_func': z_link_func}
+            reg_descr = [v_reg, z_reg]
+        elif version == 15:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link_func}
+            reg_descr = [v_reg, z_reg]
+        elif version == 15:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link_func}
+            t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg, z_reg, t_reg]
         else:
             raise ValueError(f"check version {version} ??")
         
-        m = hddm.models.HDDMRegressor(data, 
-                                    reg_descr,
-                                    depends_on=depends_on, 
-                                    p_outlier=.05, 
-                                    include=['a', 't', 'v'],
-                                    group_only_regressors=False,
-                                    keep_regressor_trace=True
-                                    )
+        include_list = ['a', 't', 'v']
+        for rd in reg_descr:
+            if rd['model'].strip().startswith('z'):
+                include_list.append('z')
+                break
+            
+        print(f"[run_model] version={version}  include={include_list}")
+
+        m = hddm.models.HDDMRegressor(
+            data,
+            reg_descr,
+            depends_on=depends_on,
+            p_outlier=.05,
+            include=include_list,         
+            group_only_regressors=False,
+            keep_regressor_trace=True
+        )
+        
         m.find_starting_values()
         infdata = m.sample(samples,
                    burn=100,
@@ -1626,6 +1664,8 @@ if __name__ == "__main__":
             data["ES_AttentionW"]  = pd.to_numeric(data["ES_AttentionW"],  errors="coerce")
             data["ES_InattentionW"]= pd.to_numeric(data["ES_InattentionW"],errors="coerce")
             data["subj_idx"]    = data["sub_id"]
+            data["stimulus"] = pd.to_numeric(data["stimulus"], errors="coerce")
+
             data = data[~data["subj_idx"].isin({1,4,5,6,14,99})]
             data = data.dropna(subset=["rt",
                                        "response",
@@ -1638,7 +1678,8 @@ if __name__ == "__main__":
                                        "gazeSE",
                                        "gazeCI",
                                        "ES_AttentionW",
-                                       "ES_InattentionW"])
+                                       "ES_InattentionW",
+                                       "stimulus"])
             
             # ------------------------------------------------------------
             # gives you a quick report at the start

@@ -80,6 +80,9 @@ data['dta_norm'] = data['DwellTimeAdvantage'] / max_abs
 data['z_dynamic']   = (data['dta_norm'] + 1) / 2                            # dynamic z sscaled by gaze
 data['z_static'] = 0.55                                                     #Sebastian's idea 
 
+data['target_option'] = np.where(data['p1'] > data['p2'], 'E', 'S')
+data['stimulus']      = np.where(data['target_option'] == 'E', 1, 0)   # 1 = E, 0 = S
+
 data.to_csv(
     "C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/"
     "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
