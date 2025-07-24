@@ -278,19 +278,22 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             reg_descr = [v_reg, t_reg]
         elif version == 13:
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW', 'link_func': lambda x: x}
-            z_reg = {'model': 'z ~ 1', 'link_func': make_z_link}
+            z_reg = {'model': 'z ~ 1', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 14:
+            z_link = make_z_link(data)
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            z_reg = {'model': 'z ~ 1', 'link_func': make_z_link}
+            z_reg = {'model': 'z ~ 1', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 15:
+            z_link = make_z_link(data)
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': make_z_link}
+            z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 16:
+            z_link = make_z_link(data)
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': make_z_link}
+            z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link}
             t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg, z_reg, t_reg]
         else:
