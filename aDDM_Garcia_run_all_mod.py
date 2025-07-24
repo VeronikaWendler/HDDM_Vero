@@ -265,12 +265,21 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             depends_on={'t': 'OVcate'}
         elif version == 11:
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+<<<<<<< HEAD
             a_reg = {'model': 'a ~ 1 + OVcate', 'link_func': lambda x: x}
             reg_descr = [v_reg, a_reg]
         elif version == 12:
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             a_reg = {'model': 'a ~ 1 + OVcate', 'link_func': lambda x: x}
             reg_descr = [v_reg, a_reg]
+=======
+            a_reg = {'model': 'a ~ 1 + C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg, a_reg]
+        elif version == 12:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg, t_reg]
+>>>>>>> 54994ca75930f760da74b594421e8b7f8a932f6c
         else:
             raise ValueError(f"check version {version} ??")
         
