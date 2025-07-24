@@ -56,13 +56,6 @@ def ensure_dir(path):
 # for Z bias coding
 from scipy.special import expit   # for inverse‑logit treans
 
-def z_link_func(x, data):
-    """
-    Returns z for E‑correct trials and 1‑z for S‑correct trials.
-    """
-    z_mag = expit(x)                                 
-    flip  = (data.loc[x.index, "stimulus"] == 0)    
-    return np.where(flip, 1.0 - z_mag, z_mag)
 
 
 #------------------------------------------------------------------------------------------------------------------
@@ -1680,7 +1673,11 @@ if __name__ == "__main__":
                                        "ES_AttentionW",
                                        "ES_InattentionW",
                                        "stimulus"])
-            
+            def z_link_func(x, data):
+                z_mag = expit(x)                                 
+                flip  = (data.loc[x.index, "stimulus"] == 0)    
+                return np.where(flip, 1.0 - z_mag, z_mag)
+
             # ------------------------------------------------------------
             # gives you a quick report at the start
             quick_report(data, phase, version, model_name, phase_key)
