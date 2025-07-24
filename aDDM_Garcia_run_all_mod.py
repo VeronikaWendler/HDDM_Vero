@@ -77,7 +77,7 @@ def ensure_dir(path):
 #data['ES_InattentionW'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwell_Right'] * data['p1'])
 #data['ES_AttentionW'] = data['ES_AttentionW'].round(3)
 #data['ES_InattentionW'] = data['ES_InattentionW'].round(3)
-
+##
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
 nr_samples      = 600      # samples per chain - do 11000 but for now for a quick one we do 600
