@@ -27,6 +27,14 @@ from patsy import dmatrix
 from joblib import Parallel, delayed
 import time
 import arviz as az
+
+# -------------------------------------------------------------------------
+# patch: make a dummy _gdbm module so “import _gdbm” never fails
+import types, sys
+sys.modules.setdefault('_gdbm', types.ModuleType('_gdbm'))
+# -------------------------------------------------------------------------
+
+
 import dill as pickle
 from copy import deepcopy   # for modfiying z to be 0.55 (like in Sebastian's Matlab)
 import argparse
@@ -637,6 +645,7 @@ def drift_diffusion_hddm(data,
             for i in range(n_jobs):
                 model, infdata = results[i]
                 model.save(os.path.join(model_dir, f"{model_name}_{i}.hddm"))
+                
                 with open(os.path.join(model_dir, f"{model_name}_{i}.pkl"), "wb") as f:
                     pickle.dump(model, f)
                 infdata = sanitize_infdata(infdata)  # clean before saving
@@ -653,6 +662,7 @@ def drift_diffusion_hddm(data,
                                        accuracy_coding 
                                        )
             model.save(os.path.join(model_dir, model_name + ".hddm"))
+
             with open(os.path.join(model_dir, f"{model_name}.pkl"), "wb") as f:
                 pickle.dump(model, f)
             infdata = sanitize_infdata(infdata)
