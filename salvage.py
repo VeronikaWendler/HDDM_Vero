@@ -104,7 +104,7 @@ def salvage_chain(prefix: str, chain: int, template_path: Path) -> None:
             model.load_db(db_name)
         else:
             import pymc
-        model.mc.db = pymc.database.sqlite.load(db_name)
+            model.mc.db = pymc.database.sqlite.load(db_name)
 
         
         model.save(stem)  # -> writes .hddm and .pkl
