@@ -97,9 +97,13 @@ def salvage_chain(prefix: str, chain: int, template_path: Path) -> None:
         model = hddm.load(str(template_path))
 
         # 2. Attach this chain’s trace
-        model.load(db_name)
-
-        # 3. Save in HDDM native formats
+        # -----------------------------------------------------------------
+        # 2. attach this chain’s trace
+        try:                        # HDDM ≥ 0.9.8
+            model.load(db_name)
+        except AttributeError:      # older HDDM
+            model.database.load(db_name)
+        
         model.save(stem)  # -> writes .hddm and .pkl
 
         # 4. Export NetCDF (optional)
