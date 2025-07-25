@@ -57,41 +57,32 @@ def ensure_dir(path):
 from scipy.special import expit   # for inverse‑logit treans
 
 
-# ---------- z‑bias link helper (put this once, near other imports) ----------
-
-# ---------- z‑bias link helper (safe for NumPy arrays) ----------
-# ---------------- safer z‑bias link -----------------
 def make_z_link(full_stimulus_vector):
-    """
-    full_stimulus_vector
-        1‑D arraylike with length == n_trials kept in the model,
-        coded 0/1: 0 → flip starting point, 1 → keep as is.
-    """
     stim = np.asarray(full_stimulus_vector, dtype=int)
 
     def _link(x):
         """
-        `x` is the raw (un‑transformed) NumPy vector HDDM gives us.
-        It can be longer than `stim` (e.g. posterior predictive checks).
+        x can be a NumPy array *or* a pandas Series coming from HDDM.
+        We return the *same* type HDDM gave us so later code still works.
         """
-        z = expit(x)                         # map to (0,1)
-
-        # --- make stim the same length as x ---
-        if stim.size < x.size:
-            reps = (x.size // stim.size) + 1
-            stim_aligned = np.tile(stim, reps)[:x.size]
+        # --- make sure stim is at least as long as x ---
+        if stim.size < len(x):
+            reps = (len(x) // stim.size) + 1
+            stim_aligned = np.tile(stim, reps)[:len(x)]
         else:
-            stim_aligned = stim[:x.size]
-        # ---------------------------------------
+            stim_aligned = stim[:len(x)]
 
-        return np.where(stim_aligned == 0, 1.0 - z, z)
+        z = np.where(stim_aligned == 0,
+                     1.0 - expit(x),   # flip for stimulus==0
+                     expit(x))         # usual inverse‑logit
+
+        # preserve the incoming container type
+        if hasattr(x, "index"):            # it's a pandas Series
+            return pd.Series(z, index=x.index, name="z")
+        return z                           # plain NumPy array
 
     return _link
-# ----------------------------------------------------
 
-# ----------------------------------------------------------------
-
-# ----------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------
 
