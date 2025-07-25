@@ -1318,7 +1318,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'a_Intercept',
                 'a_C(OVcate)[T.low]',
                 'a_C(OVcate)[T.medium]',
-                'a_C(OVcate)[T.high]',
                 't',                        # non-decision time
                 'v_Intercept',
                 'v_AttentionW',
@@ -1331,7 +1330,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Boundary sep. (intercept)',
                 'Boundary sep. (low)',
                 'Boundary sep. (medium)',
-                'Boundary sep. (high)',                
                 'Non‐dec. time',
                 'Intercept drift rate',
                 'Drift AttentionW',
