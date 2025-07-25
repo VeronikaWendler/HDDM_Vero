@@ -11,10 +11,11 @@
 
 module load singularity/3.8.5
 
-IMAGE=$HOME/containers/hddm_latest.sif
-PROJECT=$HOME/sharedscratch/HDDM_Vero
-export MPLCONFIGDIR=/workspace/.cache/mpl      # silence the warning
+IMAGE=$HOME/containers/hddm_latest.sif          # ⟨container image⟩
+PROJECT=$HOME/sharedscratch/HDDM_Vero           # ⟨folder to bind⟩
+PREFIX=garcia_replication_ES_14                 # ⟨model prefix⟩
 
-singularity exec --bind ${PROJECT}:/workspace \
-                 $IMAGE \
-                 python /workspace/salvage.py --auto garcia_replication_ES_14
+singularity exec \
+  --bind ${PROJECT}:/workspace \
+  ${IMAGE} \
+  python /workspace/salvage_hddm.py --auto ${PREFIX}
