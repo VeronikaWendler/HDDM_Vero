@@ -11,8 +11,12 @@ module load singularity/3.8.5
 
 IMAGE=$HOME/containers/hddm_latest.sif
 PROJECT=$HOME/sharedscratch/HDDM_Vero
+PREFIX=garcia_replication_ES_14
 
 singularity exec \
   --bind $PROJECT:/workspace \
-  ${IMAGE} \
-  python /workspace/salvage.py --auto /workspace/models_dir_garcia/garcia_replication_ES_14
+  $IMAGE \
+  bash -lc "\
+    cd /workspace/models_dir_garcia && \
+    python /workspace/salvage.py --auto $PREFIX \
+  "
