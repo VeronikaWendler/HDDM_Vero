@@ -1,31 +1,43 @@
-#!/bin/bash
-###############################################################
-#  Slurm wrapper that re‑creates the missing *.pkl / *.nc files
-#  for an HDDM model that has already produced *.hddm chains.
-###############################################################
+#!/usr/bin/env python
+#SBATCH --partition=compute
+#SBATCH --cpus-per-task=1
+#SBATCH --mem=4G
+#SBATCH -o logs/salvage_%j.out
+#SBATCH -e logs/salvage_%j.err
 
-#SBATCH --job-name=salvage_ES_13          #  anything you like
-#SBATCH --partition=compute               #  same partition you used
-#SBATCH --cpus-per-task=1                 #  one core is enough
-#SBATCH --mem=4G                          #  very small footprint
-#SBATCH --time=00:15:00                   #  plenty of time
-#SBATCH -o logs/salvage_%j.out            #  STDOUT
-#SBATCH -e logs/salvage_%j.err            #  STDERR
-#SBATCH --mail-type=END,FAIL              #  optional
-#SBATCH --mail-user=u04vw21@abdn.ac.uk    #  optional
+import types, sys, glob, pathlib, dill, hddm, arviz as az
 
-module load singularity/3.8.5             #  same module as before
-export PYTHONUNBUFFERED=1
-export MPLBACKEND=Agg
+# stub the missing C‑extension so dill won’t choke
+sys.modules['_gdbm'] = types.ModuleType('_gdbm')
 
-IMAGE=$HOME/containers/hddm_latest.sif
-PROJECT=$HOME/sharedscratch/HDDM_Vero     # folder that holds models_dir_garcia
-# -------------------------------------------------------------
+MODEL_DIR = pathlib.Path("/workspace/models_dir_garcia")
+MODEL_BASE = "garcia_replication_ES_14"     
 
-mkdir -p logs
+for hddm_path in sorted(MODEL_DIR.glob(f"{MODEL_BASE}_*.hddm")):
+    idx = hddm_path.stem.split("_")[-1]
+    print(f"⟳  chain {idx}: loading {hddm_path.name}")
 
-# run the helper inside the very same container
-singularity exec \
-  --bind ${PROJECT}:/workspace \
-  ${IMAGE} \
-  python /workspace/salvage.py
+    mdl = hddm.load(hddm_path)
+
+    # (1) .pkl  – skip if it already exists
+    pkl_path = MODEL_DIR / f"{MODEL_BASE}_{idx}.pkl"
+    if pkl_path.exists():
+        print("   pkl already present")
+    else:
+        with open(pkl_path, "wb") as f:
+            dill.dump(mdl, f)
+        print("   wrote", pkl_path.name)
+
+    # (2) .nc   – re‑create only if missing
+    nc_path = MODEL_DIR / f"{MODEL_BASE}_{idx}.nc"
+    if nc_path.exists():
+        print("   nc already present")
+    else:
+        try:
+            infdata = mdl.to_inference_data()        # HDDM ≥ 0.9.8
+        except AttributeError:
+            # very old HDDM – fall back to an approximate conversion
+            infdata = az.from_pymc3(trace=mdl.get_traces())
+
+        az.to_netcdf(infdata, nc_path)
+        print("   wrote", nc_path.name)
