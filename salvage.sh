@@ -4,6 +4,9 @@
 #SBATCH --mem=4G
 #SBATCH -o logs/salvage_%j.out
 #SBATCH -e logs/salvage_%j.err
+#SBATCH --mem=200G                          # total memory for the job
+#SBATCH --mail-type=ALL                     # email when job ends or fails
+#SBATCH --mail-user=u04vw21@abdn.ac.uk      # university email
 
 import types, sys, glob, pathlib, dill, hddm, arviz as az
 
