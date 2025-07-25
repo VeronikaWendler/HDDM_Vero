@@ -13,7 +13,7 @@ module load singularity/3.8.5
 
 IMAGE=$HOME/containers/hddm_latest.sif          # ⟨container image⟩
 PROJECT=$HOME/sharedscratch/HDDM_Vero           # ⟨folder to bind⟩
-PREFIX=garcia_replication_ES_14                 # ⟨model prefix⟩
+PREFIX=/workspace/models_dir_garcia/garcia_replication_ES_14
 
 singularity exec \
   --bind ${PROJECT}:/workspace \
