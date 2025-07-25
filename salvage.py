@@ -22,6 +22,24 @@ try:
     import arviz as az  # type: ignore
 except ImportError:  # graceful degradation if ArviZ is unavailable
     az = None  # type: ignore
+    
+from pathlib import Path
+import os, sys, types             #  ← already imported, keep only once
+
+# ----------------------------------------------------------------------
+# Allow an *absolute* or *relative* prefix.
+# If the first CLI argument looks like a path, turn it into:
+#   • working directory = <parent folder>
+#   • prefix            = <file stem without path>
+# ----------------------------------------------------------------------
+if len(sys.argv) > 1 and "/" in sys.argv[1]:
+    abs_prefix = Path(sys.argv[1]).expanduser().resolve()
+    os.chdir(abs_prefix.parent)       # change into the model directory
+    sys.argv[1] = abs_prefix.name     # now just "garcia_replication_ES_14"
+# ----------------------------------------------------------------------
+
+# !!! keep the rest of your script unchanged !!!
+
 
 # ---------------------------------------------------------------------------
 # helper functions

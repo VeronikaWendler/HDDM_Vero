@@ -8,14 +8,14 @@
 #SBATCH --mail-type=ALL                     # email when job ends or fails
 #SBATCH --mail-user=u04vw21@abdn.ac.uk      # university email
 
-
 module load singularity/3.8.5
 
 IMAGE=$HOME/containers/hddm_latest.sif
-PROJECT=$HOME/sharedscratch/HDDM_Vero        # folder you showed with “ls”
-PREFIX=/workspace/models_dir_garcia/garcia_replication_ES_14   # model prefix *inside* container
+PROJECT=$HOME/sharedscratch/HDDM_Vero         # this has models_dir_garcia inside
+PREFIX=garcia_replication_ES_14               # ***basename only***
 
 singularity exec \
   --bind ${PROJECT}:/workspace \
+  --pwd  /workspace/models_dir_garcia \       # <‑‑ set cwd inside container
   ${IMAGE} \
   python /workspace/salvage.py --auto ${PREFIX}
