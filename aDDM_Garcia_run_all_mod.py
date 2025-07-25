@@ -60,22 +60,35 @@ from scipy.special import expit   # for inverse‑logit treans
 # ---------- z‑bias link helper (put this once, near other imports) ----------
 
 # ---------- z‑bias link helper (safe for NumPy arrays) ----------
-def make_z_link(stimulus_vec):
+# ---------------- safer z‑bias link -----------------
+def make_z_link(full_stimulus_vector):
     """
-    Parameters
-    ----------
-    stimulus_vec : 1‑D NumPy array (or Series.values) in the SAME
-                   trial order as the design matrix that HDDM builds.
-                   0  → flip start point to the *right* bound
-                   1  → keep start point on the *left* bound
+    full_stimulus_vector
+        1‑D arraylike with length == n_trials kept in the model,
+        coded 0/1: 0 → flip starting point, 1 → keep as is.
     """
-    stim = np.asarray(stimulus_vec, dtype=int)
+    stim = np.asarray(full_stimulus_vector, dtype=int)
 
-    def z_link(x):                       # x is a NumPy array
-        z = expit(x)                    # (-inf,inf) → (0,1)
-        return np.where(stim == 0, 1.0 - z, z)
+    def _link(x):
+        """
+        `x` is the raw (un‑transformed) NumPy vector HDDM gives us.
+        It can be longer than `stim` (e.g. posterior predictive checks).
+        """
+        z = expit(x)                         # map to (0,1)
 
-    return z_link
+        # --- make stim the same length as x ---
+        if stim.size < x.size:
+            reps = (x.size // stim.size) + 1
+            stim_aligned = np.tile(stim, reps)[:x.size]
+        else:
+            stim_aligned = stim[:x.size]
+        # ---------------------------------------
+
+        return np.where(stim_aligned == 0, 1.0 - z, z)
+
+    return _link
+# ----------------------------------------------------
+
 # ----------------------------------------------------------------
 
 # ----------------------------------------------------------------------------
@@ -299,22 +312,26 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=300
             t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg, t_reg]
         elif version == 13:
-            z_link = make_z_link(data["stimulus"].values)   # <- fix
+            stim_vec = data["stimulus"].values         # *all* trials after filtering
+            z_link   = make_z_link(stim_vec)            
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 14:
-            z_link = make_z_link(data["stimulus"].values)   # <- fix
+            stim_vec = data["stimulus"].values         # *all* trials after filtering
+            z_link   = make_z_link(stim_vec) 
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 15:
-            z_link = make_z_link(data["stimulus"].values)   # <- fix
+            stim_vec = data["stimulus"].values         # *all* trials after filtering
+            z_link   = make_z_link(stim_vec) 
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 16:
-            z_link = make_z_link(data["stimulus"].values)   # <- fix
+            stim_vec = data["stimulus"].values         # *all* trials after filtering
+            z_link   = make_z_link(stim_vec) 
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link}
             t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
