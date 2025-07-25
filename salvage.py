@@ -96,13 +96,16 @@ def salvage_chain(prefix: str, chain: int, template_path: Path) -> None:
         # 1. Load the *model specification* from chain‑0 .hddm
         model = hddm.load(str(template_path))
 
-        # 2. Attach this chain’s trace
         # -----------------------------------------------------------------
-        # 2. attach this chain’s trace
-        try:                        # HDDM ≥ 0.9.8
+        # 2. attach this chain’s trace  (handle all historic API variants)
+        if hasattr(model, "load"):
             model.load(db_name)
-        except AttributeError:      # older HDDM
-            model.database.load(db_name)
+        elif hasattr(model, "load_db"):
+            model.load_db(db_name)
+        else:
+            import pymc
+        model.mc.db = pymc.database.sqlite.load(db_name)
+
         
         model.save(stem)  # -> writes .hddm and .pkl
 
