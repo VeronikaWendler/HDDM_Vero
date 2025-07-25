@@ -1343,7 +1343,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 't_Intercept',
                 't_C(OVcate)[T.low]',
                 't_C(OVcate)[T.medium]',
-                't_C(OVcate)[T.high]',
                 'a',                        # non-decision time
                 'v_Intercept',
                 'v_AttentionW',
@@ -1356,7 +1355,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Ndt (intercept)',
                 'Ndt (low)',
                 'Ndt (medium)',
-                'Ndt (high)',                
                 'Boundary sep.',
                 'Intercept drift rate',
                 'Drift AttentionW',
