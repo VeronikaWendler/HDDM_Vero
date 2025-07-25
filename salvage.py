@@ -1,57 +1,149 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Re-create missing .pkl / .nc files from finished HDDM chains
+salvage_hddm.py – re‑create *.hddm, *.pkl and *.nc files from raw HDDM
+sampling databases (…_db0/1/2) when a salvage job was interrupted or only
+chain‑0 was processed.
+
 """
 
-import sys, types, glob, pathlib
-import dill, hddm, arviz as az
-import pandas as pd, numpy as np            # needed for the ArviZ fallback
+from __future__ import annotations
 
-MODEL_DIR  = pathlib.Path("/workspace/models_dir_garcia")
-MODEL_BASE = "garcia_replication_ES_14"     # ← adjust to your prefix
+import argparse
+import os
+import sys
+import traceback
+from pathlib import Path
 
-# --------------------------------------------------------------------------
-# stub the missing gdbm C-extension so dill can pickle safely
-sys.modules['_gdbm'] = types.ModuleType('_gdbm')
+# Third‑party
+import hddm  # type: ignore
 
-def traces_to_inference_data(trace_df):
+try:
+    import arviz as az  # type: ignore
+except ImportError:  # graceful degradation if ArviZ is unavailable
+    az = None  # type: ignore
+
+# ---------------------------------------------------------------------------
+# helper functions
+# ---------------------------------------------------------------------------
+
+def chains_to_salvage(prefix: str, chains: list[int] | None) -> list[int]:
+    """Return the list of chain indices that still *need* salvaging.
+
+    If *chains* is provided explicitly, just return it. If `--auto` was used,
+    scan the directory for "<prefix>_db*" files that do not yet have a
+    corresponding "<prefix>_* .hddm" file.
     """
-    Minimal, version-agnostic conversion of an HDDM trace (pandas.DataFrame)
-    to ArviZ InferenceData.  Keeps only the posterior samples.
-    """
-    # ArviZ wants shape (chain, draw, *shape_of_param)
-    # Our traces are single-chain dataframes → chain = 1
-    posterior = {}
-    for col in trace_df.columns:
-        vals = trace_df[col].values[None, :]        # add chain axis
-        posterior[col] = vals
 
-    return az.from_dict(posterior=posterior)
+    if chains is not None:
+        return chains
 
-# --------------------------------------------------------------------------
-for hddm_path in sorted(MODEL_DIR.glob(f"{MODEL_BASE}_*.hddm")):
-    idx = hddm_path.stem.split("_")[-1]
-    print(f"⟳  chain {idx}: loading {hddm_path.name}")
-    mdl = hddm.load(hddm_path)
+    # auto‑detect mode
+    db_files = sorted(Path().glob(f"{prefix}_db[0-9]*"))
+    detected: list[int] = []
+    for db in db_files:
+        # extract the chain index from the suffix after "db"
+        try:
+            idx = int(db.name.split("_db")[-1])
+        except ValueError:
+            continue
+        # skip if we already have an .hddm file for this chain
+        if Path(f"{prefix}_{idx}.hddm").exists():
+            continue
+        detected.append(idx)
+    return detected
 
-    # ..........................................................  .pkl
-    pkl_path = MODEL_DIR / f"{MODEL_BASE}_{idx}.pkl"
-    if not pkl_path.exists():
-        with pkl_path.open("wb") as f:
-            dill.dump(mdl, f)
-        print("   ✓ wrote", pkl_path.name)
-    else:
-        print("   •", pkl_path.name, "already present")
 
-    # ..........................................................  .nc
-    nc_path = MODEL_DIR / f"{MODEL_BASE}_{idx}.nc"
-    if not nc_path.exists():
-        # robust conversion independent of HDDM/ArviZ versions
-        infdata = traces_to_inference_data(mdl.get_traces())
-        az.to_netcdf(infdata, nc_path)
-        print("   ✓ wrote", nc_path.name)
-    else:
-        print("   •", nc_path.name, "already present")
+# ---------------------------------------------------------------------------
+# main logic
+# ---------------------------------------------------------------------------
 
-print("All done ✔")
+def salvage_chain(prefix: str, chain: int, template_path: Path) -> None:
+    """Salvage a single chain, writing .hddm / .pkl / .nc."""
+
+    db_name = f"{prefix}_db{chain}"
+    stem = f"{prefix}_{chain}"
+
+    if not Path(db_name).exists():
+        print(f"[WARN] {db_name} not found – skipping chain {chain}.")
+        return
+
+    if Path(stem + ".hddm").exists():
+        print(f"[INFO] {stem}.hddm already exists – nothing to do for chain {chain}.")
+        return
+
+    print(f"⟳  chain {chain}: salvaging from {db_name} …", flush=True)
+
+    try:
+        # 1. Load the *model specification* from chain‑0 .hddm
+        model = hddm.load(str(template_path))
+
+        # 2. Attach this chain’s trace
+        model.load(db_name)
+
+        # 3. Save in HDDM native formats
+        model.save(stem)  # -> writes .hddm and .pkl
+
+        # 4. Export NetCDF (optional)
+        if az is not None:
+            idata = az.from_pymc3(trace=model.get_traces(), model=model.mc)
+            nc_path = Path(stem + ".nc")
+            idata.to_netcdf(nc_path)
+        else:
+            print("[WARN] ArviZ not installed – skipping .nc export.")
+
+        print(f"✓  wrote {stem}.hddm / .pkl" + (" / .nc" if az is not None else ""))
+    except Exception:
+        print(f"[ERROR] salvage for chain {chain} failed:")
+        traceback.print_exc()
+
+
+# ---------------------------------------------------------------------------
+# entry point
+# ---------------------------------------------------------------------------
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Salvage HDDM databases into hddm/pkl/nc files.",
+        epilog="Example: python salvage_hddm.py garcia_replication_ES_14 1 2",
+    )
+    parser.add_argument(
+        "prefix",
+        help="Common filename prefix, e.g. 'garcia_replication_ES_14'",
+    )
+    parser.add_argument(
+        "chains",
+        nargs="*",
+        type=int,
+        help="Chain indices to salvage (omit when using --auto).",
+    )
+    parser.add_argument(
+        "--auto",
+        action="store_true",
+        help="Automatically salvage every chain that has a db file but no .hddm.",
+    )
+
+    args = parser.parse_args()
+    if args.auto and args.chains:
+        parser.error("Provide either explicit chain numbers *or* --auto, not both.")
+
+    # ---------------------------------------------------------------------
+    # sanity checks
+    # ---------------------------------------------------------------------
+    template_path = Path(f"{args.prefix}_0.hddm")
+    if not template_path.exists():
+        parser.error(f"Template model {template_path} missing – cannot proceed.")
+
+    # Figure out which chains to process
+    chains = chains_to_salvage(args.prefix, args.chains if not args.auto else None)
+    if not chains:
+        print("[INFO] Nothing to salvage – all requested chains are already complete.")
+        return
+
+    # Process each chain separately (re‑loading template each time keeps memory low)
+    for ch in chains:
+        salvage_chain(args.prefix, ch, template_path)
+
+
+if __name__ == "__main__":
+    main()
