@@ -1315,9 +1315,10 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             ]
         elif version == 11:
             params_of_interest = [
-                'a',                        # intercept
-                'a_C(OVcate)[medium]',
-                'a_C(OVcate)[high]',
+                'a_Intercept',
+                'a_C(OVcate)[T.low]',
+                'a_C(OVcate)[T.medium]',
+                'a_C(OVcate)[T.high]',
                 't',                        # non-decision time
                 'v_Intercept',
                 'v_AttentionW',
@@ -1328,8 +1329,9 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             params_of_interest_s = [p + '_subj' for p in params_of_interest]
             titles = [
                 'Boundary sep. (intercept)',
+                'Boundary sep. (low)',
                 'Boundary sep. (medium)',
-                'Boundary sep. (high)',
+                'Boundary sep. (high)',                
                 'Non‐dec. time',
                 'Intercept drift rate',
                 'Drift AttentionW',
@@ -1338,12 +1340,13 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Drift InattentionW (high)',
                 ]
 
-        elif version == 13:
+        elif version == 12:
             params_of_interest = [
-                'a',                         # constant boundary
-                't_Intercept',               # non-decision time intercept
-                't_C(OVcate)[medium]',
-                't_C(OVcate)[high]',
+                't_Intercept',
+                't_C(OVcate)[T.low]',
+                't_C(OVcate)[T.medium]',
+                't_C(OVcate)[T.high]',
+                'a',                        # non-decision time
                 'v_Intercept',
                 'v_AttentionW',
                 'v_InattentionW:C(OVcate)[low]',
@@ -1352,10 +1355,11 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 ]
             params_of_interest_s = [p + '_subj' for p in params_of_interest]
             titles = [
-                'Boundary separation',
-                'Non dec. time (intercept)',
-                'Non dec. time (medium)',
-                'Non dec. time (high)',
+                'Ndt (intercept)',
+                'Ndt (low)',
+                'Ndt (medium)',
+                'Ndt (high)',                
+                'Boundary sep.',
                 'Intercept drift rate',
                 'Drift AttentionW',
                 'Drift InattentionW (low)',
