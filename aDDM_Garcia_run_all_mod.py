@@ -124,7 +124,7 @@ parallel        = True     # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
     "LE":      ["LE_1","LE_2","LE_3","LE_4"],     #"LE_5","LE_6","LE_7"
-    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18"],
+    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", "ES_19", "ES_20"],
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
@@ -143,7 +143,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 13
+start_version = 12
 started = False
 
 # dir
@@ -310,44 +310,59 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg, t_reg]
-        elif version == 13:
+        elif version == 13:  # m5 non-fixated options weights varies by OV level and non-dec. time
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'z': 'stimulus'} 
+        elif version == 14:  # m5 non-fixated options weights varies by OV level and non-dec. time
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'z': 'chose_left'} 
+        elif version == 15:  # m5 non-fixated options weights varies by OV level and non-dec. time
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'t': 'stimulus'} 
+        elif version == 16:  # m5 non-fixated options weights varies by OV level and non-dec. time
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'t': 'chose_left'}
+        elif version == 17:
             stim_vec = data["stimulus"].values         # *all* trials after filtering
             z_link   = make_z_link(stim_vec)            
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
-        elif version == 14:
+        elif version == 18:
             stim_vec = data["stimulus"].values         # *all* trials after filtering
             z_link   = make_z_link(stim_vec) 
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
-        elif version == 15:
+        elif version == 19:
             stim_vec = data["stimulus"].values         # *all* trials after filtering
             z_link   = make_z_link(stim_vec) 
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
-        elif version == 16:
+        elif version == 20:
             stim_vec = data["stimulus"].values         # *all* trials after filtering
             z_link   = make_z_link(stim_vec) 
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link}
             t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg, z_reg, t_reg]
-        elif version == 17:  # m5 non-fixated options weights varies by OV level and non-dec. time
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-            depends_on={'t': 'stimulus'} 
         else:
             raise ValueError(f"check version {version} ??")
         
         include_list = ['a', 't', 'v']
-        for rd in reg_descr:
-            if rd['model'].strip().startswith('z'):
-                include_list.append('z')
-                break
-            
+        has_z_reg = any(
+            reg['model'].strip().split('~',1)[0].strip() == 'z'
+            for reg in reg_descr
+        )
+
+        # …or if z is in the depends_on dict
+        if has_z_reg or 'z' in depends_on:
+            include_list.append('z')
         print(f"[run_model] version={version}  include={include_list}")
 
         m = hddm.models.HDDMRegressor(
@@ -1675,6 +1690,7 @@ if __name__ == "__main__":
             data["gazeSE"]= pd.to_numeric(data["gazeSE"],errors="coerce")
             data["phase"]       = data["phase"].astype("category")
             data["rt"]          = pd.to_numeric(data["rtime"], errors="coerce")
+            data["chose_left"] = pd.to_numeric(data["chose_left"], errors="coerce")
             data                = data[data["rt"] > 0.250]
             # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
             # ------------------------------------------------------------------
@@ -1720,7 +1736,9 @@ if __name__ == "__main__":
                                        "gazeCI",
                                        "ES_AttentionW",
                                        "ES_InattentionW",
-                                       "stimulus"])
+                                       "stimulus",
+                                       "chose_left"])
+
             # put this near the top of the file, right after you finish preparing `data_full`
 
 
