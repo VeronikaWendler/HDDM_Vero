@@ -9,7 +9,7 @@ import hddm, dill, arviz as az      # make sure the same conda env is loaded
 # ------------------------------------------------------------------
 # 🔧 EDIT ME
 MODEL_DIR = pathlib.Path("/workspace/models_dir_garcia")   # absolute or ~/
-MODEL     = "garcia_replication_ES_13"                     # common prefix
+MODEL     = "garcia_replication_ES_14"                     # common prefix
 # ------------------------------------------------------------------
 
 # 1) provide the dummy _gdbm module so dill never crashes
