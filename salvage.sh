@@ -1,7 +1,7 @@
-#!/usr/bin/env python
-#SBATCH --partition=compute
-#SBATCH --cpus-per-task=1
-#SBATCH --mem=4G
+#!/bin/bash
+#SBATCH --partition=compute                 # CPU partition (on MacLeod, not sure about Maxwell)
+#SBATCH --cpus-per-task=8                   # number of CPU cores for chains
+#SBATCH --mem=200G                          # total memory for the job
 #SBATCH -o logs/salvage_%j.out
 #SBATCH -e logs/salvage_%j.err
 #SBATCH --mem=200G                          # total memory for the job
