@@ -97,13 +97,12 @@ def salvage_chain(prefix: str, chain: int, template_path: Path) -> None:
         model = hddm.load(str(template_path))
 
         # -----------------------------------------------------------------
-        # 2. attach this chain’s trace  (handle all historic API variants)
-        if hasattr(model, "load"):
-            model.load(db_name)
-        elif hasattr(model, "load_db"):
-            model.load_db(db_name)
-        else:
-            import pymc
+        # 2. attach this chain’s trace  – pick the right backend automatically
+        import pymc
+
+        if os.path.isdir(db_name):                        # ← directory ⇒ pickle
+            model.mc.db = pymc.database.pickle.load(db_name)
+        else:                                             # ← single file ⇒ sqlite
             model.mc.db = pymc.database.sqlite.load(db_name)
 
         
