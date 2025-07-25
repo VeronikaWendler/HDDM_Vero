@@ -37,6 +37,11 @@ if len(sys.argv) > 1 and "/" in sys.argv[1]:
     os.chdir(abs_prefix.parent)       # change into the model directory
     sys.argv[1] = abs_prefix.name     # now just "garcia_replication_ES_14"
 # ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# If the prefix argument contains a “/”, it will
+#   • cd into its parent folder
+#   • strip off the path, leaving only the basename
+# ----------------------------------------------------------------------
 
 # !!! keep the rest of your script unchanged !!!
 
