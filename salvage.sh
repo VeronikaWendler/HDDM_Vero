@@ -11,11 +11,11 @@
 
 module load singularity/3.8.5
 
-IMAGE=$HOME/containers/hddm_latest.sif          # ⟨container image⟩
-PROJECT=$HOME/sharedscratch/HDDM_Vero           # ⟨folder to bind⟩
-PREFIX=/workspace/models_dir_garcia/garcia_replication_ES_14
+IMAGE=$HOME/containers/hddm_latest.sif
+PROJECT=$HOME/sharedscratch/HDDM_Vero        # folder you showed with “ls”
+PREFIX=/workspace/models_dir_garcia/garcia_replication_ES_14   # model prefix *inside* container
 
 singularity exec \
   --bind ${PROJECT}:/workspace \
   ${IMAGE} \
-  python /workspace/salvage_hddm.py --auto ${PREFIX}
+  python /workspace/salvage.py --auto ${PREFIX}
