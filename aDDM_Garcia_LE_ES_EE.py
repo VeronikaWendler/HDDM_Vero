@@ -1313,109 +1313,55 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Drift gazeSE (medium)',
                 'Drift gazeSE (high)',
             ]
-                   elif version == 11:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            a_reg = {'model': 'a ~ 1 + C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg, a_reg]
-        elif version == 12:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg, t_reg]
         elif version == 11:
             params_of_interest = [
-            't',
-            'v_Intercept',
-            'v_AttentionW',
-            'v_InattentionW:C(OVcate)[low]',
-            'v_InattentionW:C(OVcate)[medium]',
-            'v_InattentionW:C(OVcate)[high]',
-            'a_Intercept',
-            'a_C(OVcate)[low]',
-            'a_C(OVcate)[medium]',
-            'a_C(OVcate)[high]',
-            ]
-            params_of_interest_s = [
-            't_subj',
-            'v_Intercept_subj',
-            'v_AttentionW_subj',
-            'v_InattentionW:C(OVcate)[low]_subj',
-            'v_InattentionW:C(OVcate)[medium]_subj',
-            'v_InattentionW:C(OVcate)[high]_subj',
-            'a_Intercept_subj',
-            'a_C(OVcate)[low]_subj',
-            'a_C(OVcate)[medium]_subj',
-            'a_C(OVcate)[high]_subj',
-
-            ]
+                'a',                        # intercept
+                'a_C(OVcate)[medium]',
+                'a_C(OVcate)[high]',
+                't',                        # non-decision time
+                'v_Intercept',
+                'v_AttentionW',
+                'v_InattentionW:C(OVcate)[low]',
+                'v_InattentionW:C(OVcate)[medium]',
+                'v_InattentionW:C(OVcate)[high]',
+                ]
+            params_of_interest_s = [p + '_subj' for p in params_of_interest]
             titles = [
-            'Non-dec. time',
-            'Intercept drift rate',
-            'Drift AttentionW',
-            'Drift InattentionW:C(OVcate)[low]',
-            'Drift InattentionW:C(OVcate)[medium]',
-            'Drift InattentionW:C(OVcate)[high]',
-            'boundary sep. OVcate[low]',
-            'boundary sep. OVcate[medium]',
-            'boundary sep. OVcate[high]',
-            ]
-        elif version == 12:
-            params_of_interest = [
-            # non‑hierarchical (group) parameters
-            't',
-            'v_Intercept',
-            'v_AttentionW',
-            'v_InattentionW:C(OVcate)[low]',
-            'v_InattentionW:C(OVcate)[medium]',
-            'v_InattentionW:C(OVcate)[high]',
-            'a_Intercept',
-            'a_C(OVcate)[low]',
-            'a_C(OVcate)[medium]',
-            'a_C(OVcate)[high]',
-            ]
+                'Boundary sep. (intercept)',
+                'Boundary sep. (medium)',
+                'Boundary sep. (high)',
+                'Non‐dec. time',
+                'Intercept drift rate',
+                'Drift AttentionW',
+                'Drift InattentionW (low)',
+                'Drift InattentionW (medium)',
+                'Drift InattentionW (high)',
+                ]
 
-            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
-
-            titles = [
-            'Non-dec. time',
-            'Intercept drift rate',
-            'Drift AttentionW',
-            'Drift InattentionW (low)',
-            'Drift InattentionW (medium)',
-            'Drift InattentionW (high)',
-            'Boundary sep. (intercept)',
-            'Boundary sep. (low)',
-            'Boundary sep. (medium)',
-            'Boundary sep. (high)',
-            ]
-        
         elif version == 13:
             params_of_interest = [
-            'a',
-            't_Intercept',
-            't_C(OVcate)[low]',
-            't_C(OVcate)[medium]',
-            't_C(OVcate)[high]',
-            'v_Intercept',
-            'v_AttentionW',
-            'v_InattentionW:C(OVcate)[low]',
-            'v_InattentionW:C(OVcate)[medium]',
-            'v_InattentionW:C(OVcate)[high]',
-            ]
-
-            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
-
+                'a',                         # constant boundary
+                't_Intercept',               # non-decision time intercept
+                't_C(OVcate)[medium]',
+                't_C(OVcate)[high]',
+                'v_Intercept',
+                'v_AttentionW',
+                'v_InattentionW:C(OVcate)[low]',
+                'v_InattentionW:C(OVcate)[medium]',
+                'v_InattentionW:C(OVcate)[high]',
+                ]
+            params_of_interest_s = [p + '_subj' for p in params_of_interest]
             titles = [
-            'Boundary sep.',
-            'Non dec. time (intercept)',
-            'Non dec. time (low)',
-            'Non dec. time (medium)',
-            'Non dec. time (high)',
-            'Intercept drift rate',
-            'Drift AttentionW',
-            'Drift InattentionW (low)',
-            'Drift InattentionW (medium)',
-            'Drift InattentionW (high)',
-            ]
+                'Boundary separation',
+                'Non dec. time (intercept)',
+                'Non dec. time (medium)',
+                'Non dec. time (high)',
+                'Intercept drift rate',
+                'Drift AttentionW',
+                'Drift InattentionW (low)',
+                'Drift InattentionW (medium)',
+                'Drift InattentionW (high)',
+                ]
 
     elif phase == 'EE':
         if version == 0:
