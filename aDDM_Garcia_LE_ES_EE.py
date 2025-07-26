@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 18      # defining version
+version = 17      # defining version
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -1471,8 +1471,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "v_Intercept",
                 "v_AttentionW",
                 "v_InattentionW",
-                "z(0)",
-                "z(1)",
+                "z_Intercept",
             ]
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
@@ -1481,8 +1480,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "Intercept drift rate",
                 "Drift AttentionW",
                 "Drift InattentionW",
-                "Starting point (stimulus=0)",
-                "Starting point (stimulus=1)",
+                "Starting point intercept",
             ]
 
         elif version == 18:
@@ -1495,8 +1493,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "v_InattentionW:C(OVcate)[low]",
                 "v_InattentionW:C(OVcate)[medium]",
                 "v_InattentionW:C(OVcate)[high]",
-                "z(0)",
-                "z(1)",
+                "z_Intercept",
             ]
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
@@ -1507,8 +1504,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "Drift InattentionW (low OVcate)",
                 "Drift InattentionW (medium OVcate)",
                 "Drift InattentionW (high OVcate)",
-                "Starting point (stimulus=0)",
-                "Starting point (stimulus=1)",
+                "Starting point Intercepts",
             ]
 
         elif version == 19:
