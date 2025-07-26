@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 12       # defining version
+version = 13       # defining version
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -1362,6 +1362,215 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Drift InattentionW (medium)',
                 'Drift InattentionW (high)',
                 ]
+            
+        elif version == 13:
+            # v only, but z depends on stimulus → include z(0), z(1)
+            params_of_interest = [
+                "a",
+                "t",
+                "v_Intercept",
+                "v_AttentionW",
+                "v_InattentionW:C(OVcate)[low]",
+                "v_InattentionW:C(OVcate)[medium]",
+                "v_InattentionW:C(OVcate)[high]",
+                "z(0)",
+                "z(1)",
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                "Boundary separation",
+                "Non‑decision time",
+                "Intercept drift rate",
+                "Drift AttentionW",
+                "Drift InattentionW (low OVcate)",
+                "Drift InattentionW (medium OVcate)",
+                "Drift InattentionW (high OVcate)",
+                "Starting point (stimulus=0)",
+                "Starting point (stimulus=1)",
+            ]
+
+        elif version == 14:
+            # v only, but z depends on chose_left → include z(0), z(1)
+            params_of_interest = [
+                "a",
+                "t",
+                "v_Intercept",
+                "v_AttentionW",
+                "v_InattentionW:C(OVcate)[low]",
+                "v_InattentionW:C(OVcate)[medium]",
+                "v_InattentionW:C(OVcate)[high]",
+                "z(0)",
+                "z(1)",
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                "Boundary separation",
+                "Non‑decision time",
+                "Intercept drift rate",
+                "Drift AttentionW",
+                "Drift InattentionW (low OVcate)",
+                "Drift InattentionW (medium OVcate)",
+                "Drift InattentionW (high OVcate)",
+                "Starting point (chose_left=0)",
+                "Starting point (chose_left=1)",
+            ]
+
+        elif version == 15:
+            # v only, but t depends on stimulus → include t(0), t(1)
+            params_of_interest = [
+                "a",
+                "t(0)",
+                "t(1)",
+                "v_Intercept",
+                "v_AttentionW",
+                "v_InattentionW:C(OVcate)[low]",
+                "v_InattentionW:C(OVcate)[medium]",
+                "v_InattentionW:C(OVcate)[high]",
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                "Boundary separation",
+                "Non‑decision time (stimulus=0)",
+                "Non‑decision time (stimulus=1)",
+                "Intercept drift rate",
+                "Drift AttentionW",
+                "Drift InattentionW (low OVcate)",
+                "Drift InattentionW (medium OVcate)",
+                "Drift InattentionW (high OVcate)",
+            ]
+
+        elif version == 16:
+            # v only, but t depends on chose_left → include t(0), t(1)
+            params_of_interest = [
+                "a",
+                "t(0)",
+                "t(1)",
+                "v_Intercept",
+                "v_AttentionW",
+                "v_InattentionW:C(OVcate)[low]",
+                "v_InattentionW:C(OVcate)[medium]",
+                "v_InattentionW:C(OVcate)[high]",
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                "Boundary separation",
+                "Non‑decision time (chose_left=0)",
+                "Non‑decision time (chose_left=1)",
+                "Intercept drift rate",
+                "Drift AttentionW",
+                "Drift InattentionW (low OVcate)",
+                "Drift InattentionW (medium OVcate)",
+                "Drift InattentionW (high OVcate)",
+            ]
+
+        elif version == 17:
+            # v ~ AttentionW + InattentionW, z linked to stimulus (0/1)
+            params_of_interest = [
+                "a",
+                "t",
+                "v_Intercept",
+                "v_AttentionW",
+                "v_InattentionW",
+                "z(0)",
+                "z(1)",
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                "Boundary separation",
+                "Non‑decision time",
+                "Intercept drift rate",
+                "Drift AttentionW",
+                "Drift InattentionW",
+                "Starting point (stimulus=0)",
+                "Starting point (stimulus=1)",
+            ]
+
+        elif version == 18:
+            # v ~ AttentionW + InattentionW:C(OVcate), z linked to stimulus
+            params_of_interest = [
+                "a",
+                "t",
+                "v_Intercept",
+                "v_AttentionW",
+                "v_InattentionW:C(OVcate)[low]",
+                "v_InattentionW:C(OVcate)[medium]",
+                "v_InattentionW:C(OVcate)[high]",
+                "z(0)",
+                "z(1)",
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                "Boundary separation",
+                "Non‑decision time",
+                "Intercept drift rate",
+                "Drift AttentionW",
+                "Drift InattentionW (low OVcate)",
+                "Drift InattentionW (medium OVcate)",
+                "Drift InattentionW (high OVcate)",
+                "Starting point (stimulus=0)",
+                "Starting point (stimulus=1)",
+            ]
+
+        elif version == 19:
+            # v ~ AttentionW + InattentionW:C(OVcate), z ~ 1 + C(OVcate)
+            params_of_interest = [
+                "a",
+                "t",
+                "v_Intercept",
+                "v_AttentionW",
+                "v_InattentionW:C(OVcate)[low]",
+                "v_InattentionW:C(OVcate)[medium]",
+                "v_InattentionW:C(OVcate)[high]",
+                "z_Intercept",
+                "z_C(OVcate)[low]",
+                "z_C(OVcate)[medium]",
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                "Boundary separation",
+                "Non‑decision time",
+                "Intercept drift rate",
+                "Drift AttentionW",
+                "Drift InattentionW (low OVcate)",
+                "Drift InattentionW (medium OVcate)",
+                "Drift InattentionW (high OVcate)",
+                "Starting point (intercept)",
+                "Starting point (low OVcate)",
+                "Starting point (medium OVcate)",
+            ]
+
+        elif version == 20:
+            # v ~ AttentionW + InattentionW:C(OVcate), z ~ 1 + C(OVcate), t ~ 1 + C(OVcate)
+            params_of_interest = [
+                "a",
+                "v_Intercept",
+                "v_AttentionW",
+                "v_InattentionW:C(OVcate)[low]",
+                "v_InattentionW:C(OVcate)[medium]",
+                "v_InattentionW:C(OVcate)[high]",
+                "z_Intercept",
+                "z_C(OVcate)[low]",
+                "z_C(OVcate)[medium]",
+                "t_Intercept",
+                "t_C(OVcate)[low]",
+                "t_C(OVcate)[medium]",
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                "Boundary separation",
+                "Intercept drift rate",
+                "Drift AttentionW",
+                "Drift InattentionW (low OVcate)",
+                "Drift InattentionW (medium OVcate)",
+                "Drift InattentionW (high OVcate)",
+                "Starting point (intercept)",
+                "Starting point (low OVcate)",
+                "Starting point (medium OVcate)",
+                "Non‑decision time (intercept)",
+                "Non‑decision time (low OVcate)",
+                "Non‑decision time (medium OVcate)",
+            ]
+
 
     elif phase == 'EE':
         if version == 0:
