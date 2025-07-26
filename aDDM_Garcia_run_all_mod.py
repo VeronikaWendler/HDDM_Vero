@@ -31,6 +31,8 @@ import arviz as az
 # -------------------------------------------------------------------------
 # patch: make a dummy _gdbm module so “import _gdbm” never fails
 import types, sys
+sys.modules.setdefault('winreg', types.ModuleType('winreg'))
+
 sys.modules.setdefault('_gdbm', types.ModuleType('_gdbm'))
 # -------------------------------------------------------------------------
 
@@ -143,7 +145,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 13
+start_version = 17
 started = False
 
 # dir
