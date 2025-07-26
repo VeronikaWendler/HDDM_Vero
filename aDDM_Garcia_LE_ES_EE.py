@@ -1518,8 +1518,8 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "v_InattentionW:C(OVcate)[medium]",
                 "v_InattentionW:C(OVcate)[high]",
                 "z_Intercept",
-                "z_C(OVcate)[low]",
-                "z_C(OVcate)[medium]",
+                "z_C(OVcate)[T.low]",
+                "z_C(OVcate)[T.medium]",
             ]
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
@@ -1545,11 +1545,11 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "v_InattentionW:C(OVcate)[medium]",
                 "v_InattentionW:C(OVcate)[high]",
                 "z_Intercept",
-                "z_C(OVcate)[low]",
-                "z_C(OVcate)[medium]",
+                "z_C(OVcate)[T.low]",
+                "z_C(OVcate)[T.medium]",
                 "t_Intercept",
-                "t_C(OVcate)[low]",
-                "t_C(OVcate)[medium]",
+                "t_C(OVcate)[T.low]",
+                "t_C(OVcate)[T.medium]",
             ]
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
