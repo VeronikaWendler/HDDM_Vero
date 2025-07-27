@@ -1280,8 +1280,8 @@ def run_version_14():
     })
     
     df_combined_OV = pd.DataFrame(rows_OV, columns=["Parameter", "Group-level", "Med-Low", "High-Low", "High-Med", "Stim zS-zE"])
-    df_combined_OV.to_csv(
-        os.path.join(FIG_DIR, "combined_parameter_comparison_table_ES_garcia_m5.csv"),index=False)    print("OV Combined Parameter Comparison Table:")
+    df_combined_OV.to_csv(os.path.join(FIG_DIR, "combined_parameter_comparison_table_ES_garcia_m5.csv"),index=False)
+    print("OV Combined Parameter Comparison Table:")
     print(df_combined_OV)
     
 ################################### for LEESEE phase differences ##############################################################################
