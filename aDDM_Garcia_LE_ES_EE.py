@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 20      # defining version
+version = 21      # defining version
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -1593,7 +1593,45 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "Starting‐point intercept",
                 "First‐fixation bias",
                 ]
-
+            
+        elif version == 22:
+            params_of_interest = [
+                "v_Intercept",
+                "v_AttentionW",
+                "v_InattentionW:C(OVcate)[low]",
+                "v_InattentionW:C(OVcate)[medium]",
+                "v_InattentionW:C(OVcate)[high]",
+                "a_Intercept",
+                "a_C(OVcate)[low]",
+                "a_C(OVcate)[medium]",
+                "a_C(OVcate)[high]",
+                "t_Intercept",
+                "t_C(OVcate)[low]",
+                "t_C(OVcate)[medium]",
+                "t_C(OVcate)[high]",
+                "z(0)",
+                "z(1)",
+                ]
+            
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            
+            titles = [
+                "Drift intercept",
+                "Drift AttentionW",
+                "Drift InattentionW (low OV)",
+                "Drift InattentionW (med OV)",
+                "Drift InattentionW (high OV)",
+                "Boundary sep. intercept",
+                "Boundary sep. (low OV)",
+                "Boundary sep. (med OV)",
+                "Boundary sep. (high OV)",
+                "NDT intercept",
+                "NDT (low OV)",
+                "NDT (med OV)",
+                "NDT (high OV)",
+                "Starting point (stimulus=0)",
+                "Starting point (stimulus=1)",
+                ]
 
     elif phase == 'EE':
         if version == 0:
