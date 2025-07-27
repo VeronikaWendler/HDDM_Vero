@@ -1116,7 +1116,14 @@ def run_version_2_b():
     print("Model 5 Combined Parameter Comparison Table (ESEE):")
     print(df_combined_m5)
     
+
 import os
+print("ENV SHARED_SCRATCH =", os.environ.get("SHARED_SCRATCH"))
+print("Root dirs: ", os.listdir("/"))
+# If you suspect it might be under /home, /scratch, /shared:
+for cand in ["/home", "/scratch", "/shared", "/home/u04vw21"]:
+    if os.path.isdir(cand):
+        print(f"{cand} →", os.listdir(cand)[:10])
 
 def run_version_14():
     #---------------------------------------------------------------------------------------------------------------
