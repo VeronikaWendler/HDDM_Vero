@@ -121,8 +121,8 @@ def make_z_link(full_stimulus_vector):
 ##
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
-nr_samples      = 1000      # samples per chain - do 11000 but for now for a quick one we do 600
-parallel        = True     # parallel
+nr_samples      = 600       # samples per chain - do 11000 but for now for a quick one we do 600
+parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
     "LE":      ["LE_1","LE_2","LE_3","LE_4"],     #"LE_5","LE_6","LE_7"
@@ -131,21 +131,23 @@ model_versions  = {
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
     "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5"],
+    "ES_quad": ["ES_quad_1"]
 }
 
 
 PHASE_TO_SOURCE = {
-    "ES_ZBIAS": "ES",     
+    "ES_ZBIAS": "ES", 
+    "ES_quad": "ES",    
 }
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["ES"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","EE", "ESEE", "LEESEE"}                 # ignored this phase
+PHASE_RUN_ORDER = ["ES_quad"]                                         # order
+SKIP_PHASES     = {"LE","ES_ZBIAS","EE","ES", "ESEE", "LEESEE"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "ES"
-start_version = 17
+start_phase = "ES_quad"
+start_version = 0
 started = False
 
 # dir
@@ -208,7 +210,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=1000, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -632,18 +634,18 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
         if version == 0:
             v_reg = {'model':'v ~ 1 + DTA + DTA2', 'link_func': lambda x:x}
             reg_descr = [v_reg]
-        
+
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     depends_on=depends_on, 
                                     p_outlier=.05, 
-                                    include=['a', 't', 'v'],
+                                    include=['a', 't', 'v', 'z'],
                                     group_only_regressors=False,
                                     keep_regressor_trace=True
                                     )
         m.find_starting_values()
         infdata = m.sample(samples,
-                   burn=1000,
+                   burn=100,
                    dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                    db='pickle',
                    return_infdata=True, loglike=True, ppc=True)
@@ -659,7 +661,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=1000,
+                         samples=600,
                          n_jobs=3,
                          run=True,
                          parallel=True,
