@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 0      # defining version
+version = 1      # defining version
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES_quad']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -2173,6 +2173,32 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Linear DTA drift',
             'Quadratic DTA drift',
             ]       
+                    
+        elif version == 1:
+            # v only, but z depends on stimulus → include z(0), z(1)
+            params_of_interest = [
+                "a",
+                "t",
+                "v_Intercept",
+                "v_ES_AttentionW",
+                "v_ES_InattentionW:C(OVcate)[low]",
+                "v_ES_InattentionW:C(OVcate)[medium]",
+                "v_ES_InattentionW:C(OVcate)[high]",
+                "z(0)",
+                "z(1)",
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                "Boundary separation",
+                "Non‑decision time",
+                "Intercept drift rate",
+                "Drift ES_AttentionW",
+                "Drift ES_InattentionW (low OVcate)",
+                "Drift ES_ESInattentionW (medium OVcate)",
+                "Drift ES_InattentionW (high OVcate)",
+                "Starting point (stimulus=0)",
+                "Starting point (stimulus=1)",
+            ]
             
     # diagnistics
     diag_dir = Path(fig_dir) / "diagnostics"
