@@ -364,7 +364,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             a_reg = {'model': 'a ~ 1 + C(OVcate)', 'link_func': lambda x: x}
             t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
+            reg_descr = [v_reg,a_reg,t_reg]
             depends_on={'z': 'stimulus'} 
         else:
             raise ValueError(f"check version {version} ??")
