@@ -24,4 +24,4 @@ export MPLBACKEND=Agg
 singularity exec \
     --bind ${PROJECT}:/workspace \
     ${IMAGE} \
-    python /workspace/CCT_MAP_Garcia.py
+    python /workspace/aDDM_Garcia_run_all_mod.py
