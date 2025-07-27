@@ -147,7 +147,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 21
+start_version = 20
 started = False
 
 # dir
