@@ -353,6 +353,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link}
             t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg, z_reg, t_reg]
+        elif version == 21:  # m5 non-fixated options weights varies by OV level and non-dec. time
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            z_reg = {'model': 'z ~ FirstFix_Left', 'link_func': lambda x: x}
+            reg_descr = [v_reg, z_reg]
         else:
             raise ValueError(f"check version {version} ??")
         

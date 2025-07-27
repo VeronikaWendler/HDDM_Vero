@@ -1120,12 +1120,13 @@ def run_version_14():
     #---------------------------------------------------------------------------------------------------------------
     # Version 1: OV-modulated models (high, medium, low)
     # load and combine OV model files (set which model)
-    model_paths_OV = [
-        "/home/u04vw21/sharedscratch/HDDM_Vero/models_dir_garcia/garcia_replication_ES_14_2.pkl",
-        "/home/u04vw21/sharedscratch/HDDM_Vero/models_dir_garcia/garcia_replication_ES_14_1.pkl",
-        "/home/u04vw21/sharedscratch/HDDM_Vero/models_dir_garcia/garcia_replication_ES_14_0.pkl",
-    ]
-    
+    SCRATCH = os.environ.get("SHARED_SCRATCH", "/sharedscratch") 
+    MODELS_DIR = os.path.join(SCRATCH, "HDDM_Vero", "models_dir_garcia")
+model_paths_OV = [ os.path.join(MODELS_DIR, fn) for fn in (
+    "garcia_replication_ES_14_2.pkl",
+    "garcia_replication_ES_14_1.pkl",
+    "garcia_replication_ES_14_0.pkl") ]
+
     models_OV = []
     for path in model_paths_OV:
         with open(path, "rb") as f:
