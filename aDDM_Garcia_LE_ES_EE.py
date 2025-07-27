@@ -69,10 +69,10 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 1      # defining version
+version = 20      # defining version
 run = False        # if True, the the models run, if False the models load
 
-phase = ['ES_quad']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
+phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
 
 # Determines whether to use a single phase or the combined ESEE model
 if set(phase) == {'ES', 'EE'}:
@@ -101,7 +101,7 @@ model_base_name = "garcia_replication_"
 
 model_versions = {
     'LE': ['LE_1', 'LE_2', 'LE_3', 'LE_4', 'LE_5', 'LE_6', 'LE_7'],
-    'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4','ES_5', 'ES_6', 'ES_7', 'ES_8', 'ES_9', 'ES_10', 'ES_11','ES_12', 'ES_13', 'ES_14', 'ES_15', 'ES_16', 'ES_17', 'ES_18', 'ES_19','ES_20'],   
+    'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4','ES_5', 'ES_6', 'ES_7', 'ES_8', 'ES_9', 'ES_10', 'ES_11','ES_12', 'ES_13', 'ES_14', 'ES_15', 'ES_16', 'ES_17', 'ES_18', 'ES_19','ES_20', 'ES_21'],   
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
     'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5'],
@@ -1568,6 +1568,31 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "Non‑decision time (low OVcate)",
                 "Non‑decision time (medium OVcate)",
             ]
+        elif version == 21:
+            params_of_interest = [
+                "a",                                   
+                "t",                                   
+                "v_Intercept",                        
+                "v_AttentionW",                        
+                "v_InattentionW:C(OVcate)[low]",       
+                "v_InattentionW:C(OVcate)[medium]",    
+                "v_InattentionW:C(OVcate)[high]",      
+                "z_Intercept",                         
+                "z_FirstFix_Left",                    
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+                        
+            titles = [
+                "Boundary sep. (a)",
+                "Non‐dec. time (t)",
+                "Drift intercept",
+                "Drift AttentionW",
+                "Drift InattentionW (low OV)",
+                "Drift InattentionW (medium OV)",
+                "Drift InattentionW (high OV)",
+                "Starting‐point intercept",
+                "First‐fixation bias",
+                ]
 
 
     elif phase == 'EE':
