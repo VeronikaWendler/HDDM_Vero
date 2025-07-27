@@ -1116,13 +1116,15 @@ def run_version_2_b():
     print("Model 5 Combined Parameter Comparison Table (ESEE):")
     print(df_combined_m5)
     
+import os
+
 def run_version_14():
     #---------------------------------------------------------------------------------------------------------------
     # Version 1: OV-modulated models (high, medium, low)
     # load and combine OV model files (set which model)
     SCRATCH = os.environ.get("SHARED_SCRATCH", "/sharedscratch") 
     MODELS_DIR = os.path.join(SCRATCH, "HDDM_Vero", "models_dir_garcia")
-model_paths_OV = [ os.path.join(MODELS_DIR, fn) for fn in (
+    model_paths_OV = [ os.path.join(MODELS_DIR, fn) for fn in (
     "garcia_replication_ES_14_2.pkl",
     "garcia_replication_ES_14_1.pkl",
     "garcia_replication_ES_14_0.pkl") ]
