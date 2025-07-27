@@ -634,6 +634,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         if version == 0:
             v_reg = {'model':'v ~ 1 + DTA + DTA2', 'link_func': lambda x:x}
             reg_descr = [v_reg]
+        elif version == 1:  # m5 non-fixated options weights varies by OV level and non-dec. time
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'z': 'stimulus'} 
 
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
