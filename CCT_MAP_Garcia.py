@@ -1118,23 +1118,23 @@ def run_version_2_b():
     
 
 import os
-print("ENV SHARED_SCRATCH =", os.environ.get("SHARED_SCRATCH"))
-print("Root dirs: ", os.listdir("/"))
-# If you suspect it might be under /home, /scratch, /shared:
-for cand in ["/home", "/scratch", "/shared", "/home/u04vw21"]:
-    if os.path.isdir(cand):
-        print(f"{cand} →", os.listdir(cand)[:10])
+import os
+
+# inside the container /workspace == /home/u04vw21/sharedscratch/HDDM_Vero on the host
+PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
 
 def run_version_14():
     #---------------------------------------------------------------------------------------------------------------
     # Version 1: OV-modulated models (high, medium, low)
     # load and combine OV model files (set which model)
-    SCRATCH = os.environ.get("SHARED_SCRATCH", "/sharedscratch") 
-    MODELS_DIR = os.path.join(SCRATCH, "HDDM_Vero", "models_dir_garcia")
-    model_paths_OV = [ os.path.join(MODELS_DIR, fn) for fn in (
-    "garcia_replication_ES_14_2.pkl",
-    "garcia_replication_ES_14_1.pkl",
-    "garcia_replication_ES_14_0.pkl") ]
+    MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_garcia")
+    model_paths_OV = [
+        os.path.join(MODELS_DIR, "garcia_replication_ES_14_2.pkl"),
+        os.path.join(MODELS_DIR, "garcia_replication_ES_14_1.pkl"),
+        os.path.join(MODELS_DIR, "garcia_replication_ES_14_0.pkl"),
+        ]
+
+   
 
     models_OV = []
     for path in model_paths_OV:
@@ -1198,7 +1198,11 @@ def run_version_14():
         group_results_OV["HDI_upper"].append(stats.mstats.mquantiles(trace, [0.975])[0])
     
     df_group_OV = pd.DataFrame(group_results_OV)
-    df_group_OV.to_csv("/home/u04vw21/sharedscratch/HDDM_Vero/figures_dir_garcia/garcia_replication_ES_14/group_level_MAP_table_ES_garcia_m14.csv", index=False)
+    FIG_DIR = os.path.join(PROJECT_DIR, "figures_dir_garcia", "garcia_replication_ES_14")
+    os.makedirs(FIG_DIR, exist_ok=True)
+    
+    df_group_OV.to_csv(
+        os.path.join(FIG_DIR, "group_level_MAP_table_ES_garcia_m14.csv"),index=False)
     print("group-level parameter estimates:")
     print(df_group_OV)
     
@@ -1276,8 +1280,8 @@ def run_version_14():
     })
     
     df_combined_OV = pd.DataFrame(rows_OV, columns=["Parameter", "Group-level", "Med-Low", "High-Low", "High-Med", "Stim zS-zE"])
-    df_combined_OV.to_csv("/home/u04vw21/sharedscratch/HDDM_Vero/figures_dir_garcia/garcia_replication_ES_14/combined_parameter_comparison_table_ES_garcia_m5.csv", index=False)
-    print("OV Combined Parameter Comparison Table:")
+    df_combined_OV.to_csv(
+        os.path.join(FIG_DIR, "combined_parameter_comparison_table_ES_garcia_m5.csv"),index=False)    print("OV Combined Parameter Comparison Table:")
     print(df_combined_OV)
     
 ################################### for LEESEE phase differences ##############################################################################
