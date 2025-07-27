@@ -627,8 +627,29 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
         print("[DEBUG] z absent from posterior - confirmed fixed.")
 
         return m, infdata
+    
+    elif phase == 'ES_quad':
+        if version == 0:
+            v_reg = {'model':'v ~ 1 + DTA + DTA2', 'link_func': lambda x:x}
+            reg_descr = [v_reg]
         
+        m = hddm.models.HDDMRegressor(data, 
+                                    reg_descr,
+                                    depends_on=depends_on, 
+                                    p_outlier=.05, 
+                                    include=['a', 't', 'v'],
+                                    group_only_regressors=False,
+                                    keep_regressor_trace=True
+                                    )
+        m.find_starting_values()
+        infdata = m.sample(samples,
+                   burn=1000,
+                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                   db='pickle',
+                   return_infdata=True, loglike=True, ppc=True)
 
+        return m, infdata
+    
 ###############################################################################################################    
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1700,7 +1721,8 @@ if __name__ == "__main__":
             data                = data[data["rt"] > 0.250]
             # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
             # ------------------------------------------------------------------
-            if phase == "ES_ZBIAS":
+            if phase in ("ES_ZBIAS", "ES_quad"):
+
                 data["response"] = pd.to_numeric(data["chose_left"], errors="coerce")
                 print("[ZBIAS DEBUG] head of response mapping:")
                 print(data[["chose_left","corr","response"]].head(5).to_string(index=False))
@@ -1728,6 +1750,10 @@ if __name__ == "__main__":
             data["ES_InattentionW"]= pd.to_numeric(data["ES_InattentionW"],errors="coerce")
             data["subj_idx"]    = data["sub_id"]
             data["stimulus"] = pd.to_numeric(data["stimulus"], errors="coerce")
+            data["DTA"] = pd.to_numeric(data["DTA"],errors="coerce")
+            data["DTA2"] = pd.to_numeric(data["DTA2"],errors="coerce")
+
+            
 
             data = data[~data["subj_idx"].isin({1,4,5,6,14,99})]
             data = data.dropna(subset=["rt",
@@ -1743,7 +1769,9 @@ if __name__ == "__main__":
                                        "ES_AttentionW",
                                        "ES_InattentionW",
                                        "stimulus",
-                                       "chose_left"])
+                                       "chose_left",
+                                       "DTA",
+                                       "DTA2"])
 
             # put this near the top of the file, right after you finish preparing `data_full`
 
