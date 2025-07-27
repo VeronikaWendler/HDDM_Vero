@@ -69,10 +69,10 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 20      # defining version
+version = 0      # defining version
 run = False        # if True, the the models run, if False the models load
 
-phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
+phase = ['ES_quad']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
 
 # Determines whether to use a single phase or the combined ESEE model
 if set(phase) == {'ES', 'EE'}:
@@ -106,6 +106,7 @@ model_versions = {
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
     'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5'],
     "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5"],
+    "ES_quad": ["ES_quad_1"],
 }
 
 # debugging, tip, python starts at 0, unlike Matlab
@@ -114,6 +115,7 @@ if phase not in model_versions:
 
 PHASE_TO_SOURCE = {
     "ES_ZBIAS": "ES",     
+    "ES_quad": "ES",
 }
 
 model_name = model_versions[phase][version]
@@ -2143,7 +2145,34 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Drift ES_InattentionW:C(OVcate)[medium]',
             'Drift ES_InattentionW:C(OVcate)[high]',
             ]
-        
+    elif phase == 'ES_quad':
+        if version == 0:          # v ~ 1 + DTA + DTA²
+            params_of_interest = [
+            'a',              # boundary separation
+            't',              # non‑decision time
+            'z',              # starting point (stimulus‑coded)
+            'v_Intercept',    # drift intercept (β0)
+            'v_DTA',          # linear DTA weight (β1)
+            'v_DTA2',         # quadratic DTA weight (β2)
+            ]
+            
+            params_of_interest_s = [
+            'a_subj',
+            't_subj',
+            'z_subj',
+            'v_Intercept_subj',
+            'v_DTA_subj',
+            'v_DTA2_subj',
+            ]
+            
+            titles = [
+            'Boundary sep.',
+            'Non‑dec. time',
+            'Starting point',
+            'Intercept drift',
+            'Linear DTA drift',
+            'Quadratic DTA drift',
+            ]       
             
     # diagnistics
     diag_dir = Path(fig_dir) / "diagnostics"
