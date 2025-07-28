@@ -110,7 +110,7 @@ def make_z_link(full_stimulus_vector):
 # V_sub = value of the worse option
 
 # Importantly, this is now for the regression models where we are interested in the z bias towards E and a drift formula similar to Sebastian's matlab code, see below:
-# the Sebastian drift rate regression - p1 is value on the left and p2 is value on the right ...this is how we get teh attntional and inattentional parameters..
+# the Sebastian drift rate regression - p1 is value on the left (E value) and p2 (S value) is value on the right ...this is how we get teh attntional and inattentional parameters..
 # v = b0 + b1(PropDwell_Right * p2 - PropDwell_Left * p1) + b2(PropDwell_Right* p1 - PropDwell_Left*p2) + e
 
 # now instead of gaze_aligned vs gaze_missaligned I want some sort of more precice definition... we know:
@@ -131,7 +131,7 @@ parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
     "LE":      ["LE_1","LE_2","LE_3","LE_4"],     #"LE_5","LE_6","LE_7"
-    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25"],
+    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26"],
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
@@ -152,7 +152,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 24
+start_version = 25
 started = False
 
 # dir
@@ -382,6 +382,19 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             t_reg = {'model': 't ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg, t_reg]
+        elif version == 25:  # m5 non-fixated options weights varies by OV level and non-dec. time
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'t': 'OVcate',
+                        'a': 'OVcate'} 
+        elif version == 26:
+            v_reg = {'model': 'v ~ 1 + val_diff + DwellPropAdvantage + gaze_quad', 'link_func': lambda x: x}
+            a_reg = {'model': 'a ~ 1 + abs_DwellPropAdv:C(OVcate)', 'link_func': lambda x: x }
+            reg_descr = [v_reg, a_reg]
+        elif version == 27:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            a_reg = {'model': 'a ~ 1 + AttentionW:C(OVcate) + InattentionW', 'link_func': lambda x: x}
+            reg_descr [v_reg, a_reg]
         else:
             raise ValueError(f"check version {version} ??")
         

@@ -88,6 +88,14 @@ data['DTA']   = data['PropDwell_Right'] - data['PropDwell_Left']
 data['DTA2']  = data['DTA'] ** 2
 data['absDTA']= np.abs(data['DTA'])
 
+data["val_diff"] = data["V_corr"] - data["V_sub"]
+data['resp']  = (data['chose_left'] == data['stimulus']).astype(int)
+data['val_diff'] *= data['resp'].map({1: 1, 0: -1})
+
+data["abs_DwellPropAdv"]   = data['DwellPropAdvantage'].abs()
+data["gaze_quad"]  = data["DwellPropAdvantage"]**2
+
+
 
 data.to_csv(
     "C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/"
