@@ -1794,8 +1794,10 @@ if __name__ == "__main__":
             data["stimulus"] = pd.to_numeric(data["stimulus"], errors="coerce")
             data["DTA"] = pd.to_numeric(data["DTA"],errors="coerce")
             data["DTA2"] = pd.to_numeric(data["DTA2"],errors="coerce")
-
-            
+            data["val_diff"] = pd.to_numeric(data["val_diff"],errors="coerce")
+            data["DwellPropAdvantage"] = pd.to_numeric(data["DwellPropAdvantage"],errors="coerce")
+            data["gaze_quad"] = pd.to_numeric(data["gaze_quad"],errors="coerce")
+            data["abs_DwellPropAdv"] = pd.to_numeric(data["abs_DwellPropAdv"],errors="coerce")
 
             data = data[~data["subj_idx"].isin({1,4,5,6,14,99})]
             data = data.dropna(subset=["rt",
@@ -1813,7 +1815,11 @@ if __name__ == "__main__":
                                        "stimulus",
                                        "chose_left",
                                        "DTA",
-                                       "DTA2"])
+                                       "DTA2",
+                                       "val_diff",
+                                       "DwellPropAdvantage",
+                                       "gaze_quad",
+                                       "abs_DwellPropAdv"])
 
             # put this near the top of the file, right after you finish preparing `data_full`
 
