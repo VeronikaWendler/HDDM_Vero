@@ -125,13 +125,13 @@ def make_z_link(full_stimulus_vector):
 #data['ES_InattentionW'] = data['ES_InattentionW'].round(3)
 ##
 # hard-coded 
-nr_models       = 5         # number of MCMC chains
-nr_samples      = 6000       # samples per chain - do 11000 but for now for a quick one we do 600
+nr_models       = 3         # number of MCMC chains
+nr_samples      = 1000       # samples per chain - do 11000 but for now for a quick one we do 600
 parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
     "LE":      ["LE_1","LE_2","LE_3","LE_4"],     #"LE_5","LE_6","LE_7"
-    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24"],
+    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25"],
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
@@ -152,7 +152,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 23
+start_version = 24
 started = False
 
 # dir
@@ -378,6 +378,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg,a_reg,t_reg]
             depends_on={'z': 'stimulus'} 
+        elif version == 24:  # m5 non-fixated options weights varies by OV level and non-dec. time
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            t_reg = {'model': 't ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg, t_reg]
         else:
             raise ValueError(f"check version {version} ??")
         
@@ -404,7 +408,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
         
         m.find_starting_values()
         infdata = m.sample(samples,
-                   burn=1000,
+                   burn=100,
                    dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                    db='pickle',
                    return_infdata=True, loglike=True, ppc=True)
@@ -684,8 +688,8 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=6000,
-                         n_jobs=5,
+                         samples=1000,
+                         n_jobs=3,
                          run=True,
                          parallel=True,
                          model_name='model',
