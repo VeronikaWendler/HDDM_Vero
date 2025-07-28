@@ -113,6 +113,11 @@ def make_z_link(full_stimulus_vector):
 # the Sebastian drift rate regression - p1 is value on the left and p2 is value on the right ...this is how we get teh attntional and inattentional parameters..
 # v = b0 + b1(PropDwell_Right * p2 - PropDwell_Left * p1) + b2(PropDwell_Right* p1 - PropDwell_Left*p2) + e
 
+# now instead of gaze_aligned vs gaze_missaligned I want some sort of more precice definition... we know:
+#1. the longer gaze is spent on either option the lower accurcy - strange but true 
+# so approx. equal gaze and short gaze as well as short RT increases accuracy
+
+
 # created these new columns
 #data['ES_AttentionW'] = (data['PropDwell_Right'] * data['p2']) - (data['PropDwell_Left'] * data['p1'])
 #data['ES_InattentionW'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwell_Right'] * data['p1'])
