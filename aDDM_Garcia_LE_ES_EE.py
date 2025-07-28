@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 23     # defining version
+version = 26     # defining version
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -101,7 +101,7 @@ model_base_name = "garcia_replication_"
 
 model_versions = {
     'LE': ['LE_1', 'LE_2', 'LE_3', 'LE_4', 'LE_5', 'LE_6', 'LE_7'],
-    'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4','ES_5', 'ES_6', 'ES_7', 'ES_8', 'ES_9', 'ES_10', 'ES_11','ES_12', 'ES_13', 'ES_14', 'ES_15', 'ES_16', 'ES_17', 'ES_18', 'ES_19','ES_20', 'ES_21', "ES_22", "ES_23", "ES_24", "ES_25"],   
+    'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4','ES_5', 'ES_6', 'ES_7', 'ES_8', 'ES_9', 'ES_10', 'ES_11','ES_12', 'ES_13', 'ES_14', 'ES_15', 'ES_16', 'ES_17', 'ES_18', 'ES_19','ES_20', 'ES_21', "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27"],   
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
     'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5'],
@@ -1662,6 +1662,34 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "Starting point (stimulus=0)",
                 "Starting point (stimulus=1)",
                 ]
+            
+        elif version == 24:
+            print("Hello")
+        elif version == 25:
+            print("HEllo")
+        elif version == 26:
+            params_of_interest = [
+                "v_Intercept",
+                "v_val_diff",
+                "v_DwellPropAdvantage",
+                "v_gaze_quad",
+                "a_Intercept",
+                "a_abs_DwellPropAdv:C(OVcate)[low]",
+                "a_abs_DwellPropAdv:C(OVcate)[medium]",
+                "a_abs_DwellPropAdv:C(OVcate)[high]",
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                "Drift intercept",
+                "Drift val_diff",
+                "Drift DwellPropAdvantage",
+                "Drift gaze_quad",
+                "Boundary sep. intercept",
+                "Boundary sep. · abs DwellPropAdv (low OV)",
+                "Boundary sep. · abs DwellPropAdv (med OV)",
+                "Boundary sep. · abs DwellPropAdv (high OV)",
+                ]
+
 
     elif phase == 'EE':
         if version == 0:
