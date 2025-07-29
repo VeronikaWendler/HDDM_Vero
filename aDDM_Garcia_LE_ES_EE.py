@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 26    # defining version
+version = 25    # defining version
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -1664,9 +1664,60 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 ]
             
         elif version == 24:
-            print("Hello")
+            params_of_interest = [
+                "a",
+                "t_Intercept",
+                "t_AttentionW",
+                "t_InattentionW:C(OVcate)[low]",
+                "t_InattentionW:C(OVcate)[medium]",
+                "t_InattentionW:C(OVcate)[high]",
+                "v_Intercept",
+                "v_AttentionW",
+                "v_InattentionW:C(OVcate)[low]",
+                "v_InattentionW:C(OVcate)[medium]",
+                "v_InattentionW:C(OVcate)[high]",
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            
+            titles = [
+                "Boundary sep.",
+                "Non‑dec time (intercept)",
+                "Non‑dec time – AttentionW",
+                "Non‑dec time – InattentionW (low OV)",
+                "Non‑dec time – InattentionW (med OV)",
+                "Non‑dec time – InattentionW (high OV)",
+                "Intercept drift rate",
+                "Drift – AttentionW",
+                "Drift – InattentionW (low OV)",
+                "Drift – InattentionW (med OV)",
+                "Drift – InattentionW (high OV)",
+                ]
+
         elif version == 25:
-            print("HEllo")
+            params_of_interest = [
+                "a(low)", "a(medium)", "a(high)",
+                "t(low)", "t(medium)", "t(high)",
+                "v_Intercept",
+                "v_AttentionW",
+                "v_InattentionW:C(OVcate)[low]",
+                "v_InattentionW:C(OVcate)[medium]",
+                "v_InattentionW:C(OVcate)[high]",
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                "Boundary sep. (low OV)", 
+                "Boundary sep. (med OV)", 
+                "Boundary sep. (high OV)",
+                "Non-dec time (low OV)", 
+                "Non-dec time (med OV)", 
+                "Non-dec time (high OV)",
+                "Intercept drift rate", 
+                "Drift – AttentionW",
+                "Drift – InattentionW (low OV)", 
+                "Drift – InattentionW (med OV)", 
+                "Drift – InattentionW (high OV)",
+                ]
+            
         elif version == 26:
             params_of_interest = [
                 "v_Intercept",
@@ -1968,7 +2019,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Drift AttentionW',
             'Drift InattentionW:C(phase)[ES]',
             'Drift InattentionW:C(phase)[EE]',
-            ]
+            ],
             
             
     elif phase == 'LEESEE':
