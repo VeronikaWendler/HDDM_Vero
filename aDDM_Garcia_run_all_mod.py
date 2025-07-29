@@ -152,7 +152,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 26
+start_version = 27
 started = False
 
 # dir
@@ -392,9 +392,9 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             a_reg = {'model': 'a ~ 1 + abs_DwellPropAdv:C(OVcate)', 'link_func': lambda x: x }
             reg_descr = [v_reg, a_reg]
         elif version == 27:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            a_reg = {'model': 'a ~ 1 + AttentionW:C(OVcate) + InattentionW', 'link_func': lambda x: x}
-            reg_descr [v_reg, a_reg]
+            v_reg = {'model': 'v ~ 1 + val_diff + DwellPropAdvantage + gaze_quad + abs_DwellPropAdv:C(OVcate)', 'link_func': lambda x: x}
+            t_reg = {'model': 't ~ 1 + abs_DwellPropAdv:C(OVcate)', 'link_func': lambda x: x }
+            reg_descr = [v_reg, t_reg]
         else:
             raise ValueError(f"check version {version} ??")
         
