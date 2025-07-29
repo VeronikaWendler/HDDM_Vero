@@ -25,3 +25,4 @@ singularity exec \
     --bind ${PROJECT}:/workspace \
     ${IMAGE} \
     python /workspace/aDDM_Garcia_run_all_mod.py
+
