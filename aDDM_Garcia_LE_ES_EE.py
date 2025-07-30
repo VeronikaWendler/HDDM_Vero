@@ -1747,9 +1747,9 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "v_val_diff",
                 "v_DwellPropAdvantage",
                 "v_gaze_quad",
-                "v_abs_DwellPropAdv:C(OVcate)[low]"
-                "v_abs_DwellPropAdv:C(OVcate)[medium]"
-                "v_abs_DwellPropAdv:C(OVcate)[high]"
+                "v_abs_DwellPropAdv:C(OVcate)[low]",
+                "v_abs_DwellPropAdv:C(OVcate)[medium]",
+                "v_abs_DwellPropAdv:C(OVcate)[high]",
                 "t_Intercept",
                 "t_abs_DwellPropAdv:C(OVcate)[low]",
                 "t_abs_DwellPropAdv:C(OVcate)[medium]",
@@ -1757,7 +1757,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 ]
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
-                "Boundary sep."
+                "Boundary sep.",
                 "Drift intercept",
                 "Drift val_diff",
                 "Drift DwellPropAdvantage",
