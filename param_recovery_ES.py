@@ -176,8 +176,8 @@ def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
     param_df['subj_idx'] = param_df['subj_idx'].astype(int)
 
     if half_a:
-        param_df.loc[param_df['param'] == 'a',
-                        col_values] = param_df.loc[param_df['param'] == 'a',
+        param_df.loc[param_df['param'] == 'a_Intercept',
+                        col_values] = param_df.loc[param_df['param'] == 'a_Intercept',
                                                 col_values] / 2
 
     param_df = param_df.pivot(
@@ -208,8 +208,8 @@ print(summary_df.columns.tolist())
 data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
 df_ind_summary = data_ES_27.groupby(['subj_idx','OVcate'])['rt'].describe().reset_index()
 df_ind_summary = df_ind_summary.set_index('subj_idx').join(
-     az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx']).set_index('subj_idx')
-     ).reset_index()
+    az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx']).set_index('subj_idx')
+    ).reset_index()
 df_ind_summary.head()
 
 print(es27_infdata.groups())
@@ -231,6 +231,7 @@ print(group_params.index.tolist())
 # SIMULATION 
 #---------------------------------------------------------------------------------------------------------------------------------------------
 
+
 group_params = az.summary(es27_infdata, var_names=['~subj', '~std'], filter_vars='regex')
 subject_params = az_summary(es27_infdata)['mean']
 
@@ -240,20 +241,23 @@ sim_data = pd.DataFrame()
 for i, j in df_ind_summary.groupby(['subj_idx', 'OVcate']):
     subj, ov = i  # unpack for readability
 
-    a_val = j["a"].iloc[0]
-    t_val = j[f"t({ov})"].iloc[0]
+    t_val     = j["t"].iloc[0]
+    v_int     = j["v_Intercept"].iloc[0]
+    v_vald    = j["v_val_diff"].iloc[0]
+    v_DwellPA = j["v_DwellPropAdvantage"].iloc[0]
+    v_gquad   = j["v_gaze_quad"].iloc[0]
+    a_val     = j["a_Intercept"].iloc[0]
+    a_DwellPAov   = j[f"a_abs_DwellPropAdv:C(OVcate)[{ov}]"].iloc[0]
 
-    v_int = j["v_Intercept"].iloc[0]
-    v_att = j["v_AttentionW"].iloc[0]
-    v_inatt = j[f"v_InattentionW:C(OVcate)[{ov}]"].iloc[0]
-
-    v = v_int + v_att + v_inatt  # NO trial-level multipliers
+    v = v_int + v_vald + v_DwellPA + v_gquad                                                  # NO trial-level multipliers
+    bound = a_val + a_DwellPAov
     n_trials = int(j["count"].iloc[0])
+    
 
     data, params = hddm.generate.gen_rand_data(
         {
             "v": v,
-            "a": a_val,
+            "a": bound,
             "t": t_val
         },
         size=n_trials,  # same number of trials as in real data
@@ -302,9 +306,9 @@ def run_sampling(model, model_db_name, progress_bar=True):
         return model, result
 
 # model specification (best fitting OV-modulated Inattention and t model)
-v_reg = {'model': 'v ~ 1 + AttentionW:C(OVcate) + InattentionW', 'link_func': lambda x: x}
-reg_descr = [v_reg]
-depends_on = {'t': 'OVcate'}
+v_reg = {'model': 'v ~ 1 + val_diff + DwellPropAdvantage + gaze_quad', 'link_func': lambda x: x}
+a_reg = {'model': 'a ~ 1 + abs_DwellPropAdv:C(OVcate)', 'link_func': lambda x: x }
+reg_descr = [v_reg, a_reg]
 
 # HDDMRegressor using simulated data
 m_recovery = hddm.HDDMRegressor(
