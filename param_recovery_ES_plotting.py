@@ -209,16 +209,38 @@ print(summary_df.columns.tolist())
 
 # read in model
 data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
-df_ind_summary = data_ES_27.groupby(['subj_idx','OVcate'])['rt'].describe().reset_index()
-df_ind_summary = df_ind_summary.set_index('subj_idx').join(
-     az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx']).set_index('subj_idx')
-     ).reset_index()
-df_ind_summary.head()
 
-print(es27_infdata.groups())
+# read in model and coerce subj_idx
+data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
+data_ES_27 = data_ES_27.copy()
+data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
+data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
+data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
 
-#------------------------------------------------------------------------------------------------------------------------------------------
+# Keep only subj_idx <= 20
+orig_subjects = sorted(data_ES_27['subj_idx'].unique())
+data_ES_27 = data_ES_27[data_ES_27['subj_idx'] <= 20]
+filtered_subjects = sorted(data_ES_27['subj_idx'].unique())
 
+print(f"Subjects before filtering: {orig_subjects}")
+print(f"Subjects after keeping subj_idx <= 20: {filtered_subjects}")
+assert all(s <= 20 for s in filtered_subjects), "Filtering failed: found subj_idx > 20."
+
+# Subject-level summary restricted to kept subjects
+subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
+subject_summary = subject_summary[subject_summary['subj_idx'].isin(filtered_subjects)]
+
+# Individual summary
+df_ind_summary = (
+    data_ES_27.groupby(['subj_idx', 'OVcate'])['rt']
+    .describe()
+    .reset_index()
+)
+df_ind_summary = (
+    df_ind_summary.set_index('subj_idx')
+    .join(subject_summary.set_index('subj_idx'))
+    .reset_index()
+)
 def az_summary_group(infdata, **kwargs):
     # full summary as a DataFrame
     summary_df = az.summary(infdata, kind="stats", **kwargs).reset_index()
@@ -231,8 +253,6 @@ def az_summary_group(infdata, **kwargs):
 group_params = az_summary_group(es27_infdata)
 print(group_params.index.tolist())
 
-#---------------------------------------------------------------------------------------------------------------------------------------------
-
 group_params = az.summary(es27_infdata, var_names=['~subj', '~std'], filter_vars='regex')
 subject_params = az_summary(es27_infdata)['mean']
 
@@ -240,13 +260,15 @@ subject_params = az_summary(es27_infdata)['mean']
 #PLOTTING
 
 param_list = [
-    'a',
-    't(high)', 't(medium)', 't(low)',
+    't',
     'v_Intercept',
-    'v_InattentionW',
-    'v_AttentionW:C(OVcate)[low]',
-    'v_AttentionW:C(OVcate)[medium]',
-    'v_AttentionW:C(OVcate)[high]'
+    'v_val_diff',
+    'v_DwellPropAdvantage',
+    'v_gaze_quad',
+    'a_Intercept',
+    'a_abs_DwellPropAdv:C(OVcate)[low]',
+    'a_abs_DwellPropAdv:C(OVcate)[medium]',
+    'a_abs_DwellPropAdv:C(OVcate)[high]',
 ]
 
 n_params = len(param_list)
@@ -353,13 +375,15 @@ def difference_hdi(idata1, idata2, var_name, hdi_prob=0.94):
 
 # list of parameters 
 param_list = [
-    'a',
-    't(high)', 't(medium)', 't(low)',
+    't',
     'v_Intercept',
-    'v_InattentionW',
-    'v_AttentionW:C(OVcate)[low]',
-    'v_AttentionW:C(OVcate)[medium]',
-    'v_AttentionW:C(OVcate)[high]'
+    'v_val_diff',
+    'v_DwellPropAdvantage',
+    'v_gaze_quad',
+    'a_Intercept',
+    'a_abs_DwellPropAdv:C(OVcate)[low]',
+    'a_abs_DwellPropAdv:C(OVcate)[medium]',
+    'a_abs_DwellPropAdv:C(OVcate)[high]'
 ]
 
 # plotting and summary collection
@@ -448,7 +472,7 @@ az.plot_forest(
     ax=ax
 )
 ax.set_title("Individual-level Comparison of Fitted and Recovered Parameters")
-plot_path2 = os.path.join(FIG_DIR_ROOT, "Forest_plot_group.png")
+plot_path2 = os.path.join(FIG_DIR_ROOT, "Forest_plot_ind.png")
 plt.savefig(plot_path2, dpi=300, bbox_inches='tight')
 plt.show()
 
@@ -459,15 +483,15 @@ param_recovery = az_summary(m_recovery_infdata)["mean"]
 
 
 param_list = [
-    "t",
-    "a(low)",
-    "a(medium)",
-    "a(high)",
-    "v_Intercept",
-    "v_AttentionW",
-    "v_InattentionW:C(OVcate)[low]",
-    "v_InattentionW:C(OVcate)[medium]",
-    "v_InattentionW:C(OVcate)[high]"
+    't',
+    'v_Intercept',
+    'v_val_diff',
+    'v_DwellPropAdvantage',
+    'v_gaze_quad',
+    'a_Intercept',
+    'a_abs_DwellPropAdv:C(OVcate)[low]',
+    'a_abs_DwellPropAdv:C(OVcate)[medium]',
+    'a_abs_DwellPropAdv:C(OVcate)[high]'
 ]
 
 # subplot for each param and regplot_with_corr
