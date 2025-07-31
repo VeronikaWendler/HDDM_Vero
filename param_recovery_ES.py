@@ -207,17 +207,21 @@ print(summary_df.columns.tolist())
 # read in model
 data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
 
-to_exclude = {1,4,5,6,14,99}
-if 'subj_idx' in data_ES_27.columns:
-    # coerce to int if needed, dropping malformed rows
-    data_ES_27 = data_ES_27.copy()
-    data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
-    data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
-    data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
-    # intersect with what's actually present
-    to_drop = set(data_ES_27['subj_idx'].unique()) & to_exclude
-    if to_drop:
-        data_ES_27 = data_ES_27[~data_ES_27['subj_idx'].isin(to_drop)]
+# Coerce subj_idx to integer safely and drop bad rows
+data_ES_27 = data_ES_27.copy()
+data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
+data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
+data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
+
+# Keep only subjects with idx <= 20
+orig_subjects = sorted(data_ES_27['subj_idx'].unique())
+data_ES_27 = data_ES_27[data_ES_27['subj_idx'] <= 20]
+filtered_subjects = sorted(data_ES_27['subj_idx'].unique())
+
+# Sanity/output
+print(f"Subjects before filtering: {orig_subjects}")
+print(f"Subjects after keeping subj_idx <=20: {filtered_subjects}")
+assert all(s <= 20 for s in filtered_subjects), "Filtering failed: found subject >20."
 
 df_ind_summary = data_ES_27.groupby(['subj_idx','OVcate'])['rt'].describe().reset_index()
 df_ind_summary = df_ind_summary.set_index('subj_idx').join(
