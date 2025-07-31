@@ -238,40 +238,42 @@ subject_params = az_summary(es27_infdata)['mean']
 sim_data = pd.DataFrame()
 
 # loop over subject × OVcate groups
-for i, j in df_ind_summary.groupby(['subj_idx', 'OVcate']):
-    subj, ov = i  # unpack for readability
+for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
+    j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
+    # group-level parts
+    v_int = j["v_Intercept"]
+    v_vald = j["v_val_diff"]  # if this is group-level baseline
+    v_DwellPA = j["v_DwellPropAdvantage"]
+    v_gquad = j["v_gaze_quad"]
+    a_val = j["a_Intercept"]
+    a_DwellPAov = j[f"a_abs_DwellPropAdv:C(OVcate)[{ov}]"]
 
-    t_val     = j["t"].iloc[0]
-    v_int     = j["v_Intercept"].iloc[0]
-    v_vald    = j["v_val_diff"].iloc[0]
-    v_DwellPA = j["v_DwellPropAdvantage"].iloc[0]
-    v_gquad   = j["v_gaze_quad"].iloc[0]
-    a_val     = j["a_Intercept"].iloc[0]
-    a_DwellPAov   = j[f"a_abs_DwellPropAdv:C(OVcate)[{ov}]"].iloc[0]
+    for _, trial in trial_group.iterrows():
+        # trial-level predictors (if available)
+        val_diff_trial = trial.get("val_diff", v_vald)  # fallback to group if none
+        DwellPA_trial = trial.get("DwellPropAdvantage", v_DwellPA)
+        gaze_quad_trial = trial.get("gaze_quad", v_gquad)
+        abs_DwellPAov_trial = trial.get("abs_DwellPropAdv", a_DwellPAov)
 
-    v = v_int + v_vald + v_DwellPA + v_gquad                                                  # NO trial-level multipliers
-    bound = a_val + a_DwellPAov
-    n_trials = int(j["count"].iloc[0])
-    
+        # compute drift / boundary (you can choose whether to include trial variability)
+        v_trial = v_int + val_diff_trial + DwellPA_trial + gaze_quad_trial
+        bound = a_val + abs_DwellPAov_trial
+        t_val = j["t"].iloc[0]
 
-    data, params = hddm.generate.gen_rand_data(
-        {
-            "v": v,
-            "a": bound,
-            "t": t_val
-        },
-        size=n_trials,  # same number of trials as in real data
-        subjs=1,
-    )
+        sim_trial, _ = hddm.generate.gen_rand_data(
+            {"v": v_trial,
+             "a": bound,
+             "t": t_val},
+            size=1, subjs=1
+        )
+        sim_trial["subj_idx"] = subj
+        sim_trial["OVcate"] = ov
+        sim_trial["val_diff"] = val_diff_trial
+        sim_trial["DwellPropAdvantage"] = DwellPA_trial
+        sim_trial["gaze_quad"] = gaze_quad_trial
+        sim_trial["abs_DwellPropAdv"] = abs_DwellPAov_trial
 
-    # Add subject/condition labels
-    data[["subj_idx", "OVcate"]] = i  
-    data["val_diff"] = v_vald
-    data["DwellPropAdvantage"] = v_DwellPA
-    data["abs_DwellPropAdv"] = a_DwellPAov
-    data["gaze_quad"] = v_gquad
-
-    sim_data = pd.concat([sim_data, data], ignore_index=True)
+        sim_data = pd.concat([sim_data, sim_trial], ignore_index=True)
 
 # Drop condition column if present
 if "condition" in sim_data.columns:
