@@ -8,7 +8,13 @@ import os, sys, pickle, time
 import datetime
 import math
 import scipy as sp
-import matplotlib
+import os
+# Matplotlib config
+os.environ["MPLCONFIGDIR"] = f"/scratch/{os.getenv('USER','')}/.matplotlib"
+os.makedirs(os.environ["MPLCONFIGDIR"], exist_ok=True)
+# Disable numba JIT/caching to avoid the histogram locator error
+os.environ["NUMBA_DISABLE_JIT"] = "1"
+
 matplotlib.use("Agg")                   # for backend (does not require GUI)
 import os, pathlib
 import matplotlib.pyplot as plt
