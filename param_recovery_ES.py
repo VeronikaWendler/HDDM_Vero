@@ -278,7 +278,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
 # Drop condition column if present
 if "condition" in sim_data.columns:
     sim_data.drop("condition", axis=1, inplace=True)
-
+#
 # check simulated data
 print(sim_data.head(10))
 print("\nUnique subjects in simulation:", sim_data['subj_idx'].nunique())
