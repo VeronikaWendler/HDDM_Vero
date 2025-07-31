@@ -286,6 +286,9 @@ print("OVcate counts in simulation:\n", sim_data['OVcate'].value_counts())
 
 print(sim_data.to_string())
 
+sim_data = sim_data[sim_data['subj_idx'] < 20]
+
+
 #-------------------------------------------------------------------------------------------------------------------
 print(sim_data[['subj_idx', 'OVcate', 'rt', 'response']].head())
 print("\nUnique subjects:", sim_data['subj_idx'].nunique())
