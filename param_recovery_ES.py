@@ -207,30 +207,40 @@ print(summary_df.columns.tolist())
 # read in model
 data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
 
-# Coerce subj_idx to integer safely and drop bad rows
+# read in model and coerce subj_idx
+data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
 data_ES_27 = data_ES_27.copy()
 data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
 data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
 data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
 
-# Keep only subjects with idx <= 20
+# Keep only subj_idx <= 20
 orig_subjects = sorted(data_ES_27['subj_idx'].unique())
 data_ES_27 = data_ES_27[data_ES_27['subj_idx'] <= 20]
 filtered_subjects = sorted(data_ES_27['subj_idx'].unique())
 
-# Sanity/output
 print(f"Subjects before filtering: {orig_subjects}")
-print(f"Subjects after keeping subj_idx <=20: {filtered_subjects}")
-assert all(s <= 20 for s in filtered_subjects), "Filtering failed: found subject >20."
+print(f"Subjects after keeping subj_idx <= 20: {filtered_subjects}")
+assert all(s <= 20 for s in filtered_subjects), "Filtering failed: found subj_idx > 20."
 
-df_ind_summary = data_ES_27.groupby(['subj_idx','OVcate'])['rt'].describe().reset_index()
-df_ind_summary = df_ind_summary.set_index('subj_idx').join(
-    az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx']).set_index('subj_idx')
-    ).reset_index()
-df_ind_summary.head()
+# Subject-level summary restricted to kept subjects
+subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
+subject_summary = subject_summary[subject_summary['subj_idx'].isin(filtered_subjects)]
 
-print(es27_infdata.groups())
-#------------------------------------------------------------------------------------------------------------------------------------------
+# Individual summary
+df_ind_summary = (
+    data_ES_27.groupby(['subj_idx', 'OVcate'])['rt']
+    .describe()
+    .reset_index()
+)
+df_ind_summary = (
+    df_ind_summary.set_index('subj_idx')
+    .join(subject_summary.set_index('subj_idx'))
+    .reset_index()
+)
+
+
+
 
 def az_summary_group(infdata, **kwargs):
     # full summary as a DataFrame
@@ -244,22 +254,18 @@ def az_summary_group(infdata, **kwargs):
 group_params = az_summary_group(es27_infdata)
 print(group_params.index.tolist())
 
-#---------------------------------------------------------------------------------------------------------------------------------------------
-# SIMULATION 
-#---------------------------------------------------------------------------------------------------------------------------------------------
+
 
 
 group_params = az.summary(es27_infdata, var_names=['~subj', '~std'], filter_vars='regex')
 subject_params = az_summary(es27_infdata)['mean']
 
+# SIMULATION
 sim_data = pd.DataFrame()
-
-# loop over subject × OVcate groups
 for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
-    # group-level parts
     v_int = j["v_Intercept"]
-    v_vald = j["v_val_diff"]  # if this is group-level baseline
+    v_vald = j["v_val_diff"]
     v_DwellPA = j["v_DwellPropAdvantage"]
     v_gquad = j["v_gaze_quad"]
     a_val = j["a_Intercept"]
@@ -267,20 +273,16 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     t_val = j["t"]
 
     for _, trial in trial_group.iterrows():
-        # trial-level predictors (if available)
-        val_diff_trial = trial.get("val_diff", v_vald)  # fallback to group if none
+        val_diff_trial = trial.get("val_diff", v_vald)
         DwellPA_trial = trial.get("DwellPropAdvantage", v_DwellPA)
         gaze_quad_trial = trial.get("gaze_quad", v_gquad)
         abs_DwellPAov_trial = trial.get("abs_DwellPropAdv", a_DwellPAov)
 
-        # compute drift / boundary (you can choose whether to include trial variability)
         v_trial = v_int + val_diff_trial + DwellPA_trial + gaze_quad_trial
         bound = a_val + abs_DwellPAov_trial
 
         sim_trial, _ = hddm.generate.gen_rand_data(
-            {"v": v_trial,
-             "a": bound,
-             "t": t_val},
+            {"v": v_trial, "a": bound, "t": t_val},
             size=1, subjs=1
         )
         sim_trial["subj_idx"] = subj
@@ -292,14 +294,18 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
 
         sim_data = pd.concat([sim_data, sim_trial], ignore_index=True)
 
-# Drop condition column if present
+# Final guard: enforce subj_idx <= 20 in sim_data
+sim_data['subj_idx'] = pd.to_numeric(sim_data['subj_idx'], errors='coerce').astype(int)
+sim_data = sim_data[sim_data['subj_idx'] <= 20]
+
 if "condition" in sim_data.columns:
     sim_data.drop("condition", axis=1, inplace=True)
-#
-# check simulated data
+
+# Diagnostics
 print(sim_data.head(10))
-print("\nUnique subjects in simulation:", sim_data['subj_idx'].nunique())
+print("\nUnique subjects in simulation:", sorted(sim_data['subj_idx'].unique()))
 print("OVcate counts in simulation:\n", sim_data['OVcate'].value_counts())
+
 
 print(sim_data.to_string())
 
