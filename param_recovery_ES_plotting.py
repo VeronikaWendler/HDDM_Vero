@@ -1,15 +1,21 @@
 # PLOTTING
 
-# import libraries  
 import os
+import types
+import sys
 
-# use a local writable cache (e.g., in current working directory) for matplotlib
+# === Environment setup (must happen before importing matplotlib / arviz / numba-using libs) ===
+# Local writable cache for matplotlib
 cache_dir = os.path.abspath("./.matplotlib_cache")
 os.environ["MPLCONFIGDIR"] = cache_dir
 os.makedirs(cache_dir, exist_ok=True)
 
-# disable numba JIT/caching to avoid the histogram locator error
+# Disable numba JIT/caching to avoid the histogram locator error in ArviZ
 os.environ["NUMBA_DISABLE_JIT"] = "1"
+
+# Dummy modules to avoid import errors (keep if needed on this cluster)
+sys.modules.setdefault('winreg', types.ModuleType('winreg'))
+sys.modules.setdefault('_gdbm', types.ModuleType('_gdbm'))
 
 import pandas as pd
 import numpy as np
@@ -18,10 +24,11 @@ import os, sys, pickle, time
 import datetime
 import math
 import scipy as sp
+import matplotlib
+import matplotlib.pyplot as plt
 
 matplotlib.use("Agg")                   # for backend (does not require GUI)
 import os, pathlib
-import matplotlib.pyplot as plt
 import seaborn as sns
 import glob
 import itertools
@@ -37,8 +44,7 @@ import time
 import arviz as az
 # patch: make a dummy _gdbm module so “import _gdbm” never fails
 import types, sys
-sys.modules.setdefault('winreg', types.ModuleType('winreg'))
-sys.modules.setdefault('_gdbm', types.ModuleType('_gdbm'))
+
 import dill as pickle
 from copy import deepcopy   # for modfiying z to be 0.55 (like in Sebastian's Matlab)
 import argparse
