@@ -206,6 +206,19 @@ print(summary_df.columns.tolist())
 
 # read in model
 data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
+
+to_exclude = {1,4,5,6,14,99}
+if 'subj_idx' in data_ES_27.columns:
+    # coerce to int if needed, dropping malformed rows
+    data_ES_27 = data_ES_27.copy()
+    data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
+    data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
+    data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
+    # intersect with what's actually present
+    to_drop = set(data_ES_27['subj_idx'].unique()) & to_exclude
+    if to_drop:
+        data_ES_27 = data_ES_27[~data_ES_27['subj_idx'].isin(to_drop)]
+
 df_ind_summary = data_ES_27.groupby(['subj_idx','OVcate'])['rt'].describe().reset_index()
 df_ind_summary = df_ind_summary.set_index('subj_idx').join(
     az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx']).set_index('subj_idx')
@@ -286,7 +299,6 @@ print("OVcate counts in simulation:\n", sim_data['OVcate'].value_counts())
 
 print(sim_data.to_string())
 
-sim_data = sim_data[sim_data['subj_idx'] < 20]
 
 
 #-------------------------------------------------------------------------------------------------------------------
