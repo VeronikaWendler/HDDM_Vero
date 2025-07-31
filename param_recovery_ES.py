@@ -247,6 +247,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     v_gquad = j["v_gaze_quad"]
     a_val = j["a_Intercept"]
     a_DwellPAov = j[f"a_abs_DwellPropAdv:C(OVcate)[{ov}]"]
+    t_val = j["t"]
 
     for _, trial in trial_group.iterrows():
         # trial-level predictors (if available)
@@ -258,7 +259,6 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
         # compute drift / boundary (you can choose whether to include trial variability)
         v_trial = v_int + val_diff_trial + DwellPA_trial + gaze_quad_trial
         bound = a_val + abs_DwellPAov_trial
-        t_val = j["t"].iloc[0]
 
         sim_trial, _ = hddm.generate.gen_rand_data(
             {"v": v_trial,
