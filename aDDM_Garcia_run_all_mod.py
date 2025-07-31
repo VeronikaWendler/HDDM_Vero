@@ -109,6 +109,10 @@ def make_z_link(full_stimulus_vector):
 # V_opt​ = value if the better option
 # V_sub = value of the worse option
 
+# I wnt a new model with a gaze term and a no-gaze term both interacting with value somehow so that every option and value and gaze is soemhwo concisely integrated similar to the ddm
+#why do I wnt this? simply because wehn you look at my gaze nd value plots you can see that the longer people gaze at either option, e.g. left or right, disproportionlly much, the less likely are tehy to make a correct choice. In my model (unlike the addm) gaze is misleading when its disproportional, but wehn gaze is 
+# almost equally distributed between both options the choice accurcy is ver high 
+
 # Importantly, this is now for the regression models where we are interested in the z bias towards E and a drift formula similar to Sebastian's matlab code, see below:
 # the Sebastian drift rate regression - p1 is value on the left (E value) and p2 (S value) is value on the right ...this is how we get teh attntional and inattentional parameters..
 # v = b0 + b1(PropDwell_Right * p2 - PropDwell_Left * p1) + b2(PropDwell_Right* p1 - PropDwell_Left*p2) + e
