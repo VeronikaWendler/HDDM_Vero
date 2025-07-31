@@ -1,6 +1,16 @@
 # PLOTTING
 
 # import libraries  
+import os
+
+# use a local writable cache (e.g., in current working directory) for matplotlib
+cache_dir = os.path.abspath("./.matplotlib_cache")
+os.environ["MPLCONFIGDIR"] = cache_dir
+os.makedirs(cache_dir, exist_ok=True)
+
+# disable numba JIT/caching to avoid the histogram locator error
+os.environ["NUMBA_DISABLE_JIT"] = "1"
+
 import pandas as pd
 import numpy as np
 import hddm
@@ -8,12 +18,6 @@ import os, sys, pickle, time
 import datetime
 import math
 import scipy as sp
-import os
-# Matplotlib config
-os.environ["MPLCONFIGDIR"] = f"/scratch/{os.getenv('USER','')}/.matplotlib"
-os.makedirs(os.environ["MPLCONFIGDIR"], exist_ok=True)
-# Disable numba JIT/caching to avoid the histogram locator error
-os.environ["NUMBA_DISABLE_JIT"] = "1"
 
 matplotlib.use("Agg")                   # for backend (does not require GUI)
 import os, pathlib
