@@ -75,7 +75,7 @@ chain2 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_27_2.nc")
 es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
 
 # getting the recovered data
-recovered_nc = os.path.join(BASE_MODEL_DIR, "mES_7_recovery.nc")
+recovered_nc = os.path.join(BASE_MODEL_DIR, "mES_27_recovery.nc")
 m_recovery_infdata = az.from_netcdf(recovered_nc)
 
 
