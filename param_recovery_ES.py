@@ -265,7 +265,12 @@ for i, j in df_ind_summary.groupby(['subj_idx', 'OVcate']):
     )
 
     # Add subject/condition labels
-    data[["subj_idx", "OVcate"]] = i
+    data[["subj_idx", "OVcate"]] = i  
+    data["val_diff"] = v_vald
+    data["DwellPropAdvantage"] = v_DwellPA
+    data["abs_DwellPropAdv"] = a_DwellPAov
+    data["gaze_quad"] = v_gquad
+
     sim_data = pd.concat([sim_data, data], ignore_index=True)
 
 # Drop condition column if present
