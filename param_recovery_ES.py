@@ -314,7 +314,6 @@ reg_descr = [v_reg, a_reg]
 m_recovery = hddm.HDDMRegressor(
     sim_data,              
     reg_descr,             
-    depends_on=depends_on, 
     include=['a', 't', 'v'], 
     p_outlier=0.05,
     group_only_regressors=False,
