@@ -70,9 +70,9 @@ FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_27/diag
 
 #-------------------------------------------------------------------------------------------------------------------------------------------   
 # here also improatant, set which model to lead (concatenate the chains you ran)
-chain0 = az.from_netcdf(BASE_MODEL_DIR / "Garcia_replication_ES_27_0.nc")
-chain1 = az.from_netcdf(BASE_MODEL_DIR / "Garcia_replication_ES_27_1.nc")
-chain2 = az.from_netcdf(BASE_MODEL_DIR / "Garcia_replication_ES_27_2.nc")
+chain0 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_27_0.nc")
+chain1 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_27_1.nc")
+chain2 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_27_2.nc")
 
 es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
 
