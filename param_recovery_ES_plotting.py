@@ -102,7 +102,7 @@ param_list = [
     't',
     'v_Intercept',
     'v_val_diff',
-    'val_bal_int',
+    'v_val_bal_int',
     'a',
 ]
 

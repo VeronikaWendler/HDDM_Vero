@@ -114,6 +114,28 @@ lower_is_image = (data['p1'] < data['p2']).astype(int)   # 1 if image is worse
 data["InattW_chart"] = data["InattentionW"] * lower_is_chart
 data["InattW_image"] = data["InattentionW"] * lower_is_image
 
+
+
+
+
+#--------------------------------------------------------------------------------
+
+# aggregate dwell proportions (p_fix_C, p_fix_I   with p_fix_C + p_fix_I = 1)
+# build classic attentional and inattentional terms
+data['AttentionW']   = (p_fix_C * V_C - p_fix_I * V_I)
+data['InattentionW'] = (p_fix_I * V_C - p_fix_C * V_I)
+# format dummy: 1 if chart is the lower-value option
+data['chart_is_lower']  = (V_C < V_I).astype(int)
+# split inattentional term
+data['InattW_chart'] = data['InattentionW'] * data['chart_is_lower']
+data['InattW_image'] = data['InattentionW'] * (1 - data['chart_is_lower'])
+Regression formula
+
+python
+Kopieren
+Bearbeiten
+v_reg = {'model': 'v ~ 1 + AttentionW + InattW_chart + InattW_image',
+
 data.to_csv(
     "C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/"
     "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
