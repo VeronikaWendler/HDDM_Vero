@@ -71,6 +71,8 @@ import pymc as pm
 import hddm
 import kabuki
 import arviz as az
+from pathlib import Path
+
 
 #------------------------------------------------------------------------------------------------------------------------------------------
 # dir
@@ -94,6 +96,69 @@ es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
 recovered_nc = os.path.join(BASE_MODEL_DIR, "mES_27_recovery.nc")
 m_recovery_infdata = az.from_netcdf(recovered_nc)
 
+
+
+# list of parameters you care about
+param_list = [
+    't',
+    'v_Intercept',
+    'v_val_diff',
+    'v_DwellPropAdvantage',
+    'v_gaze_quad',
+    'a_Intercept',
+    'a_abs_DwellPropAdv:C(OVcate)[low]',
+    'a_abs_DwellPropAdv:C(OVcate)[medium]',
+    'a_abs_DwellPropAdv:C(OVcate)[high]'
+]
+
+def save_diagnostics(idata, label, outdir, var_names=None):
+    outdir = Path(outdir)
+    outdir.mkdir(parents=True, exist_ok=True)
+    # Summary including r_hat and ESS
+    summary = az.summary(idata, var_names=var_names, round_to=3)  # default includes r_hat, ess_bulk, ess_tail
+    summary_file = outdir / f"{label}_summary_rhat_ess.csv"
+    summary.to_csv(summary_file)
+    print(f"Saved summary for {label} to {summary_file}")
+
+    # Warn about potential convergence issues
+    if 'r_hat' in summary.columns:
+        high_rhat = summary['r_hat'] > 1.05
+        if high_rhat.any():
+            print(f"Warning: {label} has R-hat >1.05 for: {list(summary.index[high_rhat])}")
+    if 'ess_bulk' in summary.columns:
+        low_ess = summary['ess_bulk'] < 100  # heuristic; depends on total draws
+        if low_ess.any():
+            print(f"Warning: {label} has low bulk ESS for: {list(summary.index[low_ess])}")
+
+    # Trace plots
+    try:
+        trace_fig = az.plot_trace(idata, var_names=var_names)
+        trace_path = outdir / f"{label}_trace.png"
+        trace_fig.savefig(trace_path, bbox_inches='tight', dpi=200)
+        plt.close(trace_fig)
+        print(f"Saved trace plot for {label} to {trace_path}")
+    except Exception as e:
+        print(f"Could not make trace plot for {label}: {e}")
+
+    # Optional: LOO (may fail if model isn't compatible)
+    try:
+        loo_res = az.loo(idata, scale="deviance")
+        loo_df = pd.DataFrame({
+            "loo": [loo_res.loo],
+            "p_loo": [loo_res.p_loo],
+            "shape_k": [np.mean(loo_res.pareto_k.values)]
+        })
+        loo_path = outdir / f"{label}_loo.csv"
+        loo_df.to_csv(loo_path, index=False)
+        print(f"Saved LOO for {label} to {loo_path}")
+    except Exception as e:
+        print(f"LOO computation failed for {label}: {e}")
+
+    return summary
+
+# Run diagnostics and persist
+fitted_summary = save_diagnostics(es27_infdata, "fitted", FIG_DIR_ROOT, var_names=param_list)
+recovered_summary = save_diagnostics(m_recovery_infdata, "recovered", FIG_DIR_ROOT, var_names=param_list)
 
 #--------------------------------------------------------------------------------------------------------------------------------------------
 #REG PLOT FUNCTION
