@@ -344,14 +344,9 @@ param_list = [
     't',
     'v_Intercept',
     'v_val_diff',
-    'v_DwellPropAdvantage',
-    'v_gaze_quad',
-    'a_Intercept',
-    'a_abs_DwellPropAdv:C(OVcate)[low]',
-    'a_abs_DwellPropAdv:C(OVcate)[medium]',
-    'a_abs_DwellPropAdv:C(OVcate)[high]',
+    'v_val_bal_int',
+    'a',
 ]
-
 n_params = len(param_list)
 n_cols = 4
 figsize = (12, 6)
@@ -459,7 +454,7 @@ param_list = [
     't',
     'v_Intercept',
     'v_val_diff',
-    'val_bal_int',
+    'v_val_bal_int',
     'a',
 ]
 
