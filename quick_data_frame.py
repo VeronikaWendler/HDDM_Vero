@@ -102,43 +102,27 @@ data['DTA2']  = data['DTA'] ** 2
 data['absDTA']= np.abs(data['DTA'])
 
 
+# v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2 ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ϵ
+data['AttentionW'] = (data['PropDwell_opt'] * data['V_corr']) - (data['PropDwell_sub'] * data['V_sub'])
+data['InattentionW'] = (data['PropDwell_sub'] * data['V_corr']) - (data['PropDwell_opt'] * data['V_sub'])
+data['AttentionW'] = data['AttentionW'].round(3)
+data['InattentionW'] = data['InattentionW'].round(3)
 
+V_C = data['p2']          # chart EV
+V_I = data['p1']          # image EV
 
+# 2. dummies: which format is lower EV?
+data['chart_is_sub']  = (V_C < V_I).astype(int)
+data['image_is_sub']  = (V_I < V_C).astype(int)
 
-#-------------------------------------------------------------------------
+# 3. split inattention term
+data['IAW_chart'] = data['InattentionW'] * data['chart_is_sub']
+data['IAW_image'] = data['InattentionW'] * data['image_is_sub']
+data['IAW_chart'] = data['IAW_chart'].round(3)
+data['IAW_image'] = data['IAW_image'].round(3)
 
-# identify which option (chart or image) was the LOWER-value one on this trial
-lower_is_chart = (data['p2'] < data['p1']).astype(int)   # 1 if chart is worse
-lower_is_image = (data['p1'] < data['p2']).astype(int)   # 1 if image is worse
-
-data["InattW_chart"] = data["InattentionW"] * lower_is_chart
-data["InattW_image"] = data["InattentionW"] * lower_is_image
-
-
-
-
-
-#--------------------------------------------------------------------------------
-
-# aggregate dwell proportions (p_fix_C, p_fix_I   with p_fix_C + p_fix_I = 1)
-# build classic attentional and inattentional terms
-data['AttentionW']   = (p_fix_C * V_C - p_fix_I * V_I)
-data['InattentionW'] = (p_fix_I * V_C - p_fix_C * V_I)
-# format dummy: 1 if chart is the lower-value option
-data['chart_is_lower']  = (V_C < V_I).astype(int)
-# split inattentional term
-data['InattW_chart'] = data['InattentionW'] * data['chart_is_lower']
-data['InattW_image'] = data['InattentionW'] * (1 - data['chart_is_lower'])
-Regression formula
-
-python
-Kopieren
-Bearbeiten
-v_reg = {'model': 'v ~ 1 + AttentionW + InattW_chart + InattW_image',
 
 data.to_csv(
     "C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/"
     "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
-    index=False
-)
-
+    index=False,)

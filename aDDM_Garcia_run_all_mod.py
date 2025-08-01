@@ -135,7 +135,7 @@ parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
     "LE":      ["LE_1","LE_2","LE_3","LE_4"],     #"LE_5","LE_6","LE_7"
-    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27", "ES_28", "ES_29"],
+    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27", "ES_28", "ES_29", "ES_30", "ES_31"],
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
@@ -156,7 +156,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 27
+start_version = 29
 started = False
 
 # dir
@@ -403,8 +403,12 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             reg_descr = [v_reg]
         elif version == 29:
             v_reg = {'model': 'v ~ 1 + AttentionW + InattW_chart + InattW_image', 'link_func': lambda x: x}
+            depends_on={'a': 'OVcate'}  
+        elif version == 30:
+            v_reg = {'model': 'v ~ 1 + gaze_quad:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            depends_on = {'t': 'OVcate'}                   # add boundary/t if desired
+            depends_on={'t': 'abs_DwellPropAdv:C(OVcate)',
+                        'a': 'abs_DwellPropAdv:C(OVcate)'}  
         else:
             raise ValueError(f"check version {version} ??")
         
@@ -1808,7 +1812,7 @@ if __name__ == "__main__":
             data["DwellPropAdvantage"] = pd.to_numeric(data["DwellPropAdvantage"],errors="coerce")
             data["gaze_quad"] = pd.to_numeric(data["gaze_quad"],errors="coerce")
             data["abs_DwellPropAdv"] = pd.to_numeric(data["abs_DwellPropAdv"],errors="coerce")
-
+            
             data = data[~data["subj_idx"].isin({1,4,5,6,14,99})]
             data = data.dropna(subset=["rt",
                                        "response",
@@ -1829,7 +1833,7 @@ if __name__ == "__main__":
                                        "val_diff",
                                        "DwellPropAdvantage",
                                        "gaze_quad",
-                                       "abs_DwellPropAdv"])
+                                       "abs_DwellPropAdv",])   
 
             # put this near the top of the file, right after you finish preparing `data_full`
 
