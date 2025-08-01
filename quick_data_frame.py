@@ -90,6 +90,9 @@ data['val_diff'] *= data['resp'].map({1: 1, 0: -1})
 data["abs_DwellPropAdv"]   = data['DwellPropAdvantage'].abs()
 data["gaze_quad"]  = data["DwellPropAdvantage"]**2
 
+# dwell_prop ranges roughly -1 … +1.  Centre it first.
+data["gaze_bal"]   = 1 - data["DwellPropAdvantage"]**2     # penalty (1 at centre, 0 at extremes)
+data["val_bal_int"] = data["val_diff"] * data["gaze_bal"]  # interaction that drives drift
 
 
 

@@ -135,7 +135,7 @@ parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
     "LE":      ["LE_1","LE_2","LE_3","LE_4"],     #"LE_5","LE_6","LE_7"
-    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27", "ES_28"],
+    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27", "ES_28", "ES_29"],
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
@@ -394,11 +394,13 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
         elif version == 26:
             v_reg = {'model': 'v ~ 1 + val_diff + DwellPropAdvantage + gaze_quad', 'link_func': lambda x: x}
             a_reg = {'model': 'a ~ 1 + abs_DwellPropAdv:C(OVcate)', 'link_func': lambda x: x }
-            reg_descr = [v_reg, a_reg]
+            reg_descr = [v_reg, a_reg]    
         elif version == 27:
-            v_reg = {'model': 'v ~ 1 + val_diff + DwellPropAdvantage + gaze_quad + abs_DwellPropAdv:C(OVcate)', 'link_func': lambda x: x}
-            t_reg = {'model': 't ~ 1 + abs_DwellPropAdv:C(OVcate)', 'link_func': lambda x: x }
-            reg_descr = [v_reg, t_reg]
+            v_reg = {'model': 'v ~ 1 + gaze_quad', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 28:
+            v_reg = {'model': 'v ~ 1 + val_diff + val_bal_int', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
         else:
             raise ValueError(f"check version {version} ??")
         
