@@ -70,9 +70,9 @@ FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_27/diag
 
 #-------------------------------------------------------------------------------------------------------------------------------------------   
 # here also improatant, set which model to lead (concatenate the chains you ran)
-chain0 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_27_0.nc")
-chain1 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_27_1.nc")
-chain2 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_27_2.nc")
+chain0 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_29_0.nc")
+chain1 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_29_1.nc")
+chain2 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_29_2.nc")
 
 es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
 
@@ -176,8 +176,8 @@ def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
     param_df['subj_idx'] = param_df['subj_idx'].astype(int)
 
     if half_a:
-        param_df.loc[param_df['param'] == 'a_Intercept',
-                        col_values] = param_df.loc[param_df['param'] == 'a_Intercept',
+        param_df.loc[param_df['param'] == 'a',
+                        col_values] = param_df.loc[param_df['param'] == 'a',
                                                 col_values] / 2
 
     param_df = param_df.pivot(
@@ -245,9 +245,77 @@ print(group_params.index.tolist())
 group_params = az.summary(es27_infdata, var_names=['~subj', '~std'], filter_vars='regex')
 subject_params = az_summary(es27_infdata)['mean']
 
+# subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
+# df_ind_summary = (
+#     data_ES_27.groupby(['subj_idx', 'OVcate'])['rt']
+#     .describe()
+#     .reset_index()
+# )
+# df_ind_summary = (
+#     df_ind_summary.set_index('subj_idx')
+#     .join(subject_summary.set_index('subj_idx'))
+#     .reset_index()
+# )
+
+# # get group/subject parameters for the weighted terms (if needed)
+# # e.g., you might want to pull them per trial from df_ind_summary
+# sim_data = []
+
+# for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
+#     j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
+#     v_int = j["v_Intercept"]
+#     v_vald = j["v_val_diff"]
+#     v_DwellPA = j["v_DwellPropAdvantage"]
+#     v_gquad = j["v_gaze_quad"]
+#     a_int = j["a_Intercept"]
+#     a_abs_DwellPAov = j[f"a_abs_DwellPropAdv:C(OVcate)[{ov}]"]
+#     t_val = j["t"]
+
+#     for _, trial in trial_group.iterrows():
+#         val_diff_trial = trial.get("val_diff", 0)
+#         DwellPA_trial = trial.get("DwellPropAdvantage", 0)
+#         gaze_quad_trial = trial.get("gaze_quad", 0)
+#         abs_DwellPAov_trial = trial.get("abs_DwellPropAdv", 0)
+
+#         # weighted drift and boundary
+#         v_trial = v_int + v_vald * val_diff_trial + v_DwellPA * DwellPA_trial + v_gquad * gaze_quad_trial
+#         a_trial = a_int + a_abs_DwellPAov * abs_DwellPAov_trial
+
+#         # simulate (you can do multiple repeats if desired)
+#         sim_trial, _ = hddm.generate.gen_rand_data(
+#             {"v": v_trial, "a": a_trial, "t": t_val},
+#             size=1, subjs=1
+#         )
+#         sim_trial["subj_idx"] = subj
+#         sim_trial["OVcate"] = ov
+#         sim_trial["val_diff"] = val_diff_trial
+#         sim_trial["DwellPropAdvantage"] = DwellPA_trial
+#         sim_trial["gaze_quad"] = gaze_quad_trial
+#         sim_trial["abs_DwellPropAdv"] = abs_DwellPAov_trial
+
+#         sim_data.append(sim_trial)
+
+# sim_data = pd.concat(sim_data, ignore_index=True)
+
+# # Final guard: enforce subj_idx <= 20 in sim_data
+# sim_data['subj_idx'] = pd.to_numeric(sim_data['subj_idx'], errors='coerce').astype(int)
+# sim_data = sim_data[sim_data['subj_idx'] <= 20]
+
+# if "condition" in sim_data.columns:
+#     sim_data.drop("condition", axis=1, inplace=True)
+
+# # Diagnostics
+# print(sim_data.head(10))
+# print("\nUnique subjects in simulation:", sorted(sim_data['subj_idx'].unique()))
+# print("OVcate counts in simulation:\n", sim_data['OVcate'].value_counts())
+
+
+# print(sim_data.to_string())
+
+
 subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
 df_ind_summary = (
-    data_ES_27.groupby(['subj_idx', 'OVcate'])['rt']
+    data_ES_27.groupby(['subj_idx'])['rt']
     .describe()
     .reset_index()
 )
@@ -261,37 +329,31 @@ df_ind_summary = (
 # e.g., you might want to pull them per trial from df_ind_summary
 sim_data = []
 
-for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
-    j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
+for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx']):
+    j = df_ind_summary[(df_ind_summary['subj_idx'] == subj)].iloc[0]
     v_int = j["v_Intercept"]
     v_vald = j["v_val_diff"]
-    v_DwellPA = j["v_DwellPropAdvantage"]
-    v_gquad = j["v_gaze_quad"]
-    a_int = j["a_Intercept"]
-    a_abs_DwellPAov = j[f"a_abs_DwellPropAdv:C(OVcate)[{ov}]"]
+    v_valbal = j["v_val_bal_int"]
     t_val = j["t"]
+    a_val = j["a"]
 
     for _, trial in trial_group.iterrows():
         val_diff_trial = trial.get("val_diff", 0)
-        DwellPA_trial = trial.get("DwellPropAdvantage", 0)
-        gaze_quad_trial = trial.get("gaze_quad", 0)
-        abs_DwellPAov_trial = trial.get("abs_DwellPropAdv", 0)
+        val_bal_trial = trial.get("val_bal_int", 0)
 
         # weighted drift and boundary
-        v_trial = v_int + v_vald * val_diff_trial + v_DwellPA * DwellPA_trial + v_gquad * gaze_quad_trial
-        a_trial = a_int + a_abs_DwellPAov * abs_DwellPAov_trial
+        v_trial = v_int + v_vald * val_diff_trial + v_valbal * val_bal_trial
 
         # simulate (you can do multiple repeats if desired)
         sim_trial, _ = hddm.generate.gen_rand_data(
-            {"v": v_trial, "a": a_trial, "t": t_val},
+            {"v": v_trial,
+             "a": a_val, 
+             "t": t_val},
             size=1, subjs=1
         )
         sim_trial["subj_idx"] = subj
-        sim_trial["OVcate"] = ov
         sim_trial["val_diff"] = val_diff_trial
-        sim_trial["DwellPropAdvantage"] = DwellPA_trial
-        sim_trial["gaze_quad"] = gaze_quad_trial
-        sim_trial["abs_DwellPropAdv"] = abs_DwellPAov_trial
+        sim_trial["val_bal_int"] = val_bal_trial
 
         sim_data.append(sim_trial)
 
@@ -307,17 +369,66 @@ if "condition" in sim_data.columns:
 # Diagnostics
 print(sim_data.head(10))
 print("\nUnique subjects in simulation:", sorted(sim_data['subj_idx'].unique()))
-print("OVcate counts in simulation:\n", sim_data['OVcate'].value_counts())
-
 
 print(sim_data.to_string())
 
 
+# #-------------------------------------------------------------------------------------------------------------------
+# print(sim_data[['subj_idx', 'OVcate', 'rt', 'response']].head())
+# print("\nUnique subjects:", sim_data['subj_idx'].nunique())
+# print("OVcate counts:\n", sim_data['OVcate'].value_counts())
+# #-----------------------------------------------------------------------------------------------------------------------
+# #Re-Fitting the model (like in hcp tutorial)
+
+# # helper function to wrap the sampling procedure
+# def run_sampling(model, model_db_name, progress_bar=True):
+#     model.find_starting_values()
+#     result = model.sample(
+#         1000,                # nr of samples (
+#         burn=100,            # Burn-in samples
+#         dbname=model_db_name,# path for saving the chain
+#         db='pickle',         # Save chain using pickle
+#         return_infdata=True, # Return an InferenceData object for diagnostics/plots
+#         loglike=True,        # allow for loglikelihood computation
+#         ppc=True             # to get the ppc
+#     )
+#     if isinstance(result, tuple):
+#         model_out = result[0]
+#         infdata = result[1]
+#         return model_out, infdata
+#     else:
+#         return model, result
+
+# # model specification (best fitting OV-modulated Inattention and t model)
+# v_reg = {'model': 'v ~ 1 + val_diff + DwellPropAdvantage + gaze_quad', 'link_func': lambda x: x}
+# a_reg = {'model': 'a ~ 1 + abs_DwellPropAdv:C(OVcate)', 'link_func': lambda x: x }
+# reg_descr = [v_reg, a_reg]
+
+# # HDDMRegressor using simulated data
+# m_recovery = hddm.HDDMRegressor(
+#     sim_data,              
+#     reg_descr,             
+#     include=['a', 't', 'v'], 
+#     p_outlier=0.05,
+#     group_only_regressors=False,
+#     keep_regressor_trace=True
+# )
+
+# # full path for saving
+# model_db_name = os.path.join(BASE_MODEL_DIR, "mES_27_recovery")
+# m_recovery, m_recovery_infdata = run_sampling(m_recovery, model_db_name, progress_bar=False)
+# az.to_netcdf(m_recovery_infdata, os.path.join(BASE_MODEL_DIR, "mES_27_recovery.nc"))
+
+# #-----------------------------------------------------------------------------------------------------------------------------------
+# #recovered_nc = os.path.join(BASE_MODEL_DIR, "mES_27_recovery.nc")
+# #m_recovery_infdata = az.from_netcdf(recovered_nc)
+
+# #------------------------------------------------------------------------------------------------------------------------------------
+
 
 #-------------------------------------------------------------------------------------------------------------------
-print(sim_data[['subj_idx', 'OVcate', 'rt', 'response']].head())
+print(sim_data[['subj_idx', 'rt', 'response']].head())
 print("\nUnique subjects:", sim_data['subj_idx'].nunique())
-print("OVcate counts:\n", sim_data['OVcate'].value_counts())
 #-----------------------------------------------------------------------------------------------------------------------
 #Re-Fitting the model (like in hcp tutorial)
 
@@ -341,9 +452,8 @@ def run_sampling(model, model_db_name, progress_bar=True):
         return model, result
 
 # model specification (best fitting OV-modulated Inattention and t model)
-v_reg = {'model': 'v ~ 1 + val_diff + DwellPropAdvantage + gaze_quad', 'link_func': lambda x: x}
-a_reg = {'model': 'a ~ 1 + abs_DwellPropAdv:C(OVcate)', 'link_func': lambda x: x }
-reg_descr = [v_reg, a_reg]
+v_reg = {'model': 'v ~ 1 + val_diff + val_bal_int', 'link_func': lambda x: x}
+reg_descr = [v_reg]
 
 # HDDMRegressor using simulated data
 m_recovery = hddm.HDDMRegressor(
@@ -356,9 +466,9 @@ m_recovery = hddm.HDDMRegressor(
 )
 
 # full path for saving
-model_db_name = os.path.join(BASE_MODEL_DIR, "mES_27_recovery")
+model_db_name = os.path.join(BASE_MODEL_DIR, "mES_29_recovery")
 m_recovery, m_recovery_infdata = run_sampling(m_recovery, model_db_name, progress_bar=False)
-az.to_netcdf(m_recovery_infdata, os.path.join(BASE_MODEL_DIR, "mES_27_recovery.nc"))
+az.to_netcdf(m_recovery_infdata, os.path.join(BASE_MODEL_DIR, "mES_29_recovery.nc"))
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 #recovered_nc = os.path.join(BASE_MODEL_DIR, "mES_27_recovery.nc")
