@@ -495,35 +495,40 @@ plt.show()
 
 #----------------------------------------------------------------------------------------------------------------------------
 
+#'REG PLOTS'
+def get_subject_means(df):
+    df = df.reset_index(names="subj_idx")
+    df["subj_idx"] = df["subj_idx"].astype(int)
+    return df.set_index("subj_idx")
+
 param_fitted = az_summary(es27_infdata)["mean"]
 param_recovery = az_summary(m_recovery_infdata)["mean"]
 
+fitted_subj = get_subject_means(param_fitted)
+recovered_subj = get_subject_means(param_recovery)
 
-param_list = [
-    't',
-    'v_Intercept',
-    'v_val_diff',
-    'v_DwellPropAdvantage',
-    'v_gaze_quad',
-    'a_Intercept',
-    'a_abs_DwellPropAdv:C(OVcate)[low]',
-    'a_abs_DwellPropAdv:C(OVcate)[medium]',
-    'a_abs_DwellPropAdv:C(OVcate)[high]'
-]
+common = fitted_subj.index.intersection(recovered_subj.index)
+if len(common) < max(len(fitted_subj), len(recovered_subj)):
+    print(f"Warning: only comparing {len(common)} common subjects "
+          f"(fitted had {len(fitted_subj)}, recovered had {len(recovered_subj)})")
 
-# subplot for each param and regplot_with_corr
-fig, ax = plt.subplots(ncols=len(param_list), figsize=(3*len(param_list), 3))
+fitted_aligned = fitted_subj.loc[common]
+recovered_aligned = recovered_subj.loc[common]
 
-# regplot_with_corr
+# regression plots: one panel per parameter
+fig, ax = plt.subplots(ncols=len(param_list), figsize=(3 * len(param_list), 3))
 for i, param in enumerate(param_list):
-    regplot_with_corr(x=param_fitted[param], y=param_recovery[param], ax=ax[i])
+    x = fitted_aligned[param]
+    y = recovered_aligned[param]
+    regplot_with_corr(x=x, y=y, ax=ax[i])
     if i == 0:
-        ax[i].set_ylabel('Predicted')
+        ax[i].set_ylabel('Recovered')
     else:
         ax[i].set_ylabel('')
-        
-plot_path3 = os.path.join(FIG_DIR_ROOT, "Reg_plots.png")
-plt.savefig(plot_path3, dpi=300, bbox_inches='tight')
+    ax[i].set_title(param)
 
 plt.tight_layout()
-plt.show()
+plot_path3 = os.path.join(FIG_DIR_ROOT, "Reg_plots.png")
+plt.savefig(plot_path3, dpi=300, bbox_inches='tight')
+plt.close(fig)
+
