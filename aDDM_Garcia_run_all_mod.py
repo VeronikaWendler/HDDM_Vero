@@ -401,6 +401,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
         elif version == 28:
             v_reg = {'model': 'v ~ 1 + val_diff + val_bal_int', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+        elif version == 29:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattW_chart + InattW_image', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'t': 'OVcate'}                   # add boundary/t if desired
         else:
             raise ValueError(f"check version {version} ??")
         

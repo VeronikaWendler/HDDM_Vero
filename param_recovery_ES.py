@@ -313,63 +313,58 @@ subject_params = az_summary(es27_infdata)['mean']
 # print(sim_data.to_string())
 
 
-subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
+# ---------- subject-level summary (no OVcate) ----------
+subject_summary = az_summary(es27_infdata)["mean"].reset_index(names="subj_idx")
+
+# rt summary per subject
 df_ind_summary = (
-    data_ES_27.groupby(['subj_idx'])['rt']
+    data_ES_27.groupby("subj_idx")["rt"]
     .describe()
     .reset_index()
 )
-df_ind_summary = (
-    df_ind_summary.set_index('subj_idx')
-    .join(subject_summary.set_index('subj_idx'))
-    .reset_index()
-)
 
-# get group/subject parameters for the weighted terms (if needed)
-# e.g., you might want to pull them per trial from df_ind_summary
-sim_data = []
+# Merge subject-level posterior means with the RT summary
+df_ind_summary = df_ind_summary.merge(subject_summary, on="subj_idx", how="inner")
 
-for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx']):
-    j = df_ind_summary[(df_ind_summary['subj_idx'] == subj)].iloc[0]
+# ---------- simulate trial-by-trial using those subject-level estimates ----------
+sim_data_list = []
+for subj, trial_group in data_ES_27.groupby("subj_idx"):
+    j = df_ind_summary[df_ind_summary["subj_idx"] == subj].iloc[0]
+
     v_int = j["v_Intercept"]
     v_vald = j["v_val_diff"]
-    v_valbal = j["v_val_bal_int"]
+    v_valbal = j["v_val_bal_int"]          # from your orthogonalised term
     t_val = j["t"]
-    a_val = j["a"]
+    a_val = j.get("a_Intercept", j.get("a", None))  # adjust depending on what your summary names it
 
     for _, trial in trial_group.iterrows():
         val_diff_trial = trial.get("val_diff", 0)
         val_bal_trial = trial.get("val_bal_int", 0)
 
-        # weighted drift and boundary
+        # drift with interaction-style structure
         v_trial = v_int + v_vald * val_diff_trial + v_valbal * val_bal_trial
 
-        # simulate (you can do multiple repeats if desired)
         sim_trial, _ = hddm.generate.gen_rand_data(
-            {"v": v_trial,
-             "a": a_val, 
-             "t": t_val},
+            {"v": v_trial, "a": a_val, "t": t_val},
             size=1, subjs=1
         )
         sim_trial["subj_idx"] = subj
         sim_trial["val_diff"] = val_diff_trial
         sim_trial["val_bal_int"] = val_bal_trial
 
-        sim_data.append(sim_trial)
+        sim_data_list.append(sim_trial)
 
-sim_data = pd.concat(sim_data, ignore_index=True)
+sim_data = pd.concat(sim_data_list, ignore_index=True)
 
-# Final guard: enforce subj_idx <= 20 in sim_data
-sim_data['subj_idx'] = pd.to_numeric(sim_data['subj_idx'], errors='coerce').astype(int)
-sim_data = sim_data[sim_data['subj_idx'] <= 20]
-
+# final filtering etc.
+sim_data["subj_idx"] = pd.to_numeric(sim_data["subj_idx"], errors="coerce").astype(int)
+sim_data = sim_data[sim_data["subj_idx"] <= 20]
 if "condition" in sim_data.columns:
     sim_data.drop("condition", axis=1, inplace=True)
 
-# Diagnostics
+# diagnostics
 print(sim_data.head(10))
-print("\nUnique subjects in simulation:", sorted(sim_data['subj_idx'].unique()))
-
+print("\nUnique subjects in simulation:", sorted(sim_data["subj_idx"].unique()))
 print(sim_data.to_string())
 
 

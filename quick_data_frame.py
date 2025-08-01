@@ -102,6 +102,18 @@ data['DTA2']  = data['DTA'] ** 2
 data['absDTA']= np.abs(data['DTA'])
 
 
+
+
+
+#-------------------------------------------------------------------------
+
+# identify which option (chart or image) was the LOWER-value one on this trial
+lower_is_chart = (data['p2'] < data['p1']).astype(int)   # 1 if chart is worse
+lower_is_image = (data['p1'] < data['p2']).astype(int)   # 1 if image is worse
+
+data["InattW_chart"] = data["InattentionW"] * lower_is_chart
+data["InattW_image"] = data["InattentionW"] * lower_is_image
+
 data.to_csv(
     "C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/"
     "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
