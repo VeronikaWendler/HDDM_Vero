@@ -118,26 +118,34 @@ def regplot_with_corr(
     ax=None,
     **kwargs
 ):
-    """
-
-    Example:
-    --------
-    >>> Example usage
-    >>> import pandas as pd
-    >>> data = pd.DataFrame({'x': [1, 2, 3, 4, 5], 'y': [2, 3, 5, 7, 11]})
-    >>> regplot_with_corr(data)
-    >>> plt.show()
-    """
     if ax is None:
         ax = plt.gca()
+
+    # Extract / coerce x and y into pandas Series
     if data is not None:
         data_x = data[x]
         data_y = data[y]
-    else: 
-        data_x = x
-        data_y = y
+    else:
+        # If they passed raw arrays or Series
+        data_x = x if isinstance(x, pd.Series) else pd.Series(x)
+        data_y = y if isinstance(y, pd.Series) else pd.Series(y)
 
-    # Plot regression line and scatter plot
+    # Align the two series: keep only indices present in both
+    try:
+        data_x, data_y = data_x.align(data_y, join='inner')
+    except Exception:  # fallback if not alignment-compatible (e.g., different types)
+        data_x = pd.Series(data_x).reset_index(drop=True)
+        data_y = pd.Series(data_y).reset_index(drop=True)
+        minlen = min(len(data_x), len(data_y))
+        data_x = data_x.iloc[:minlen]
+        data_y = data_y.iloc[:minlen]
+
+    # Drop any remaining NaNs
+    mask = data_x.notna() & data_y.notna()
+    data_x = data_x[mask]
+    data_y = data_y[mask]
+
+    # Plot regression line and scatter
     sns.regplot(
         x=data_x,
         y=data_y,
@@ -148,34 +156,27 @@ def regplot_with_corr(
 
     annot_text = ""
     if cor_anonot:
-        # Calculate Pearson correlation
-        correlation, p_value = pearsonr(data_x, data_y)
-        # if np.isnan(correlation):
-        #     correlation = 0
-        # if np.isnan(p_value):
-        #     p_value = 1
-        p_str = "p < 0.001" if p_value < 0.001 else f"p = {p_value:.3f}"
-        annot_text += f"$r={correlation:.2f}$\n${p_str}$"
-
+        # Pearson correlation
+        if len(data_x) > 1 and len(data_y) > 1:
+            correlation, p_value = pearsonr(data_x, data_y)
+            p_str = "p < 0.001" if p_value < 0.001 else f"p = {p_value:.3f}"
+            annot_text += f"$r={correlation:.2f}$\n${p_str}$"
     if reg_anonot:
-        # Calculate regression coefficients
-        X = sm.add_constant(data_x)  # Adds a constant term to the predictor
+        # Linear regression coefficients
+        X = sm.add_constant(data_x)
         model = sm.OLS(data_y, X).fit()
         intercept, slope = model.params
         annot_text += f"\n$\\beta_0={intercept:.2f}$\n$\\beta_1={slope:.2f}$"
 
-    # Annotate the plot with correlation, p-value, intercept, and slope
-    if annot_text != "":
+    if annot_text:
         ax.annotate(
             annot_text,
             **annot_kws,
             xycoords='axes fraction',
-            bbox=dict(
-                boxstyle='round,pad=0.3', edgecolor='black', facecolor='white'
-            )
+            bbox=dict(boxstyle='round,pad=0.3', edgecolor='black', facecolor='white')
         )
-    
     return ax
+
 
 
 def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
