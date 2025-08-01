@@ -402,8 +402,8 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             v_reg = {'model': 'v ~ 1 + val_diff + val_bal_int', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         elif version == 29:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattW_chart + InattW_image', 'link_func': lambda x: x}
-            depends_on={'a': 'OVcate'}  
+            v_reg = {'model': 'v ~ 1 + AttentionW + IAW_chart + IAW_image', 'link_func': lambda x: x}
+            depends_on={'a': 'OVcate'} 
         elif version == 30:
             v_reg = {'model': 'v ~ 1 + gaze_quad:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
@@ -417,7 +417,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             for reg in reg_descr
         )
 
-        # …or if z is in the depends_on dict
+        # …or if z is in the depends_on dict #
         if has_z_reg or 'z' in depends_on:
             include_list.append('z')
         print(f"[run_model] version={version}  include={include_list}")
