@@ -1812,7 +1812,7 @@ if __name__ == "__main__":
             data["gaze_quad"] = pd.to_numeric(data["gaze_quad"],errors="coerce")
             data["abs_DwellPropAdv"] = pd.to_numeric(data["abs_DwellPropAdv"],errors="coerce")
             data["IAW_chart"] = pd.to_numeric(data["IAW_chart"],errors="coerce")
-            data["IAW_imag"] = pd.to_numeric(data["IAW_imag"],errors="coerce")
+            data["IAW_image"] = pd.to_numeric(data["IAW_image"],errors="coerce")
             
             data = data[~data["subj_idx"].isin({1,4,5,6,14,99})]
             data = data.dropna(subset=["rt",
@@ -1836,12 +1836,12 @@ if __name__ == "__main__":
                                        "gaze_quad",
                                        "abs_DwellPropAdv",
                                        "IAW_chart",
-                                       "IAW_imag"])   
+                                       "IAW_image"])   
             
             # put this near the top of the file, right after you finish preparing `data_full`
 
             # list every column that appears in any v- or a-regression
-            cols_to_z = ['val_diff', 'DwellPropAdvantage', 'gaze_quad', 'val_bal_int', 'AttentionW', 'IAW_chart', 'IAW_imag', 'abs_DwellPropAdv']
+            cols_to_z = ['val_diff', 'DwellPropAdvantage', 'gaze_quad', 'val_bal_int', 'AttentionW', 'IAW_chart', 'IAW_image', 'abs_DwellPropAdv']
             
             for c in cols_to_z:
                 mu, sd = data[c].mean(), data[c].std()
