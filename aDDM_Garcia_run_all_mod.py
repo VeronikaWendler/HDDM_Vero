@@ -403,6 +403,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             reg_descr = [v_reg]
         elif version == 29:
             v_reg = {'model': 'v ~ 1 + AttentionW + IAW_chart + IAW_image', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
             depends_on={'a': 'OVcate'} 
         elif version == 30:
             v_reg = {'model': 'v ~ 1 + gaze_quad:C(OVcate)', 'link_func': lambda x: x}
