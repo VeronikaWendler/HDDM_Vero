@@ -441,10 +441,11 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
                    return_infdata=True, loglike=True, ppc=True)
 
         return m, infdata
+    
 
      
         # # INCLUDE SP IF YouOU WNAT THIA IF NOT EXCLUDE 
-        # #  Fix z at 0.55 
+        # #  Fix z at 0.55 #
         # from copy import deepcopy
         # cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
         # idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
