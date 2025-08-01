@@ -409,7 +409,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             reg_descr = [v_reg]
             depends_on={'a': 'abs_DwellPropAdv:C(OVcate)[high]'}  
         else:
-            raise ValueError(f"check version {version} ??")
+            raise ValueError(f"check version {version} ??")   
         
         include_list = ['a', 't', 'v']
         has_z_reg = any(
@@ -1811,9 +1811,9 @@ if __name__ == "__main__":
             data["DwellPropAdvantage"] = pd.to_numeric(data["DwellPropAdvantage"],errors="coerce")
             data["gaze_quad"] = pd.to_numeric(data["gaze_quad"],errors="coerce")
             data["abs_DwellPropAdv"] = pd.to_numeric(data["abs_DwellPropAdv"],errors="coerce")
-            data["InattW_chart"] = pd.to_numeric(data["InattW_chart"],errors="coerce")
-            data["InattW_image"] = pd.to_numeric(data["InattW_image"],errors="coerce")
-
+            data["IAW_chart"] = pd.to_numeric(data["IAW_chart"],errors="coerce")
+            data["IAW_imag"] = pd.to_numeric(data["IAW_imag"],errors="coerce")
+            
             data = data[~data["subj_idx"].isin({1,4,5,6,14,99})]
             data = data.dropna(subset=["rt",
                                        "response",
@@ -1835,13 +1835,13 @@ if __name__ == "__main__":
                                        "DwellPropAdvantage",
                                        "gaze_quad",
                                        "abs_DwellPropAdv",
-                                       "InattW_chart",
-                                       "InattW_image"])   
+                                       "IAW_chart",
+                                       "IAW_imag"])   
             
             # put this near the top of the file, right after you finish preparing `data_full`
 
             # list every column that appears in any v- or a-regression
-            cols_to_z = ['val_diff', 'DwellPropAdvantage', 'gaze_quad', 'val_bal_int', 'AttentionW', 'InattW_chart', 'InattW_image', 'abs_DwellPropAdv']
+            cols_to_z = ['val_diff', 'DwellPropAdvantage', 'gaze_quad', 'val_bal_int', 'AttentionW', 'IAW_chart', 'IAW_imag', 'abs_DwellPropAdv']
             
             for c in cols_to_z:
                 mu, sd = data[c].mean(), data[c].std()
