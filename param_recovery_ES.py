@@ -227,19 +227,6 @@ assert all(s <= 20 for s in filtered_subjects), "Filtering failed: found subj_id
 subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
 subject_summary = subject_summary[subject_summary['subj_idx'].isin(filtered_subjects)]
 
-# Individual summary
-df_ind_summary = (
-    data_ES_27.groupby(['subj_idx', 'OVcate'])['rt']
-    .describe()
-    .reset_index()
-)
-df_ind_summary = (
-    df_ind_summary.set_index('subj_idx')
-    .join(subject_summary.set_index('subj_idx'))
-    .reset_index()
-)
-
-
 
 
 def az_summary_group(infdata, **kwargs):
@@ -255,34 +242,48 @@ group_params = az_summary_group(es27_infdata)
 print(group_params.index.tolist())
 
 
-
-
 group_params = az.summary(es27_infdata, var_names=['~subj', '~std'], filter_vars='regex')
 subject_params = az_summary(es27_infdata)['mean']
 
-# SIMULATION
-sim_data = pd.DataFrame()
+subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
+df_ind_summary = (
+    data_ES_27.groupby(['subj_idx', 'OVcate'])['rt']
+    .describe()
+    .reset_index()
+)
+df_ind_summary = (
+    df_ind_summary.set_index('subj_idx')
+    .join(subject_summary.set_index('subj_idx'))
+    .reset_index()
+)
+
+# get group/subject parameters for the weighted terms (if needed)
+# e.g., you might want to pull them per trial from df_ind_summary
+sim_data = []
+
 for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
     v_int = j["v_Intercept"]
     v_vald = j["v_val_diff"]
     v_DwellPA = j["v_DwellPropAdvantage"]
     v_gquad = j["v_gaze_quad"]
-    a_val = j["a_Intercept"]
-    a_DwellPAov = j[f"a_abs_DwellPropAdv:C(OVcate)[{ov}]"]
+    a_int = j["a_Intercept"]
+    a_abs_DwellPAov = j[f"a_abs_DwellPropAdv:C(OVcate)[{ov}]"]
     t_val = j["t"]
 
     for _, trial in trial_group.iterrows():
-        val_diff_trial = trial.get("val_diff", v_vald)
-        DwellPA_trial = trial.get("DwellPropAdvantage", v_DwellPA)
-        gaze_quad_trial = trial.get("gaze_quad", v_gquad)
-        abs_DwellPAov_trial = trial.get("abs_DwellPropAdv", a_DwellPAov)
+        val_diff_trial = trial.get("val_diff", 0)
+        DwellPA_trial = trial.get("DwellPropAdvantage", 0)
+        gaze_quad_trial = trial.get("gaze_quad", 0)
+        abs_DwellPAov_trial = trial.get("abs_DwellPropAdv", 0)
 
-        v_trial = v_int + val_diff_trial + DwellPA_trial + gaze_quad_trial
-        bound = a_val + abs_DwellPAov_trial
+        # weighted drift and boundary
+        v_trial = v_int + v_vald * val_diff_trial + v_DwellPA * DwellPA_trial + v_gquad * gaze_quad_trial
+        a_trial = a_int + a_abs_DwellPAov * abs_DwellPAov_trial
 
+        # simulate (you can do multiple repeats if desired)
         sim_trial, _ = hddm.generate.gen_rand_data(
-            {"v": v_trial, "a": bound, "t": t_val},
+            {"v": v_trial, "a": a_trial, "t": t_val},
             size=1, subjs=1
         )
         sim_trial["subj_idx"] = subj
@@ -292,7 +293,9 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
         sim_trial["gaze_quad"] = gaze_quad_trial
         sim_trial["abs_DwellPropAdv"] = abs_DwellPAov_trial
 
-        sim_data = pd.concat([sim_data, sim_trial], ignore_index=True)
+        sim_data.append(sim_trial)
+
+sim_data = pd.concat(sim_data, ignore_index=True)
 
 # Final guard: enforce subj_idx <= 20 in sim_data
 sim_data['subj_idx'] = pd.to_numeric(sim_data['subj_idx'], errors='coerce').astype(int)
