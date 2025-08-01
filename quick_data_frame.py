@@ -122,6 +122,24 @@ data['IAW_chart'] = data['IAW_chart'].round(3)
 data['IAW_image'] = data['IAW_image'].round(3)
 
 
+# ---------- choose which columns to standardise --------------
+to_z = ['AttentionW',            # symmetric, continuous
+        'InattentionW',          # symmetric, continuous
+        'gaze_quad',             # if you use it
+        'val_diff',
+        'DwellPropAdvantage',
+        'abs_DwellPropAdv']              # etc. add more if needed
+
+# ---------------------------------------------
+# z-score, then round to 3 decimals (example)
+# ---------------------------------------------
+for c in to_z:
+    mu, sd = data[c].mean(), data[c].std()
+    data[f'z_{c}'] = ((data[c] - mu) / sd).round(4)  
+
+data['z_IAW_chart'] = data['z_InattentionW'] * data['chart_is_sub']
+data['z_IAW_image'] = data['z_InattentionW'] * data['image_is_sub']
+
 data.to_csv(
     "C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/"
     "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",

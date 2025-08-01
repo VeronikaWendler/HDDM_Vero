@@ -402,13 +402,17 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             v_reg = {'model': 'v ~ 1 + val_diff + val_bal_int', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         elif version == 29:
-            v_reg = {'model': 'v ~ 1 + AttentionW + IAW_chart + IAW_image', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 1 + z_AttentionW:C(OVcate) + z_IAW_chart + z_IAW_image', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on={'a': 'OVcate'} 
         elif version == 30:
-            v_reg = {'model': 'v ~ 1 + gaze_quad:C(OVcate)', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 1 + z_val_diff + z_DwellPropAdvantage:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            depends_on={'a': 'abs_DwellPropAdv:C(OVcate)[high]'}  
+            depends_on={'a': 'OVcate'}  
+        elif version == 31:
+            v_reg = {'model': 'v ~ 1 + z_val_diff + z_DwellPropAdvantage + z_gaze_quad:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'a': 'OVcate'}
         else:
             raise ValueError(f"check version {version} ??")   
         
@@ -1816,6 +1820,24 @@ if __name__ == "__main__":
             data["IAW_chart"] = pd.to_numeric(data["IAW_chart"],errors="coerce")
             data["IAW_image"] = pd.to_numeric(data["IAW_image"],errors="coerce")
             
+            
+            data["z_AttentionW"]  = pd.to_numeric(data["z_AttentionW"],  errors="coerce")
+            data["z_InattentionW"]= pd.to_numeric(data["z_InattentionW"],errors="coerce")
+            data["z_val_diff"]  = pd.to_numeric(data["z_val_diff"],  errors="coerce")
+            data["z_DwellPropAdvantage"]= pd.to_numeric(data["z_DwellPropAdvantage"],errors="coerce")
+            data["z_gaze_quad"]  = pd.to_numeric(data["z_gaze_quad"],  errors="coerce")
+            data["z_abs_DwellPropAdv"]= pd.to_numeric(data["z_abs_DwellPropAdv"],errors="coerce")
+            data["z_IAW_chart"]= pd.to_numeric(data["z_IAW_chart"],errors="coerce")
+            data["z_IAW_image"]= pd.to_numeric(data["z_IAW_image"],errors="coerce")
+            
+            # convert dwell columns to numeric (if they aren't already)
+            data["DwellLeft"]  = pd.to_numeric(data["DwellLeft"],  errors="coerce")
+            data["DwellRight"] = pd.to_numeric(data["DwellRight"], errors="coerce")
+
+            # ── NEW LINE: keep only trials with strictly positive dwell time on both sides
+            data = data[(data["DwellLeft"] > 0) & (data["DwellRight"] > 0)]
+
+            
             data = data[~data["subj_idx"].isin({1,4,5,6,14,99})]
             data = data.dropna(subset=["rt",
                                        "response",
@@ -1833,28 +1855,16 @@ if __name__ == "__main__":
                                        "chose_left",
                                        "DTA",
                                        "DTA2",
-                                       "val_diff",
-                                       "DwellPropAdvantage",
-                                       "gaze_quad",
-                                       "abs_DwellPropAdv",
-                                       "IAW_chart",
-                                       "IAW_image"])   
+                                       "z_val_diff",
+                                       "z_DwellPropAdvantage",
+                                       "z_gaze_quad",
+                                       "z_abs_DwellPropAdv",
+                                       "z_IAW_chart",
+                                       "z_IAW_image",
+                                       "z_AttentionW",
+                                       "z_InattentionW",])   
             
             # put this near the top of the file, right after you finish preparing `data_full`
-
-            # list every column that appears in any v- or a-regression
-            cols_to_z = ['val_diff', 'DwellPropAdvantage', 'gaze_quad', 'val_bal_int', 'AttentionW', 'IAW_chart', 'IAW_image', 'abs_DwellPropAdv']
-            
-            for c in cols_to_z:
-                mu, sd = data[c].mean(), data[c].std()
-                data[f'z_{c}'] = (data[c] - mu) / sd
-                
-            from statsmodels.stats.outliers_influence import variance_inflation_factor
-            
-            X = data[['z_val_diff','z_DwellPropAdvantage','z_gaze_quad']].dropna()
-            vif = {c: variance_inflation_factor(X.values, i) for i,c in enumerate(X.columns)}
-            print(vif)
-
 
             # ------------------------------------------------------------
             # gives you a quick report at the start
