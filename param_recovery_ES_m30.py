@@ -246,11 +246,6 @@ df_ind_summary = (
 )
 
 
-
-
-
-
-
 sim_data = []
 
 for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
@@ -260,7 +255,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     v_image = j["v_z_IAW_image"]
     v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"] 
     t_val = j["t"]
-    a_val = j[f"a_subj({ov})"]
+    a_val = j[f"a({ov})"]
 
     for _, trial in trial_group.iterrows():
         v_chart_trial = trial.get("z_IAW_chart", 0)
