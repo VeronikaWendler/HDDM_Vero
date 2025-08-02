@@ -251,10 +251,20 @@ import re
 # First, let's properly extract all parameters with their dependencies
 subject_params = az_summary(es27_infdata)['mean'].reset_index()
 
+# Print the columns to see what we're working with
+print("Columns in subject_params:", subject_params.columns.tolist())
+
+# The parameter names are in the first level of columns - let's access them properly
+# We need to first reset the multi-index columns to access them
+subject_params.columns = ['_'.join(col).strip() for col in subject_params.columns.values]
+
+# Now extract the parameter names from the 'index_' column
+subject_params['param_name'] = subject_params['index_']
+subject_params[['param', 'subj_idx']] = subject_params['param_name'].str.extract(r'(.*)_subj\.(\d+)')
+
 # For the boundary parameter 'a', we need to merge with OVcate information
-# We'll create a mapping of subject_idx to their a(high), a(medium), a(low) values
 a_params = subject_params[subject_params['param'].str.startswith('a(')].copy()
-a_params[['param', 'OVcate']] = a_params['param'].str.extract(r'a\((.*)\)')  # Extract the OVcate level
+a_params[['param_base', 'OVcate']] = a_params['param'].str.extract(r'a\((.*)\)')  # Extract the OVcate level
 
 # Now we can merge this back with our trial data
 sim_data = []
@@ -264,7 +274,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
     
     # Get the SPECIFIC a parameter for this subject and OVcate level
-    a_val = a_params[(a_params['subj_idx'] == subj) & (a_params['OVcate'] == ov)]['mean'].values[0]
+    a_val = a_params[(a_params['subj_idx'] == str(subj)) & (a_params['OVcate'] == ov)]['mean_'].values[0]
     
     # Get other parameters as before
     v_int = j["v_Intercept"]
