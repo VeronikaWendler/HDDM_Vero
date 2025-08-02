@@ -152,29 +152,33 @@ def regplot_with_corr(
     return ax
 
 
-def get_param(subj_row, group_series, pattern, ov):
+def lookup_with_subj_suffix(subj_row, group_series, base_template, ov):
     """
-    Try to retrieve a parameter for the given OV level.
-    Order of preference:
-        1. subject-specific   pattern.format(f"subj({ov})")   e.g. a_subj(high)
-        2. group-level        pattern.format(ov)              e.g. a(high)
-    Raises KeyError if neither exists.
+    For regressors like v_z_AttentionW:C(OVcate)[{ov}]:
+    subject-specific names end up as e.g. 'v_z_AttentionW:C(OVcate)[high]_subj'
+    group-level as 'v_z_AttentionW:C(OVcate)[high]'.
     """
-    candidates = [pattern.format(f"subj({ov})"),
-                  pattern.format(ov)]
-
-    for c in candidates:
-        # subject-level lookup first
-        if c in subj_row:
-            return subj_row[c]
-        # fall back on group-level
-        if c in group_series:
-            return group_series[c]
-
-    raise KeyError(f"None of {candidates} found "
-                   f"(available: {list(subj_row.index)[:20]})")
+    group_name = base_template.format(ov)
+    subj_name = f"{group_name}_subj"
+    if subj_name in subj_row:
+        return subj_row[subj_name]
+    if group_name in group_series:
+        return group_series[group_name]
+    raise KeyError(f"Neither {subj_name} nor {group_name} found (available subj: {list(subj_row.index)[:30]}, group: {list(group_series.index)[:30]})")
 
 
+def lookup_a_param(subj_row, group_series, ov):
+    """
+    For 'a' depending on OVcate:
+    group-level is 'a(high)', subject-level is 'a_subj(high)'.
+    """
+    group_name = f"a({ov})"
+    subj_name = f"a_subj({ov})"
+    if subj_name in subj_row:
+        return subj_row[subj_name]
+    if group_name in group_series:
+        return group_series[group_name]
+    raise KeyError(f"Neither {subj_name} nor {group_name} found (available subj: {list(subj_row.index)[:30]}, group: {list(group_series.index)[:30]})")
 
 
 def az_summary(infdata, **kwargs):
@@ -231,8 +235,9 @@ for (subj, ov), trials in data_ES_27.groupby(["subj_idx", "OVcate"]):
     v_int  = pars_row["v_Intercept"]
     v_c    = pars_row["v_z_IAW_chart"]
     v_i    = pars_row["v_z_IAW_image"]
-    v_att  = get_param(pars_row, group_pars, "v_z_AttentionW:C(OVcate)[{}]", ov)
-    a_val  = get_param(pars_row, group_pars, "a({})", ov)
+    v_att  = lookup_with_subj_suffix(pars_row, group_pars, "v_z_AttentionW:C(OVcate)[{}]", ov)
+    a_val  = lookup_a_param(pars_row, group_pars, ov)
+
     t_val  = pars_row["t"]
 
     for _, tr in trials.iterrows():
