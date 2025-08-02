@@ -212,7 +212,7 @@ data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
 
 orig_subjects = sorted(data_ES_27['subj_idx'].unique())
 
-data_ES_27 = data_ES_27.groupby('subj_idx').filter(lambda g: not g['rt'].isna().all())
+#data_ES_27 = data_ES_27.groupby('subj_idx').filter(lambda g: not g['rt'].isna().all())
 
 
 filtered_subjects = sorted(data_ES_27['subj_idx'].unique())
@@ -313,7 +313,7 @@ if "condition" in sim_data.columns:
     sim_data.drop("condition", axis=1, inplace=True)
     
 before = sim_data['subj_idx'].nunique()
-sim_data = sim_data.groupby('subj_idx').filter(lambda g: not g['rt'].isna().all())
+#sim_data = sim_data.groupby('subj_idx').filter(lambda g: not g['rt'].isna().all())
 after = sim_data['subj_idx'].nunique()
 print(f"Removed {before - after} subjects with all-NaN RTs (kept {after}).")
 
