@@ -255,53 +255,80 @@ subject_params = az_summary(es27_infdata)['mean'].reset_index()
 print("Columns in subject_params:", subject_params.columns.tolist())
 
 # The parameter names are in the first level of columns - let's access them properly
-# We need to first reset the multi-index columns to access them
-subject_params.columns = ['_'.join(col).strip() for col in subject_params.columns.values]
+# First, let's properly extract all parameters with their dependencies
+subject_params = az_summary(es27_infdata)['mean'].reset_index()
 
-# Now extract the parameter names from the 'index_' column
-subject_params['param_name'] = subject_params['index_']
-subject_params[['param', 'subj_idx']] = subject_params['param_name'].str.extract(r'(.*)_subj\.(\d+)')
+# Debug: Print the actual columns we have
+print("Actual columns in subject_params:", subject_params.columns.tolist())
+
+# The parameter names might be in different columns depending on your az_summary output
+# Let's find which column contains the parameter names
+param_col = None
+for col in subject_params.columns:
+    if any('_subj.' in str(x) for x in subject_params[col]):
+        param_col = col
+        break
+
+if param_col is None:
+    raise ValueError("Could not find parameter names column in subject_params")
+
+# Extract parameter names and subject indices
+subject_params[['param', 'subj_idx']] = subject_params[param_col].str.extract(r'(.*)_subj\.(\d+)')
 
 # For the boundary parameter 'a', we need to merge with OVcate information
-a_params = subject_params[subject_params['param'].str.startswith('a(')].copy()
+a_params = subject_params[subject_params['param'].str.startswith('a(', na=False)].copy()
 a_params[['param_base', 'OVcate']] = a_params['param'].str.extract(r'a\((.*)\)')  # Extract the OVcate level
+
+# Convert subj_idx to integer for matching
+a_params['subj_idx'] = a_params['subj_idx'].astype(int)
 
 # Now we can merge this back with our trial data
 sim_data = []
 
 for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
-    # Get the general subject parameters
-    j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
-    
-    # Get the SPECIFIC a parameter for this subject and OVcate level
-    a_val = a_params[(a_params['subj_idx'] == str(subj)) & (a_params['OVcate'] == ov)]['mean_'].values[0]
-    
-    # Get other parameters as before
-    v_int = j["v_Intercept"]
-    v_chart = j["v_z_IAW_chart"]
-    v_image = j["v_z_IAW_image"]
-    v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"]
-    t_val = j["t"]
+    try:
+        # Get the general subject parameters
+        j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
+        
+        # Get the SPECIFIC a parameter for this subject and OVcate level
+        a_row = a_params[(a_params['subj_idx'] == subj) & (a_params['OVcate'] == ov)]
+        if len(a_row) == 0:
+            print(f"Warning: No a parameter found for subject {subj}, OVcate {ov}")
+            continue
+            
+        a_val = a_row.iloc[0]['mean']  # Assuming 'mean' is the column with parameter values
+        
+        # Get other parameters as before
+        v_int = j["v_Intercept"]
+        v_chart = j["v_z_IAW_chart"]
+        v_image = j["v_z_IAW_image"]
+        v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"]
+        t_val = j["t"]
 
-    for _, trial in trial_group.iterrows():
-        v_chart_trial = trial.get("z_IAW_chart", 0)
-        v_image_trial = trial.get("z_IAW_image", 0)
-        v_att_trial = trial.get("z_AttentionW:C(OVcate)", 0)
+        for _, trial in trial_group.iterrows():
+            v_chart_trial = trial.get("z_IAW_chart", 0)
+            v_image_trial = trial.get("z_IAW_image", 0)
+            v_att_trial = trial.get("z_AttentionW:C(OVcate)", 0)
 
-        # weighted drift and boundary
-        v_trial = v_int + v_att * v_att_trial + v_chart * v_chart_trial + v_image * v_image_trial
+            # weighted drift and boundary
+            v_trial = v_int + v_att * v_att_trial + v_chart * v_chart_trial + v_image * v_image_trial
 
-        sim_trial, _ = hddm.generate.gen_rand_data(
-            {"v": v_trial, "a": a_val, "t": t_val},
-            size=1, subjs=1
-        )
-        sim_trial["subj_idx"] = subj
-        sim_trial["OVcate"] = ov
-        sim_trial["z_IAW_chart"] = v_chart_trial
-        sim_trial["z_IAW_image"] = v_image_trial
-        sim_trial["z_AttentionW:C(OVcate)"] = v_att_trial
+            sim_trial, _ = hddm.generate.gen_rand_data(
+                {"v": v_trial, "a": a_val, "t": t_val},
+                size=1, subjs=1
+            )
+            sim_trial["subj_idx"] = subj
+            sim_trial["OVcate"] = ov
+            sim_trial["z_IAW_chart"] = v_chart_trial
+            sim_trial["z_IAW_image"] = v_image_trial
+            sim_trial["z_AttentionW:C(OVcate)"] = v_att_trial
 
-        sim_data.append(sim_trial)
+            sim_data.append(sim_trial)
+    except Exception as e:
+        print(f"Error processing subject {subj}, OVcate {ov}: {str(e)}")
+        continue
+
+sim_data = pd.concat(sim_data, ignore_index=True)
 # sim_data = []
 
 # for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
