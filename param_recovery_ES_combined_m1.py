@@ -20,7 +20,7 @@ import itertools
 #import pp
 import joblib
 from IPython import embed as shell
-import hddm
+import hddms
 import kabuki
 import statsmodels.formula.api as sm
 from patsy import dmatrix
@@ -309,7 +309,7 @@ print("\nUnique subjects in simulation:", sorted(sim_data['subj_idx'].unique()))
 print("OVcate counts in simulation:\n", sim_data['OVcate'].value_counts())
 
 
-print(sim_data.to_string())
+#print(sim_data.to_string())
 
 
 #-------------------------------------------------------------------------------------------------------------------
@@ -318,6 +318,24 @@ print("\nUnique subjects:", sim_data['subj_idx'].nunique())
 print("OVcate counts:\n", sim_data['OVcate'].value_counts())
 #-----------------------------------------------------------------------------------------------------------------------
 #Re-Fitting the model (like in hcp tutorial)
+# Trial counts per subject
+sim_subj_counts = sim_data.groupby('subj_idx').size()
+print("Simulated trials per subject (total):")
+for subj, cnt in sim_subj_counts.items():
+    ov_breakdown = sim_data[sim_data['subj_idx'] == subj]['OVcate'].value_counts().to_dict()
+    print(f"  Subject {subj}: {cnt} trials, OVcate breakdown: {ov_breakdown}")
+
+# Subjects with all-NaN RTs (before/after filtering)
+bad_sim = sim_data.groupby('subj_idx')['rt'].apply(lambda s: s.isna().all())
+subjects_all_nan = bad_sim[bad_sim].index.tolist()
+if subjects_all_nan:
+    print("Subjects whose simulated RTs are all NaN (will be or were removed):", subjects_all_nan)
+else:
+    print("No subjects have all-NaN simulated RTs.")
+
+# Overview of unique subjects and counts
+print("Unique subjects retained:", sorted(sim_data['subj_idx'].unique()))
+print("OVcate counts overall:\n", sim_data['OVcate'].value_counts())
 
 # helper function to wrap the sampling procedure
 def run_sampling(model, model_db_name, progress_bar=True):
