@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 27    # defining version
+version = 30    # defining version
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -101,7 +101,7 @@ model_base_name = "garcia_replication_"
 
 model_versions = {
     'LE': ['LE_1', 'LE_2', 'LE_3', 'LE_4', 'LE_5', 'LE_6', 'LE_7'],
-    'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4','ES_5', 'ES_6', 'ES_7', 'ES_8', 'ES_9', 'ES_10', 'ES_11','ES_12', 'ES_13', 'ES_14', 'ES_15', 'ES_16', 'ES_17', 'ES_18', 'ES_19','ES_20', 'ES_21', "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27","ES_28", "ES_29"],   
+    'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4','ES_5', 'ES_6', 'ES_7', 'ES_8', 'ES_9', 'ES_10', 'ES_11','ES_12', 'ES_13', 'ES_14', 'ES_15', 'ES_16', 'ES_17', 'ES_18', 'ES_19','ES_20', 'ES_21', "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27","ES_28", "ES_29", "ES_30", "ES_31", "ES_32", "ES_33"],   
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
     'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5'],
@@ -1770,6 +1770,111 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "Value balanced attention",
                 "ndt ",
                 ]
+        elif version == 29:
+            params_of_interest = [
+                'a(low)', 'a(medium)', 'a(high)',
+                't',
+                'v_Intercept',
+                'z_AttentionW:C(OVcate)[low]',
+                'z_AttentionW:C(OVcate)[medium]',
+                'z_AttentionW:C(OVcate)[high]',
+                'z_IAW_chart',
+                'z_IAW_image',
+                ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+
+            titles = [
+                'Boundary sep. (low OVcate)', 
+                'Boundary sep. (medium OVcate)', 
+                'Boundary sep. (high OVcate)',
+                'Non-dec. time',
+                'Intercept drift rate',
+                'Drift z_AttentionW:C(OVcate)[low]',
+                'Drift z_AttentionW:C(OVcate)[medium]',
+                'Drift z_AttentionW:C(OVcate)[high]',
+                'Drift z_IAW_chart',
+                'Drift z_IAW_image',
+                ]
+        elif version == 30:
+            params_of_interest = [
+                'a(low)', 'a(medium)', 'a(high)',
+                't',
+                'v_Intercept',
+                'z_AttentionW',
+                'z_IAW_chart:C(OVcate)[low]',
+                'z_IAW_chart:C(OVcate)[medium]',
+                'z_IAW_chart:C(OVcate)[high]',
+                'z_IAW_image:C(OVcate)[low]',
+                'z_IAW_image:C(OVcate)[medium]',
+                'z_IAW_image:C(OVcate)[high]',
+                ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+
+            titles = [
+                'Boundary sep. (low OVcate)',
+                'Boundary sep. (medium OVcate)',
+                'Boundary sep. (high OVcate)',
+                'Non-dec. time',
+                'Intercept drift rate',
+                'Drift z_AttentionW',
+                'Drift z_IAW_chart:C(OVcate)[low]',
+                'Drift z_IAW_chart:C(OVcate)[medium]',
+                'Drift z_IAW_chart:C(OVcate)[high]',
+                'Drift z_IAW_image:C(OVcate)[low]',
+                'Drift z_IAW_image:C(OVcate)[medium]',
+                'Drift z_IAW_image:C(OVcate)[high]',
+            ]
+        elif version == 31:
+            
+            params_of_interest = [
+                'a(low)', 'a(medium)', 'a(high)',
+                't',
+                'v_Intercept',
+                'z_val_diff',
+                'z_DwellPropAdvantage:C(OVcate)[low]',
+                'z_DwellPropAdvantage:C(OVcate)[medium]',
+                'z_DwellPropAdvantage:C(OVcate)[high]',
+            ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            
+            titles = [
+                'Boundary sep. (low OVcate)',
+                'Boundary sep. (medium OVcate)',
+                'Boundary sep. (high OVcate)',
+                'Non-dec. time',
+                'Intercept drift rate',
+                'Drift z_val_diff',
+                'Drift z_DwellPropAdvantage:C(OVcate)[low]',
+                'Drift z_DwellPropAdvantage:C(OVcate)[medium]',
+                'Drift z_DwellPropAdvantage:C(OVcate)[high]',
+            ]
+        elif version == 32:
+
+            params_of_interest = [
+                'a(low)', 'a(medium)', 'a(high)',
+                't',
+                'v_Intercept',
+                'z_val_diff',
+                'z_DwellPropAdvantage',
+                'z_gaze_quad:C(OVcate)[low]',
+                'z_gaze_quad:C(OVcate)[medium]',
+                'z_gaze_quad:C(OVcate)[high]',
+            ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            
+            titles = [
+                'Boundary sep. (low OVcate)',
+                'Boundary sep. (medium OVcate)',
+                'Boundary sep. (high OVcate)',
+                'Non-dec. time',
+                'Intercept drift rate',
+                'Drift z_val_diff',
+                'Drift z_DwellPropAdvantage',
+                'Drift z_gaze_quad:C(OVcate)[low]',
+                'Drift z_gaze_quad:C(OVcate)[medium]',
+                'Drift z_gaze_quad:C(OVcate)[high]',
+            ]
+            
             
     elif phase == 'EE':
         if version == 0:
