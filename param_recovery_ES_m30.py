@@ -95,6 +95,17 @@ def extract_subject_means(infdata: az.InferenceData) -> pd.DataFrame:
 
     return wide
 
+# ------------------------------------------------------------------
+def _get(p: pd.Series, pattern: str, cat: str):
+    
+    cand1 = pattern.format(cat)                           # e.g. a(high)
+    cand2 = (cand1.replace("(", "_").replace(")", "")
+                   .replace(":", "_").replace("[", "_").replace("]", ""))
+    for c in (cand1, cand2):
+        if c in p:
+            return p[c]
+    raise KeyError(f"Neither {cand1} nor {cand2} in columns: {p.index[:20]}")
+# 
 
 # ---------------------------------------------------------------------
 
@@ -111,8 +122,8 @@ def simulate_from_subject_params(data: pd.DataFrame,
         v_int   = p["v_Intercept"]
         v_c     = p["v_z_IAW_chart"]
         v_i     = p["v_z_IAW_image"]
-        v_att   = p[f"v_z_AttentionW:C(OVcate)[{ov}]"]
-        a_val   = p[f"a({ov})"]
+        v_att = _get(p, "v_z_AttentionW:C(OVcate)[{}]", ov)
+        a_val = _get(p, "a({})", ov)
         t_val   = p["t"]
 
         for _, tr in trials.iterrows():
@@ -166,6 +177,7 @@ def main():
 
     infdata   = load_chains(BASE_MODEL_DIR, "combined_replication_ES_30")
     subject_df = extract_subject_means(infdata)
+    print(sorted(subject_df.columns.tolist())[:40])   # first 40 columns
 
     raw = infdata.observed_data.to_dataframe().reset_index(drop=True)
     raw["subj_idx"] = raw["subj_idx"].astype(int)
