@@ -152,46 +152,81 @@ def regplot_with_corr(
     return ax
 
 
+# def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
+
+#     param_df = az.summary(infdata, kind="stats",
+#                             **kwargs).reset_index(names="param_name")
+#     # col_values = ['mean', 'sd', "hdi_3%", "hdi_97%"]
+#     col_values = list(param_df.columns[1:5])
+
+#     pattern = r'(.*)_subj\.(\d+)'
+#     param_df[['param', 'subj_idx']] = param_df['param_name'].str.extract(pattern)
+
+#     param_df[['param',
+#                 'subj_idx']] = param_df['param_name'].str.extract(pattern)
+#     # param_df['param'] = param_df['param'].apply(lambda x: f'${x}$')
+#     param_df = param_df.dropna(subset=['subj_idx'])
+#     param_df['subj_idx'] = param_df['subj_idx'].astype(int)
+
+#     if half_a:
+#         param_df.loc[param_df['param'] == 'a',
+#                         col_values] = param_df.loc[param_df['param'] == 'a',
+#                                                 col_values] / 2
+
+#     param_df = param_df.pivot(
+#         index='subj_idx', columns='param', values=col_values
+#     )
+
+#     if param_names_order is not None:
+#         new_index = pd.MultiIndex.from_tuples(
+#             [
+#                 (level_0, param) for level_0 in col_values
+#                 for param in param_names_order
+#             ],
+#             names=[None, 'param']
+#         )
+#         param_df = param_df.reindex(columns=new_index)
+
+#     param_df.reset_index(inplace=True)
+#     param_df.columns.names = [None, None]
+
+#     return param_df
+
 def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
+    """
+    Pull out every parameter whose ArviZ name ends in .<subj>,
+    strip off any "_subj" tag, and pivot so you get one row per subj
+    and one column per (clean) parameter name.
+    """
+    # get the raw ArviZ summary
+    param_df = az.summary(infdata, kind="stats", **kwargs)             \
+                 .reset_index(names="param_name")
 
-    param_df = az.summary(infdata, kind="stats",
-                            **kwargs).reset_index(names="param_name")
-    # col_values = ['mean', 'sd', "hdi_3%", "hdi_97%"]
-    col_values = list(param_df.columns[1:5])
+    # these are the statistics we’ll keep (mean, sd, etc.)
+    stats = list(param_df.columns[1:5])
 
-    pattern = r'(.*)_subj\.(\d+)'
+    # look for ANY param_name that ends in ".<digits>",
+    # optionally preceded by "_subj"
+    pattern = r'(?P<param>.+?)(?:_subj)?\.(?P<subj>\d+)$'
+    ext = param_df["param_name"].str.extract(pattern)
 
-    param_df[['param',
-                'subj_idx']] = param_df['param_name'].str.extract(pattern)
-    # param_df['param'] = param_df['param'].apply(lambda x: f'${x}$')
-    param_df = param_df.dropna(subset=['subj_idx'])
-    param_df['subj_idx'] = param_df['subj_idx'].astype(int)
-
-    if half_a:
-        param_df.loc[param_df['param'] == 'a',
-                        col_values] = param_df.loc[param_df['param'] == 'a',
-                                                col_values] / 2
-
-    param_df = param_df.pivot(
-        index='subj_idx', columns='param', values=col_values
+    # drop everything that didn’t match
+    param_df = param_df.join(ext).dropna(subset=["subj"]).rename(
+        columns={"subj":"subj_idx"}
     )
+    param_df["subj_idx"] = param_df["subj_idx"].astype(int)
 
-    if param_names_order is not None:
-        new_index = pd.MultiIndex.from_tuples(
-            [
-                (level_0, param) for level_0 in col_values
-                for param in param_names_order
-            ],
-            names=[None, 'param']
-        )
-        param_df = param_df.reindex(columns=new_index)
+    # now pivot into wide form:
+    #  index = subj_idx, columns = clean param name, values = our stats
+    wide = param_df.pivot(index="subj_idx", columns="param", values=stats)
 
-    param_df.reset_index(inplace=True)
-    param_df.columns.names = [None, None]
+    # if you only need the means:
+    # return wide["mean"].reset_index()
+    # but to keep sd/etc available:
+    wide.columns.names = ["stat", "param"]
+    wide = wide.reset_index()
+    return wide
 
-    return param_df
-
-#  
 #-----------------------------------------------------------------------------------------------------------------------------------------
 summary_df = az_summary(es27_infdata)['mean']
 print(summary_df.columns.tolist())
@@ -244,39 +279,9 @@ df_ind_summary = (
     .join(subject_summary.set_index('subj_idx'))
     .reset_index()
 )
+print("columns now available in j:", df_ind_summary.columns.tolist())
 
 import re
-
-def robust_lookup(series: pd.Series, base_pattern: str, ov: str):
-    """
-    Try to fetch the parameter for given OVcate, accounting for naming
-    variations like 'a(high)', 'a_high', 'a_subj(high)', etc.
-    base_pattern can be either a format string with '{}' for ov or a base name,
-    e.g. 'a({})' or 'v_z_AttentionW:C(OVcate)[{}]'.
-    """
-    candidates = []
-    if '{}' in base_pattern:
-        raw = base_pattern.format(ov)
-    else:
-        raw = f"{base_pattern}({ov})"
-    candidates.append(raw)
-    # sanitized variants
-    sanitized = (raw.replace("(", "_").replace(")", "")
-                     .replace(":", "_").replace("[", "_").replace("]", ""))
-    candidates.append(sanitized)
-    # subject-level style (if present)
-    if '{}' in base_pattern:
-        subj_raw = base_pattern.replace('{}', f"subj({ov})")
-        subj_raw = subj_raw.replace("subj(", "subj(")  # keep format
-    else:
-        subj_raw = f"{base_pattern}_subj({ov})"
-    candidates.append(subj_raw)
-    candidates.append(subj_raw.replace("(", "_").replace(")", "")
-                               .replace(":", "_").replace("[", "_").replace("]", ""))
-    for c in candidates:
-        if c in series:
-            return series[c]
-    raise KeyError(f"None of {candidates} found in index. Available (first 30): {series.index.tolist()[:30]}")
 
 sim_data = []
 
@@ -285,8 +290,8 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     v_int = j["v_Intercept"]
     v_chart = j["v_z_IAW_chart"]
     v_image = j["v_z_IAW_image"]
-    v_att = robust_lookup(j, "v_z_AttentionW:C(OVcate)[{}]", ov)
-    a_val = robust_lookup(j, "a({})", ov)
+    v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"]
+    a_val = j[f"a({ov})"]
     t_val = j["t"]
     
         
