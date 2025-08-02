@@ -152,46 +152,49 @@ def regplot_with_corr(
     return ax
 
 
-def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
+def get_param(subj_row, group_series, pattern, ov):
+    """
+    Try to retrieve a parameter for the given OV level.
+    Order of preference:
+        1. subject-specific   pattern.format(f"subj({ov})")   e.g. a_subj(high)
+        2. group-level        pattern.format(ov)              e.g. a(high)
+    Raises KeyError if neither exists.
+    """
+    candidates = [pattern.format(f"subj({ov})"),
+                  pattern.format(ov)]
 
-    param_df = az.summary(infdata, kind="stats",
-                            **kwargs).reset_index(names="param_name")
-    # col_values = ['mean', 'sd', "hdi_3%", "hdi_97%"]
-    col_values = list(param_df.columns[1:5])
+    for c in candidates:
+        # subject-level lookup first
+        if c in subj_row:
+            return subj_row[c]
+        # fall back on group-level
+        if c in group_series:
+            return group_series[c]
 
-    pattern = r'(.*)_subj\.(\d+)'
-    param_df[['param', 'subj_idx']] = param_df['param_name'].str.extract(pattern)
+    raise KeyError(f"None of {candidates} found "
+                   f"(available: {list(subj_row.index)[:20]})")
 
-    param_df[['param',
-                'subj_idx']] = param_df['param_name'].str.extract(pattern)
-    # param_df['param'] = param_df['param'].apply(lambda x: f'${x}$')
-    param_df = param_df.dropna(subset=['subj_idx'])
-    param_df['subj_idx'] = param_df['subj_idx'].astype(int)
 
-    if half_a:
-        param_df.loc[param_df['param'] == 'a',
-                        col_values] = param_df.loc[param_df['param'] == 'a',
-                                                col_values] / 2
 
-    param_df = param_df.pivot(
-        index='subj_idx', columns='param', values=col_values
-    )
 
-    if param_names_order is not None:
-        new_index = pd.MultiIndex.from_tuples(
-            [
-                (level_0, param) for level_0 in col_values
-                for param in param_names_order
-            ],
-            names=[None, 'param']
-        )
-        param_df = param_df.reindex(columns=new_index)
+def az_summary(infdata, **kwargs):
+    df = az.summary(infdata, kind="stats", **kwargs).reset_index(names="full")
 
-    param_df.reset_index(inplace=True)
-    param_df.columns.names = [None, None]
+    # ----------  SPLIT INTO 3 FLAVOURS  ----------
+    # 1) subject-specific columns that end with .<id>
+    subj_pat   = r"(?P<param>.+)\.(?P<subj>\d+)$"
+    subj_mask  = df["full"].str.contains(subj_pat)
+    df_subj    = (df[subj_mask]
+                    .assign(**df[subj_mask]["full"].str.extract(subj_pat))
+                    .astype({"subj": int})
+                    .pivot(index="subj", columns="param", values="mean")
+                    .rename_axis(index="subj_idx")
+                 )
 
-    return param_df
+    # 2) group-level parameters (no .<id>)
+    group_df   = df[~subj_mask].set_index("full")["mean"]
 
+    return df_subj, group_df        # <-- two convenient objects
 
 #-----------------------------------------------------------------------------------------------------------------------------------------
 summary_df = az_summary(es27_infdata)['mean']
@@ -207,9 +210,8 @@ data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
 data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
 data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
 
-bad_raw = data_ES_27.groupby('subj_idx')['rt'].apply(lambda s: s.isna().all())
-if bad_raw.any():
-    data_ES_27 = data_ES_27[~data_ES_27['subj_idx'].isin(bad_raw[bad_raw].index)]
+bad_raw = data_ES_27.groupby('subj_idx')['rt'].transform(lambda s: s.isna().all())
+data_ES_27 = data_ES_27[~bad_raw]
 # ---------------------------------------------------------------------
 
 orig_subjects = sorted(data_ES_27['subj_idx'].unique())
@@ -248,124 +250,41 @@ df_ind_summary = (
 print("columns now available in j:", df_ind_summary.columns.tolist())
 
 import re
-# First, let's properly extract all parameters with their dependencies
-subject_params = az_summary(es27_infdata)['mean'].reset_index()
 
-# Print the columns to see what we're working with
-print("Columns in subject_params:", subject_params.columns.tolist())
 
-# The parameter names are in the first level of columns - let's access them properly
-# First, let's properly extract all parameters with their dependencies
-subject_params = az_summary(es27_infdata)['mean'].reset_index()
+subj_pars, group_pars = az_summary(es27_infdata)
 
-# Debug: Print the actual columns we have
-print("Actual columns in subject_params:", subject_params.columns.tolist())
-
-# The parameter names might be in different columns depending on your az_summary output
-# Let's find which column contains the parameter names
-param_col = None
-for col in subject_params.columns:
-    if any('_subj.' in str(x) for x in subject_params[col]):
-        param_col = col
-        break
-
-if param_col is None:
-    raise ValueError("Could not find parameter names column in subject_params")
-
-# Extract parameter names and subject indices
-subject_params[['param', 'subj_idx']] = subject_params[param_col].str.extract(r'(.*)_subj\.(\d+)')
-
-# For the boundary parameter 'a', we need to merge with OVcate information
-a_params = subject_params[subject_params['param'].str.startswith('a(', na=False)].copy()
-a_params[['param_base', 'OVcate']] = a_params['param'].str.extract(r'a\((.*)\)')  # Extract the OVcate level
-
-# Convert subj_idx to integer for matching
-a_params['subj_idx'] = a_params['subj_idx'].astype(int)
-
-# Now we can merge this back with our trial data
 sim_data = []
 
-for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
-    try:
-        # Get the general subject parameters
-        j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
-        
-        # Get the SPECIFIC a parameter for this subject and OVcate level
-        a_row = a_params[(a_params['subj_idx'] == subj) & (a_params['OVcate'] == ov)]
-        if len(a_row) == 0:
-            print(f"Warning: No a parameter found for subject {subj}, OVcate {ov}")
-            continue
-            
-        a_val = a_row.iloc[0]['mean']  # Assuming 'mean' is the column with parameter values
-        
-        # Get other parameters as before
-        v_int = j["v_Intercept"]
-        v_chart = j["v_z_IAW_chart"]
-        v_image = j["v_z_IAW_image"]
-        v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"]
-        t_val = j["t"]
+for (subj, ov), trials in data_ES_27.groupby(["subj_idx", "OVcate"]):
+    pars_row = subj_pars.loc[subj]               # ← row of subject means
 
-        for _, trial in trial_group.iterrows():
-            v_chart_trial = trial.get("z_IAW_chart", 0)
-            v_image_trial = trial.get("z_IAW_image", 0)
-            v_att_trial = trial.get("z_AttentionW:C(OVcate)", 0)
+    v_int  = pars_row["v_Intercept"]
+    v_c    = pars_row["v_z_IAW_chart"]
+    v_i    = pars_row["v_z_IAW_image"]
+    v_att  = get_param(pars_row, group_pars, "v_z_AttentionW:C(OVcate)[{}]", ov)
+    a_val  = get_param(pars_row, group_pars, "a({})", ov)
+    t_val  = pars_row["t"]
 
-            # weighted drift and boundary
-            v_trial = v_int + v_att * v_att_trial + v_chart * v_chart_trial + v_image * v_image_trial
+    # ------- simulate one synthetic trial per real one -------
+    for _, tr in trials.iterrows():
+        v_trial = (v_int
+                   + v_att * tr.get("z_AttentionW", 0.)
+                   + v_c   * tr.get("z_IAW_chart", 0.)
+                   + v_i   * tr.get("z_IAW_image", 0.))
 
-            sim_trial, _ = hddm.generate.gen_rand_data(
-                {"v": v_trial, "a": a_val, "t": t_val},
-                size=1, subjs=1
-            )
-            sim_trial["subj_idx"] = subj
-            sim_trial["OVcate"] = ov
-            sim_trial["z_IAW_chart"] = v_chart_trial
-            sim_trial["z_IAW_image"] = v_image_trial
-            sim_trial["z_AttentionW:C(OVcate)"] = v_att_trial
+        sim_tr, _ = hddm.generate.gen_rand_data(
+            {"v": v_trial, "a": a_val, "t": t_val}, size=1, subjs=1)
 
-            sim_data.append(sim_trial)
-    except Exception as e:
-        print(f"Error processing subject {subj}, OVcate {ov}: {str(e)}")
-        continue
-
-sim_data = pd.concat(sim_data, ignore_index=True)
-# sim_data = []
-
-# for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
-#     j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
-#     v_int = j["v_Intercept"]
-#     v_chart = j["v_z_IAW_chart"]
-#     v_image = j["v_z_IAW_image"]
-#     v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"]
-#     t_val = j["t"]
-    
-        
-#     for _, trial in trial_group.iterrows():
-#         v_chart_trial = trial.get("z_IAW_chart", 0)
-#         v_image_trial = trial.get("z_IAW_image", 0)
-#         v_att_trial = trial.get("z_AttentionW:C(OVcate)", 0)
-
-#         # weighted drift and boundary
-#         v_trial = v_int + v_att * v_att_trial + v_chart * v_chart_trial + v_image * v_image_trial
-
-#         sim_trial, _ = hddm.generate.gen_rand_data(
-#             {"v": v_trial, "t": t_val},
-#             size=1, subjs=1
-#         )
-#         sim_trial["subj_idx"] = subj
-#         sim_trial["OVcate"] = ov
-#         sim_trial["z_IAW_chart"] = v_chart_trial
-#         sim_trial["z_IAW_image"] = v_image_trial
-#         sim_trial["z_AttentionW:C(OVcate)"] = v_att_trial
-
-#         sim_data.append(sim_trial)
+        sim_tr["subj_idx"]  = subj
+        sim_tr["OVcate"]    = ov
+        sim_data.append(sim_tr)
 
 sim_data = pd.concat(sim_data, ignore_index=True)
 
 # ── NEW: drop subjects whose *all* simulated RTs are NaN ──────────────
-bad_sim = sim_data.groupby('subj_idx')['rt'].apply(lambda s: s.isna().all())
-if bad_sim.any():
-    sim_data = sim_data[~sim_data['subj_idx'].isin(bad_sim[bad_sim].index)]
+bad_sim  = sim_data.groupby('subj_idx')['rt'].transform(lambda s: s.isna().all())
+sim_data = sim_data[~bad_sim]
 # ---------------------------------------------------------------------
 
 sim_data['subj_idx'] = pd.to_numeric(sim_data['subj_idx'], errors='coerce').astype(int)
