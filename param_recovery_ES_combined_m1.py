@@ -20,7 +20,7 @@ import itertools
 #import pp
 import joblib
 from IPython import embed as shell
-import hddms
+import hddm
 import kabuki
 import statsmodels.formula.api as sm
 from patsy import dmatrix
