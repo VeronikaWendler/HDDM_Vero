@@ -420,6 +420,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
         elif version == 33:
             v_reg = {'model': 'v ~ 1 + val_diff + DwellPropAdvantage + gaze_quad', 'link_func': lambda x: x}
             a_reg = {'model': 'a ~ 1 + OVcate', 'link_func': lambda x: x }
+            reg_descr = [v_reg, a_reg]
         else:
             raise ValueError(f"check version {version} ??")   
         

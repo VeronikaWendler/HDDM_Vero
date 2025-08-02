@@ -258,6 +258,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     v_image = j["v_z_IAW_image"]
     v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"]
     t_val = j["t"]
+    a_val = 2.3
     
         
     for _, trial in trial_group.iterrows():
@@ -269,7 +270,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
         v_trial = v_int + v_att * v_att_trial + v_chart * v_chart_trial + v_image * v_image_trial
 
         sim_trial, _ = hddm.generate.gen_rand_data(
-            {"v": v_trial, "t": t_val},
+            {"v": v_trial, "t": t_val, "a": a_val},
             size=1, subjs=1
         )
         sim_trial["subj_idx"] = subj
