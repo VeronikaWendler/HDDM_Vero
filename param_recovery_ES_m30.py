@@ -248,19 +248,31 @@ df_ind_summary = (
 print("columns now available in j:", df_ind_summary.columns.tolist())
 
 import re
+# First, let's properly extract all parameters with their dependencies
+subject_params = az_summary(es27_infdata)['mean'].reset_index()
 
+# For the boundary parameter 'a', we need to merge with OVcate information
+# We'll create a mapping of subject_idx to their a(high), a(medium), a(low) values
+a_params = subject_params[subject_params['param'].str.startswith('a(')].copy()
+a_params[['param', 'OVcate']] = a_params['param'].str.extract(r'a\((.*)\)')  # Extract the OVcate level
+
+# Now we can merge this back with our trial data
 sim_data = []
 
 for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
+    # Get the general subject parameters
     j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
+    
+    # Get the SPECIFIC a parameter for this subject and OVcate level
+    a_val = a_params[(a_params['subj_idx'] == subj) & (a_params['OVcate'] == ov)]['mean'].values[0]
+    
+    # Get other parameters as before
     v_int = j["v_Intercept"]
     v_chart = j["v_z_IAW_chart"]
     v_image = j["v_z_IAW_image"]
     v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"]
-    a_val = j["a"]
     t_val = j["t"]
-    
-        
+
     for _, trial in trial_group.iterrows():
         v_chart_trial = trial.get("z_IAW_chart", 0)
         v_image_trial = trial.get("z_IAW_image", 0)
@@ -280,6 +292,36 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
         sim_trial["z_AttentionW:C(OVcate)"] = v_att_trial
 
         sim_data.append(sim_trial)
+# sim_data = []
+
+# for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
+#     j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
+#     v_int = j["v_Intercept"]
+#     v_chart = j["v_z_IAW_chart"]
+#     v_image = j["v_z_IAW_image"]
+#     v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"]
+#     t_val = j["t"]
+    
+        
+#     for _, trial in trial_group.iterrows():
+#         v_chart_trial = trial.get("z_IAW_chart", 0)
+#         v_image_trial = trial.get("z_IAW_image", 0)
+#         v_att_trial = trial.get("z_AttentionW:C(OVcate)", 0)
+
+#         # weighted drift and boundary
+#         v_trial = v_int + v_att * v_att_trial + v_chart * v_chart_trial + v_image * v_image_trial
+
+#         sim_trial, _ = hddm.generate.gen_rand_data(
+#             {"v": v_trial, "t": t_val},
+#             size=1, subjs=1
+#         )
+#         sim_trial["subj_idx"] = subj
+#         sim_trial["OVcate"] = ov
+#         sim_trial["z_IAW_chart"] = v_chart_trial
+#         sim_trial["z_IAW_image"] = v_image_trial
+#         sim_trial["z_AttentionW:C(OVcate)"] = v_att_trial
+
+#         sim_data.append(sim_trial)
 
 sim_data = pd.concat(sim_data, ignore_index=True)
 
