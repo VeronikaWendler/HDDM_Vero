@@ -219,25 +219,6 @@ subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'
 subject_summary = subject_summary[subject_summary['subj_idx'].isin(orig_subjects)]
 
 
-
-
-# Make sure OVcate in data is clean
-data_ES_27['OVcate'] = data_ES_27['OVcate'].astype(str).str.strip()
-
-# Pre-extract a per subject × OVcate from the subject-level summary
-# This assumes columns like 'a(high)', 'a(low)', 'a(medium)' exist in subject_summary
-a_group = subject_summary.set_index('subj_idx')  # rows = subjects
-
-def get_a_val(subj, ov):
-    key = f"a({ov})"
-    try:
-        return float(a_group.loc[subj, key])
-    except KeyError:
-        raise KeyError(f"Unable to find {key} for subj {subj} in subject_summary. Available a-keys: {[c for c in a_group.columns if c.startswith('a(')][:10]}")
-
-
-
-
 def az_summary_group(infdata, **kwargs):
     # full summary as a DataFrame
     summary_df = az.summary(infdata, kind="stats", **kwargs).reset_index()
@@ -276,8 +257,6 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     v_chart = j["v_z_IAW_chart"]
     v_image = j["v_z_IAW_image"]
     v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"]
-    a_val = get_a_val(subj, ov)
-
     t_val = j["t"]
     
         
@@ -290,7 +269,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
         v_trial = v_int + v_att * v_att_trial + v_chart * v_chart_trial + v_image * v_image_trial
 
         sim_trial, _ = hddm.generate.gen_rand_data(
-            {"v": v_trial, "a": a_val, "t": t_val},
+            {"v": v_trial, "t": t_val},
             size=1, subjs=1
         )
         sim_trial["subj_idx"] = subj
