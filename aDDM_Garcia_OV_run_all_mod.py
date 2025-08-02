@@ -156,7 +156,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 29
+start_version = 0
 started = False
 
 # dir
@@ -275,132 +275,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
         return m, infdata
     
     elif phase == 'ES':
-        accuracy_coding = True
-        if version == 0:    # m1 # this is the 0 model with fully fixed parameters across OV levels
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-        elif version == 1:  # m2 fixated option weights varies by OV level 
-            v_reg = {'model': 'v ~ 1 + AttentionW:C(OVcate) + InattentionW', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-        elif version == 2:  #m3  non-fixated option weights varies by OV level
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]       
-        elif version == 3: # m4 non-fixated options weights varies by OV level and boundary separation
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-            depends_on = {'a': 'OVcate'}      
-        elif version == 4:  # m5 non-fixated options weights varies by OV level and non-dec. time
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-            depends_on={'t': 'OVcate'} 
-        elif version == 5:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate) + gazeCI', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-        elif version == 6:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeCI:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-            depends_on={'a': 'OVcate'}
-        elif version == 7:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeCI:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-            depends_on={'t': 'OVcate'}
-        elif version == 8:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeSE', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-        elif version == 9:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeSE:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-            depends_on={'a': 'OVcate'}
-        elif version == 10:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW + gazeSE:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-            depends_on={'t': 'OVcate'}
-        elif version == 11:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            a_reg = {'model': 'a ~ 1 + C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg, a_reg]
-        elif version == 12:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg, t_reg]
-        elif version == 13:  # m5 non-fixated options weights varies by OV level and non-dec. time
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-            depends_on={'z': 'stimulus'} 
-        elif version == 14:  # m5 non-fixated options weights varies by OV level and non-dec. time
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-            depends_on={'z': 'chose_left'} 
-        elif version == 15:  # m5 non-fixated options weights varies by OV level and non-dec. time
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-            depends_on={'t': 'stimulus'} 
-        elif version == 16:  # m5 non-fixated options weights varies by OV level and non-dec. time
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-            depends_on={'t': 'chose_left'}
-        elif version == 17:
-            stim_vec = data["stimulus"].values         # *all* trials after filtering
-            z_link   = make_z_link(stim_vec)            
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW', 'link_func': lambda x: x}
-            z_reg = {'model': 'z ~ 1', 'link_func': z_link}
-            reg_descr = [v_reg, z_reg]
-        elif version == 18:
-            stim_vec = data["stimulus"].values         # *all* trials after filtering
-            z_link   = make_z_link(stim_vec) 
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            z_reg = {'model': 'z ~ 1', 'link_func': z_link}
-            reg_descr = [v_reg, z_reg]
-        elif version == 19:
-            stim_vec = data["stimulus"].values         # *all* trials after filtering
-            z_link   = make_z_link(stim_vec) 
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link}
-            reg_descr = [v_reg, z_reg]
-        elif version == 20:
-            stim_vec = data["stimulus"].values         # *all* trials after filtering
-            z_link   = make_z_link(stim_vec) 
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link}
-            t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg, z_reg, t_reg]
-        elif version == 21:  # m5 non-fixated options weights varies by OV level and non-dec. time
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            z_reg = {'model': 'z ~ FirstFix_Left', 'link_func': lambda x: x}
-            reg_descr = [v_reg, z_reg]
-            
-        elif version == 22:  # m5 non-fixated options weights varies by OV level and non-dec. time
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            a_reg = {'model': 'a ~ 1 + C(OVcate)', 'link_func': lambda x: x}
-            t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg,a_reg,t_reg]
-            depends_on={'z': 'stimulus'} 
-            
-        elif version == 23:  # m5 non-fixated options weights varies by OV level and non-dec. time
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            a_reg = {'model': 'a ~ 1 + C(OVcate)', 'link_func': lambda x: x}
-            t_reg = {'model': 't ~ 1 + C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg,a_reg,t_reg]
-            depends_on={'z': 'stimulus'} 
-        elif version == 24:  # m5 non-fixated options weights varies by OV level and non-dec. time
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            t_reg = {'model': 't ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg, t_reg]
-        elif version == 25:  # m5 non-fixated options weights varies by OV level and non-dec. time
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-            depends_on={'t': 'OVcate',
-                        'a': 'OVcate'} 
-        elif version == 26:
+        if version == 0:
             v_reg = {'model': 'v ~ 1 + val_diff + DwellPropAdvantage + gaze_quad', 'link_func': lambda x: x}
-            a_reg = {'model': 'a ~ 1 + abs_DwellPropAdv:C(OVcate)', 'link_func': lambda x: x }
-            reg_descr = [v_reg, a_reg]    
-        elif version == 27:
-            v_reg = {'model': 'v ~ 1 + gaze_quad', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-        elif version == 28:
-            v_reg = {'model': 'v ~ 1 + val_diff + val_bal_int', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
+            a_reg = {'model': 'a ~ 1 + OVcate', 'link_func': lambda x: x }
+            reg_descr = [v_reg, a_reg]
         elif version == 29:
             v_reg = {'model': 'v ~ 1 + z_AttentionW:C(OVcate) + z_IAW_chart + z_IAW_image', 'link_func': lambda x: x}
             reg_descr = [v_reg]
@@ -417,10 +295,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             v_reg = {'model': 'v ~ 1 + z_val_diff + z_DwellPropAdvantage + z_gaze_quad:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on={'a': 'OVcate'}
-        elif version == 33:
-            v_reg = {'model': 'v ~ 1 + val_diff + DwellPropAdvantage + gaze_quad', 'link_func': lambda x: x}
-            a_reg = {'model': 'a ~ 1 + OVcate', 'link_func': lambda x: x }
-            reg_descr = [v_reg, a_reg]
+
         else:
             raise ValueError(f"check version {version} ??")   
         
@@ -438,7 +313,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
         m = hddm.models.HDDMRegressor(
             data,
             reg_descr,
-            depends_on=depends_on,
             p_outlier=.05,
             include=include_list,         
             group_only_regressors=False,
