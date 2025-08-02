@@ -152,80 +152,46 @@ def regplot_with_corr(
     return ax
 
 
-# def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
-
-#     param_df = az.summary(infdata, kind="stats",
-#                             **kwargs).reset_index(names="param_name")
-#     # col_values = ['mean', 'sd', "hdi_3%", "hdi_97%"]
-#     col_values = list(param_df.columns[1:5])
-
-#     pattern = r'(.*)_subj\.(\d+)'
-#     param_df[['param', 'subj_idx']] = param_df['param_name'].str.extract(pattern)
-
-#     param_df[['param',
-#                 'subj_idx']] = param_df['param_name'].str.extract(pattern)
-#     # param_df['param'] = param_df['param'].apply(lambda x: f'${x}$')
-#     param_df = param_df.dropna(subset=['subj_idx'])
-#     param_df['subj_idx'] = param_df['subj_idx'].astype(int)
-
-#     if half_a:
-#         param_df.loc[param_df['param'] == 'a',
-#                         col_values] = param_df.loc[param_df['param'] == 'a',
-#                                                 col_values] / 2
-
-#     param_df = param_df.pivot(
-#         index='subj_idx', columns='param', values=col_values
-#     )
-
-#     if param_names_order is not None:
-#         new_index = pd.MultiIndex.from_tuples(
-#             [
-#                 (level_0, param) for level_0 in col_values
-#                 for param in param_names_order
-#             ],
-#             names=[None, 'param']
-#         )
-#         param_df = param_df.reindex(columns=new_index)
-
-#     param_df.reset_index(inplace=True)
-#     param_df.columns.names = [None, None]
-
-#     return param_df
-
 def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
-    """
-    Pull out every parameter whose ArviZ name ends in .<subj>,
-    strip off any "_subj" tag, and pivot so you get one row per subj
-    and one column per (clean) parameter name.
-    """
-    # get the raw ArviZ summary
-    param_df = az.summary(infdata, kind="stats", **kwargs)             \
-                 .reset_index(names="param_name")
 
-    # these are the statistics we’ll keep (mean, sd, etc.)
-    stats = list(param_df.columns[1:5])
+    param_df = az.summary(infdata, kind="stats",
+                            **kwargs).reset_index(names="param_name")
+    # col_values = ['mean', 'sd', "hdi_3%", "hdi_97%"]
+    col_values = list(param_df.columns[1:5])
 
-    # look for ANY param_name that ends in ".<digits>",
-    # optionally preceded by "_subj"
-    pattern = r'(?P<param>.+?)(?:_subj)?\.(?P<subj>\d+)$'
-    ext = param_df["param_name"].str.extract(pattern)
+    pattern = r'(.*)_subj\.(\d+)'
+    param_df[['param', 'subj_idx']] = param_df['param_name'].str.extract(pattern)
 
-    # drop everything that didn’t match
-    param_df = param_df.join(ext).dropna(subset=["subj"]).rename(
-        columns={"subj":"subj_idx"}
+    param_df[['param',
+                'subj_idx']] = param_df['param_name'].str.extract(pattern)
+    # param_df['param'] = param_df['param'].apply(lambda x: f'${x}$')
+    param_df = param_df.dropna(subset=['subj_idx'])
+    param_df['subj_idx'] = param_df['subj_idx'].astype(int)
+
+    if half_a:
+        param_df.loc[param_df['param'] == 'a',
+                        col_values] = param_df.loc[param_df['param'] == 'a',
+                                                col_values] / 2
+
+    param_df = param_df.pivot(
+        index='subj_idx', columns='param', values=col_values
     )
-    param_df["subj_idx"] = param_df["subj_idx"].astype(int)
 
-    # now pivot into wide form:
-    #  index = subj_idx, columns = clean param name, values = our stats
-    wide = param_df.pivot(index="subj_idx", columns="param", values=stats)
+    if param_names_order is not None:
+        new_index = pd.MultiIndex.from_tuples(
+            [
+                (level_0, param) for level_0 in col_values
+                for param in param_names_order
+            ],
+            names=[None, 'param']
+        )
+        param_df = param_df.reindex(columns=new_index)
 
-    # if you only need the means:
-    # return wide["mean"].reset_index()
-    # but to keep sd/etc available:
-    wide.columns.names = ["stat", "param"]
-    wide = wide.reset_index()
-    return wide
+    param_df.reset_index(inplace=True)
+    param_df.columns.names = [None, None]
+
+    return param_df
+
 
 #-----------------------------------------------------------------------------------------------------------------------------------------
 summary_df = az_summary(es27_infdata)['mean']
@@ -291,7 +257,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     v_chart = j["v_z_IAW_chart"]
     v_image = j["v_z_IAW_image"]
     v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"]
-    a_val = j[f"a({ov})"]
+    a_val = j["a"]
     t_val = j["t"]
     
         
