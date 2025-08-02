@@ -152,112 +152,162 @@ def regplot_with_corr(
     return ax
 
 
-def lookup_with_subj_suffix(subj_row, group_series, base_template, ov):
-    """
-    For regressors like v_z_AttentionW:C(OVcate)[{ov}]:
-    subject-specific names end up as e.g. 'v_z_AttentionW:C(OVcate)[high]_subj'
-    group-level as 'v_z_AttentionW:C(OVcate)[high]'.
-    """
-    group_name = base_template.format(ov)
-    subj_name = f"{group_name}_subj"
-    if subj_name in subj_row:
-        return subj_row[subj_name]
-    if group_name in group_series:
-        return group_series[group_name]
-    raise KeyError(f"Neither {subj_name} nor {group_name} found (available subj: {list(subj_row.index)[:30]}, group: {list(group_series.index)[:30]})")
+def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
 
+    param_df = az.summary(infdata, kind="stats",
+                            **kwargs).reset_index(names="param_name")
+    # col_values = ['mean', 'sd', "hdi_3%", "hdi_97%"]
+    col_values = list(param_df.columns[1:5])
 
-def lookup_a_param(subj_row, group_series, ov):
-    """
-    For 'a' depending on OVcate:
-    group-level is 'a(high)', subject-level is 'a_subj(high)'.
-    """
-    group_name = f"a({ov})"
-    subj_name = f"a_subj({ov})"
-    if subj_name in subj_row:
-        return subj_row[subj_name]
-    if group_name in group_series:
-        return group_series[group_name]
-    raise KeyError(f"Neither {subj_name} nor {group_name} found (available subj: {list(subj_row.index)[:30]}, group: {list(group_series.index)[:30]})")
+    pattern = r'(.*)_subj\.(\d+)'
+    param_df[['param', 'subj_idx']] = param_df['param_name'].str.extract(pattern)
 
+    param_df[['param',
+                'subj_idx']] = param_df['param_name'].str.extract(pattern)
+    # param_df['param'] = param_df['param'].apply(lambda x: f'${x}$')
+    param_df = param_df.dropna(subset=['subj_idx'])
+    param_df['subj_idx'] = param_df['subj_idx'].astype(int)
 
-def az_summary(infdata, **kwargs):
-    df = az.summary(infdata, kind="stats", **kwargs).reset_index(names="full")
+    if half_a:
+        param_df.loc[param_df['param'] == 'a',
+                        col_values] = param_df.loc[param_df['param'] == 'a',
+                                                col_values] / 2
 
-    # ----------  SPLIT INTO 3 FLAVOURS  ----------
-    # 1) subject-specific columns that end with .<id>
-    subj_pat   = r"(?P<param>.+)\.(?P<subj>\d+)$"
-    subj_mask  = df["full"].str.contains(subj_pat)
-    df_subj    = (df[subj_mask]
-                    .assign(**df[subj_mask]["full"].str.extract(subj_pat))
-                    .astype({"subj": int})
-                    .pivot(index="subj", columns="param", values="mean")
-                    .rename_axis(index="subj_idx")
-                 )
+    param_df = param_df.pivot(
+        index='subj_idx', columns='param', values=col_values
+    )
 
-    # 2) group-level parameters (no .<id>)
-    group_df   = df[~subj_mask].set_index("full")["mean"]
+    if param_names_order is not None:
+        new_index = pd.MultiIndex.from_tuples(
+            [
+                (level_0, param) for level_0 in col_values
+                for param in param_names_order
+            ],
+            names=[None, 'param']
+        )
+        param_df = param_df.reindex(columns=new_index)
 
-    return df_subj, group_df        # <-- two convenient objects
+    param_df.reset_index(inplace=True)
+    param_df.columns.names = [None, None]
 
+    return param_df
+
+#  
 #-----------------------------------------------------------------------------------------------------------------------------------------
-# ---------- get subject-level and group-level parameter estimates ----------
-subj_pars, group_pars = az_summary(es27_infdata)  # subj_pars: DataFrame indexed by subj_idx; group_pars: Series
+summary_df = az_summary(es27_infdata)['mean']
+print(summary_df.columns.tolist())
 
-# read in model data and coerce subj_idx
+# read in model
 data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
+
+# read in model and coerce subj_idx
+data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
+data_ES_27 = data_ES_27.copy()
 data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
 data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
 data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
 
-# drop subjects whose raw data have all NaN RTs
-bad_raw = data_ES_27.groupby('subj_idx')['rt'].transform(lambda s: s.isna().all())
-data_ES_27 = data_ES_27[~bad_raw]
+bad_raw = data_ES_27.groupby('subj_idx')['rt'].apply(lambda s: s.isna().all())
+if bad_raw.any():
+    data_ES_27 = data_ES_27[~data_ES_27['subj_idx'].isin(bad_raw[bad_raw].index)]
+# ---------------------------------------------------------------------
 
-# diagnostics / available params (optional debugging)
-# print("Example subject parameters:", subj_pars.loc[subj_pars.index[0]].index.tolist())
-# print("Group-level parameters:", list(group_pars.index)[:30])
+orig_subjects = sorted(data_ES_27['subj_idx'].unique())
 
-# build per-(subj,OVcate) summary for simulation usage
+# Subject-level summary restricted to kept subjects
+subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
+subject_summary = subject_summary[subject_summary['subj_idx'].isin(orig_subjects)]
+
+
+
+
+# Make sure OVcate in data is clean
+data_ES_27['OVcate'] = data_ES_27['OVcate'].astype(str).str.strip()
+
+# Pre-extract a per subject × OVcate from the subject-level summary
+# This assumes columns like 'a(high)', 'a(low)', 'a(medium)' exist in subject_summary
+a_group = subject_summary.set_index('subj_idx')  # rows = subjects
+
+def get_a_val(subj, ov):
+    key = f"a({ov})"
+    try:
+        return float(a_group.loc[subj, key])
+    except KeyError:
+        raise KeyError(f"Unable to find {key} for subj {subj} in subject_summary. Available a-keys: {[c for c in a_group.columns if c.startswith('a(')][:10]}")
+
+
+
+
+def az_summary_group(infdata, **kwargs):
+    # full summary as a DataFrame
+    summary_df = az.summary(infdata, kind="stats", **kwargs).reset_index()
+    # Check the actual column name for parameters (might be 'index' instead of 'param_name')
+    param_col = 'index' if 'index' in summary_df.columns else 'param_name'
+    # Set the index to the parameter names and select the mean estimates
+    return summary_df.set_index(param_col)["mean"]
+
+# check what's in the infdata
+group_params = az_summary_group(es27_infdata)
+print(group_params.index.tolist())
+
+group_params = az.summary(es27_infdata, var_names=['~subj', '~std'], filter_vars='regex')
+subject_params = az_summary(es27_infdata)['mean']
+
+subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
 df_ind_summary = (
     data_ES_27.groupby(['subj_idx', 'OVcate'])['rt']
     .describe()
     .reset_index()
 )
-# join subject-specific parameters if you need them downstream; not needed for the current sim loop
+df_ind_summary = (
+    df_ind_summary.set_index('subj_idx')
+    .join(subject_summary.set_index('subj_idx'))
+    .reset_index()
+)
 
-# ---------- simulate synthetic trials ----------
+import re
+
+
 sim_data = []
 
-for (subj, ov), trials in data_ES_27.groupby(["subj_idx", "OVcate"]):
-    pars_row = subj_pars.loc[subj]  # subject means
+for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
+    j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
+    v_int = j["v_Intercept"]
+    v_chart = j["v_z_IAW_chart"]
+    v_image = j["v_z_IAW_image"]
+    v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"]
+    a_val = get_a_val(subj, ov)
 
-    v_int  = pars_row["v_Intercept"]
-    v_c    = pars_row["v_z_IAW_chart"]
-    v_i    = pars_row["v_z_IAW_image"]
-    v_att  = lookup_with_subj_suffix(pars_row, group_pars, "v_z_AttentionW:C(OVcate)[{}]", ov)
-    a_val  = lookup_a_param(pars_row, group_pars, ov)
+    t_val = j["t"]
+    
+        
+    for _, trial in trial_group.iterrows():
+        v_chart_trial = trial.get("z_IAW_chart", 0)
+        v_image_trial = trial.get("z_IAW_image", 0)
+        v_att_trial = trial.get("z_AttentionW:C(OVcate)", 0)
 
-    t_val  = pars_row["t"]
+        # weighted drift and boundary
+        v_trial = v_int + v_att * v_att_trial + v_chart * v_chart_trial + v_image * v_image_trial
 
-    for _, tr in trials.iterrows():
-        v_trial = (v_int
-                   + v_att * tr.get("z_AttentionW", 0.)  # or adjust if column is "z_AttentionW:C(OVcate)"
-                   + v_c   * tr.get("z_IAW_chart", 0.)
-                   + v_i   * tr.get("z_IAW_image", 0.))
+        sim_trial, _ = hddm.generate.gen_rand_data(
+            {"v": v_trial, "a": a_val, "t": t_val},
+            size=1, subjs=1
+        )
+        sim_trial["subj_idx"] = subj
+        sim_trial["OVcate"] = ov
+        sim_trial["z_IAW_chart"] = v_chart_trial
+        sim_trial["z_IAW_image"] = v_image_trial
+        sim_trial["z_AttentionW:C(OVcate)"] = v_att_trial
 
-        sim_tr, _ = hddm.generate.gen_rand_data(
-            {"v": v_trial, "a": a_val, "t": t_val}, size=1, subjs=1)
-
-        sim_tr["subj_idx"]  = subj
-        sim_tr["OVcate"]    = ov
-        sim_data.append(sim_tr)
+        sim_data.append(sim_trial)
 
 sim_data = pd.concat(sim_data, ignore_index=True)
 
-# drop subjects whose simulated RTs are all NaN
-bad_sim  = sim_data.groupby('subj_idx')['rt'].transform(lambda s: s.isna().all())
-sim_data = sim_data[~bad_sim]
+# ── NEW: drop subjects whose *all* simulated RTs are NaN ──────────────
+bad_sim = sim_data.groupby('subj_idx')['rt'].apply(lambda s: s.isna().all())
+if bad_sim.any():
+    sim_data = sim_data[~sim_data['subj_idx'].isin(bad_sim[bad_sim].index)]
+# ---------------------------------------------------------------------
 
 sim_data['subj_idx'] = pd.to_numeric(sim_data['subj_idx'], errors='coerce').astype(int)
 
