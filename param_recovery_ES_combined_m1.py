@@ -275,7 +275,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     if ov == "high":
         a_effect = 0.0
     else:
-        a_effect = safe_get(j, f"a_C(OVcate)[T.{ov}]")
+        a_effect = safe_get(j, f"a_OVcate[T.{ov}]")
 
     t_val = safe_get(j, "t")
 
