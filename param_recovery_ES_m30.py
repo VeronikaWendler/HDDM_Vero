@@ -267,63 +267,164 @@ df_ind_summary = (
 
 # get group/subject parameters for the weighted terms (if needed)
 # e.g., you might want to pull them per trial from df_ind_summary
-sim_data = []            # keep building one trial at a time, like before
+# ------------------------------------------------------------------
+# ----  Build a single table of subject-level parameters  ----------
+# (summary_df already has one row per subject, columns are parameters)
+subj_par  = summary_df.set_index('subj_idx')    #  rows = subj_idx
 
-for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
-    j = df_ind_summary[
-        (df_ind_summary['subj_idx'] == subj) &
-        (df_ind_summary['OVcate']   == ov)
-    ].iloc[0]
+# quick sanity check
+needed_cols = ['v_Intercept', 'v_z_IAW_chart', 'v_z_IAW_image',
+               't', 'a(high)', 'a(medium)', 'a(low)',
+               'v_z_AttentionW:C(OVcate)[high]',
+               'v_z_AttentionW:C(OVcate)[medium]',
+               'v_z_AttentionW:C(OVcate)[low]']
+missing = [c for c in needed_cols if c not in subj_par.columns]
+assert not missing, f"parameter(s) missing from summary_df: {missing}"
 
-    # coefficients (same as before)
-    v_int     = j["v_Intercept"]
-    v_zIAWc   = j["v_z_IAW_chart"]
-    v_zIAWi   = j["v_z_IAW_image"]
-    v_zAttW   = j[f"v_z_AttentionW:C(OVcate)[{ov}]"]
-    t_val     = j["t"]
-    a_val     = j[f"a({ov})"]
+# ------------------------------------------------------------------
+# ----  simulate ----------------------------------------------------
+sim_rows = []   # list of data frames (one per simulated trial)
 
-    for _, trial in trial_group.iterrows():
-        # trial-specific predictor values (unchanged)
-        zIAWc_trial = trial.get("z_IAW_chart", 0)
-        zIAWi_trial = trial.get("z_IAW_image", 0)
-        zAttW_trial = trial.get("z_AttentionW", 0)
+for (subj, ov), trial_grp in data_ES_27.groupby(['subj_idx', 'OVcate']):
+    
+    # -------- fixed parameters for THIS subject & OV ---------------
+    p        =  subj_par.loc[subj]                     # row of parameters
+    v_int    =  p['v_Intercept']
+    v_zIAWc  =  p['v_z_IAW_chart']
+    v_zIAWi  =  p['v_z_IAW_image']
+    v_zAttW  =  p[f'v_z_AttentionW:C(OVcate)[{ov}]']   # e.g. “high”
+    t_val    =  p['t']
+    a_val    =  p[f'a({ov})']                          # “a(high)” etc.
+    
+    # -------- iterate over that subject’s trials -------------------
+    for _, tr in trial_grp.iterrows():
+        # trial-wise predictors
+        zIAWc_trial  = tr.get('z_IAW_chart',  0)
+        zIAWi_trial  = tr.get('z_IAW_image',  0)
+        zAttW_trial  = tr.get('z_AttentionW', 0)
 
-        # compute drift for this trial
-        v_trial = v_int + v_zAttW * zAttW_trial + v_zIAWc * zIAWc_trial + v_zIAWi * zIAWi_trial
+        # drift & simulate one response
+        v_trial = (v_int +
+                   v_zAttW * zAttW_trial +
+                   v_zIAWc * zIAWc_trial +
+                   v_zIAWi * zIAWi_trial)
 
-        # simulate ONE trial exactly as before
-        sim_trial, _ = hddm.generate.gen_rand_data(
-            {"v": v_trial,
-             "a": a_val,
-             "t": t_val},
+        sim_tr, _ = hddm.generate.gen_rand_data(
+            dict(v=v_trial, a=a_val, t=t_val),
             size=1, subjs=1
         )
 
-        # ----- fixed the three mislabeled assignments -----
-        sim_trial["subj_idx"]      = subj
-        sim_trial["OVcate"]        = ov
-        sim_trial["z_IAW_chart"]   = zIAWc_trial     # was v_zAttW_trial
-        sim_trial["z_IAW_image"]   = zIAWi_trial     # was v_zIAWc_trial
-        sim_trial["z_AttentionW"] = zAttW_trial   # correct
+        # annotate
+        sim_tr['subj_idx']      = subj
+        sim_tr['OVcate']        = ov
+        sim_tr['z_IAW_chart']   = zIAWc_trial
+        sim_tr['z_IAW_image']   = zIAWi_trial
+        sim_tr['z_AttentionW']  = zAttW_trial
+        sim_rows.append(sim_tr)
 
-        sim_data.append(sim_trial)
+# ------------------------------------------------------------------
+# ----  concatenate & clean  ---------------------------------------
+sim_data = pd.concat(sim_rows, ignore_index=True)
 
-sim_data = pd.concat(sim_data, ignore_index=True)
-# Final guard: enforce subj_idx <= 20 in sim_data
-sim_data['subj_idx'] = pd.to_numeric(sim_data['subj_idx'], errors='coerce').astype(int)
+# keep only subjects ≤ 20 (just like your original script)
+sim_data['subj_idx'] = sim_data['subj_idx'].astype(int)
 sim_data = sim_data[sim_data['subj_idx'] <= 20]
 
-if "condition" in sim_data.columns:
-    sim_data.drop("condition", axis=1, inplace=True)
+# drop any stray ‘condition’ column
+sim_data = sim_data.loc[:, ~sim_data.columns.isin(['condition'])]
 
-# Diagnostics
-print(sim_data.head(10))
-print("\nUnique subjects in simulation:", sorted(sim_data['subj_idx'].unique()))
-print("OVcate counts in simulation:\n", sim_data['OVcate'].value_counts())
-
+print(sim_data.head())
+print("\nUnique subjects:", sim_data['subj_idx'].nunique())
+print("OVcate counts:\n", sim_data['OVcate'].value_counts())
 
 print(sim_data.to_string())
+
+
+print(sim_data[['subj_idx', 'OVcate', 'rt', 'response']].head())
+print("\nUnique subjects:", sim_data['subj_idx'].nunique())
+print("OVcate counts:\n", sim_data['OVcate'].value_counts())
+#-----------------------------------------------------------------------------------------------------------------------
+#Re-Fitting the model (like in hcp tutorial)
+
+# helper function to wrap the sampling procedure
+def run_sampling(model, model_db_name, progress_bar=True):
+    model.find_starting_values()
+    result = model.sample(
+        1000,                # nr of samples (
+        burn=100,            # Burn-in samples
+        dbname=model_db_name,# path for saving the chain
+        db='pickle',         # Save chain using pickle
+        return_infdata=True, # Return an InferenceData object for diagnostics/plots
+        loglike=True,        # allow for loglikelihood computation
+        ppc=True             # to get the ppc
+    )
+    if isinstance(result, tuple):
+        model_out = result[0]
+        infdata = result[1]
+        return model_out, infdata
+    else:
+        return model, result
+
+# model specification 
+v_reg = {'model': 'v ~ 1 + z_AttentionW:C(OVcate) + z_IAW_chart + z_IAW_image', 'link_func': lambda x: x}
+reg_descr = [v_reg]
+depends_on={'a': 'OVcate'} 
+            
+
+# HDDMRegressor using simulated data
+m_recovery = hddm.HDDMRegressor(
+    sim_data,              
+    reg_descr,
+    depends_on=depends_on,         
+    include=['a', 't', 'v'], 
+    p_outlier=0.05,
+    group_only_regressors=False,
+    keep_regressor_trace=True
+)
+
+# full path for saving
+model_db_name = os.path.join(BASE_MODEL_DIR, "mES_30_recovery")
+m_recovery, m_recovery_infdata = run_sampling(m_recovery, model_db_name, progress_bar=False)
+az.to_netcdf(m_recovery_infdata, os.path.join(BASE_MODEL_DIR, "mES_30_recovery.nc"))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 #------------------------------------------
 # subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
 # df_ind_summary = (
@@ -447,52 +548,8 @@ print(sim_data.to_string())
 # print("\nUnique subjects in simulation:", sorted(sim_data["subj_idx"].unique()))
 # print(sim_data.to_string())
 
-print(sim_data[['subj_idx', 'OVcate', 'rt', 'response']].head())
-print("\nUnique subjects:", sim_data['subj_idx'].nunique())
-print("OVcate counts:\n", sim_data['OVcate'].value_counts())
-#-----------------------------------------------------------------------------------------------------------------------
-#Re-Fitting the model (like in hcp tutorial)
 
-# helper function to wrap the sampling procedure
-def run_sampling(model, model_db_name, progress_bar=True):
-    model.find_starting_values()
-    result = model.sample(
-        1000,                # nr of samples (
-        burn=100,            # Burn-in samples
-        dbname=model_db_name,# path for saving the chain
-        db='pickle',         # Save chain using pickle
-        return_infdata=True, # Return an InferenceData object for diagnostics/plots
-        loglike=True,        # allow for loglikelihood computation
-        ppc=True             # to get the ppc
-    )
-    if isinstance(result, tuple):
-        model_out = result[0]
-        infdata = result[1]
-        return model_out, infdata
-    else:
-        return model, result
 
-# model specification 
-v_reg = {'model': 'v ~ 1 + z_AttentionW:C(OVcate) + z_IAW_chart + z_IAW_image', 'link_func': lambda x: x}
-reg_descr = [v_reg]
-depends_on={'a': 'OVcate'} 
-            
-
-# HDDMRegressor using simulated data
-m_recovery = hddm.HDDMRegressor(
-    sim_data,              
-    reg_descr,
-    depends_on=depends_on,         
-    include=['a', 't', 'v'], 
-    p_outlier=0.05,
-    group_only_regressors=False,
-    keep_regressor_trace=True
-)
-
-# full path for saving
-model_db_name = os.path.join(BASE_MODEL_DIR, "mES_30_recovery")
-m_recovery, m_recovery_infdata = run_sampling(m_recovery, model_db_name, progress_bar=False)
-az.to_netcdf(m_recovery_infdata, os.path.join(BASE_MODEL_DIR, "mES_30_recovery.nc"))
 
 #-----------------------------------------------------------------------------------------------------------------------------------
 #recovered_nc = os.path.join(BASE_MODEL_DIR, "mES_27_recovery.nc")
