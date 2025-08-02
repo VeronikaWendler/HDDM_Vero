@@ -197,67 +197,36 @@ def az_summary(infdata, **kwargs):
     return df_subj, group_df        # <-- two convenient objects
 
 #-----------------------------------------------------------------------------------------------------------------------------------------
-summary_df = az_summary(es27_infdata)['mean']
-print(summary_df.columns.tolist())
+# ---------- get subject-level and group-level parameter estimates ----------
+subj_pars, group_pars = az_summary(es27_infdata)  # subj_pars: DataFrame indexed by subj_idx; group_pars: Series
 
-# read in model
+# read in model data and coerce subj_idx
 data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
-
-# read in model and coerce subj_idx
-data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
-data_ES_27 = data_ES_27.copy()
 data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
 data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
 data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
 
+# drop subjects whose raw data have all NaN RTs
 bad_raw = data_ES_27.groupby('subj_idx')['rt'].transform(lambda s: s.isna().all())
 data_ES_27 = data_ES_27[~bad_raw]
-# ---------------------------------------------------------------------
 
-orig_subjects = sorted(data_ES_27['subj_idx'].unique())
+# diagnostics / available params (optional debugging)
+# print("Example subject parameters:", subj_pars.loc[subj_pars.index[0]].index.tolist())
+# print("Group-level parameters:", list(group_pars.index)[:30])
 
-# Subject-level summary restricted to kept subjects
-subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
-subject_summary = subject_summary[subject_summary['subj_idx'].isin(orig_subjects)]
-
-
-def az_summary_group(infdata, **kwargs):
-    # full summary as a DataFrame
-    summary_df = az.summary(infdata, kind="stats", **kwargs).reset_index()
-    # Check the actual column name for parameters (might be 'index' instead of 'param_name')
-    param_col = 'index' if 'index' in summary_df.columns else 'param_name'
-    # Set the index to the parameter names and select the mean estimates
-    return summary_df.set_index(param_col)["mean"]
-
-# check what's in the infdata
-group_params = az_summary_group(es27_infdata)
-print(group_params.index.tolist())
-
-group_params = az.summary(es27_infdata, var_names=['~subj', '~std'], filter_vars='regex')
-subject_params = az_summary(es27_infdata)['mean']
-
-subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
+# build per-(subj,OVcate) summary for simulation usage
 df_ind_summary = (
     data_ES_27.groupby(['subj_idx', 'OVcate'])['rt']
     .describe()
     .reset_index()
 )
-df_ind_summary = (
-    df_ind_summary.set_index('subj_idx')
-    .join(subject_summary.set_index('subj_idx'))
-    .reset_index()
-)
-print("columns now available in j:", df_ind_summary.columns.tolist())
+# join subject-specific parameters if you need them downstream; not needed for the current sim loop
 
-import re
-
-
-subj_pars, group_pars = az_summary(es27_infdata)
-
+# ---------- simulate synthetic trials ----------
 sim_data = []
 
 for (subj, ov), trials in data_ES_27.groupby(["subj_idx", "OVcate"]):
-    pars_row = subj_pars.loc[subj]               # ← row of subject means
+    pars_row = subj_pars.loc[subj]  # subject means
 
     v_int  = pars_row["v_Intercept"]
     v_c    = pars_row["v_z_IAW_chart"]
@@ -266,10 +235,9 @@ for (subj, ov), trials in data_ES_27.groupby(["subj_idx", "OVcate"]):
     a_val  = get_param(pars_row, group_pars, "a({})", ov)
     t_val  = pars_row["t"]
 
-    # ------- simulate one synthetic trial per real one -------
     for _, tr in trials.iterrows():
         v_trial = (v_int
-                   + v_att * tr.get("z_AttentionW", 0.)
+                   + v_att * tr.get("z_AttentionW", 0.)  # or adjust if column is "z_AttentionW:C(OVcate)"
                    + v_c   * tr.get("z_IAW_chart", 0.)
                    + v_i   * tr.get("z_IAW_image", 0.))
 
@@ -282,10 +250,9 @@ for (subj, ov), trials in data_ES_27.groupby(["subj_idx", "OVcate"]):
 
 sim_data = pd.concat(sim_data, ignore_index=True)
 
-# ── NEW: drop subjects whose *all* simulated RTs are NaN ──────────────
+# drop subjects whose simulated RTs are all NaN
 bad_sim  = sim_data.groupby('subj_idx')['rt'].transform(lambda s: s.isna().all())
 sim_data = sim_data[~bad_sim]
-# ---------------------------------------------------------------------
 
 sim_data['subj_idx'] = pd.to_numeric(sim_data['subj_idx'], errors='coerce').astype(int)
 
