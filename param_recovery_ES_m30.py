@@ -73,21 +73,28 @@ def load_chains(model_dir: pathlib.Path, stem: str, n: int = 3) -> az.InferenceD
 # ---------------------------------------------------------------------
 
 def extract_subject_means(infdata: az.InferenceData) -> pd.DataFrame:
-    """Return one row per subject with the posterior‐mean of each parameter."""
+    """Return one row per subject with posterior-mean of each parameter."""
     summary = az.summary(infdata, kind="stats").reset_index(names="param")
 
-    # pull out "<parameter>_subj.<id>" parts
-    pat = r"(?P<param>.*)_subj\.(?P<subj>\d+)"
-    extracted = summary["param"].str.extract(pat, expand=True)      # <- safe
-    summary  = summary.join(extracted)                              # add cols
+    pat = r"(?P<param_name>.*)_subj\.(?P<subj>\d+)"
+    extracted = summary["param"].str.extract(pat, expand=True)
 
-    # keep only rows that actually matched the pattern
+    # rename so we don’t clash with the existing “param” column
+    extracted = extracted.rename(columns={"param_name": "base_param"})
+
+    summary = summary.join(extracted)
+
+    # keep only rows where we actually matched the pattern
     summary = summary.dropna(subset=["subj"]).astype({"subj": int})
 
-    # wide format: index = subj, columns = param
-    wide = summary.pivot(index="subj", columns="param", values="mean")
-    wide.index.name = "subj_idx"
-    return wide.reset_index()
+    # pivot to wide form
+    wide = (summary
+            .pivot(index="subj", columns="base_param", values="mean")
+            .rename_axis(index="subj_idx", columns=None)
+            .reset_index())
+
+    return wide
+
 
 # ---------------------------------------------------------------------
 
