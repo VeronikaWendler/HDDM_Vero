@@ -272,7 +272,6 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     v_DwellPA = safe_get(j, "v_DwellPropAdvantage")
     v_gquad = safe_get(j, "v_gaze_quad")
     a_int = safe_get(j, "a_Intercept")
-    a_int = safe_get(j, "a_Intercept")
     if ov == "high":
         a_effect = 0.0
     else:
