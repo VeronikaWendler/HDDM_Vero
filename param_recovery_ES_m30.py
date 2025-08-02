@@ -332,14 +332,12 @@ def run_sampling(model, model_db_name, progress_bar=True):
 # model
 v_reg = {'model': 'v ~ 1 + z_AttentionW:C(OVcate) + z_IAW_chart + z_IAW_image', 'link_func': lambda x: x}
 reg_descr = [v_reg]
-depends_on={'a': 'OVcate'} 
 
 # HDDMRegressor using simulated data
 m_recovery = hddm.HDDMRegressor(
     sim_data,              
     reg_descr,   
-    depends_on=depends_on,          
-    include=['a', 't', 'v'], 
+    include=['t', 'v'], 
     p_outlier=0.05,
     group_only_regressors=False,
     keep_regressor_trace=True
