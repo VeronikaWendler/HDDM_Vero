@@ -68,7 +68,8 @@ def ensure_dir(path):
 # FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_27/diagnostics"
 BASE_MODEL_DIR = PROJECT_DIR / "models_dir_combined"
 FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_combined/combined_replication_ES_30/diagnostics"
--------------------------------------------------------------------------------------------------   
+
+
 # here also improatant, set which model to lead (concatenate the chains you ran)
 # chain0 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_29_0.nc")
 # chain1 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_29_1.nc")
