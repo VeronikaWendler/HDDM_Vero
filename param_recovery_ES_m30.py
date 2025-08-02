@@ -59,354 +59,113 @@ import kabuki
 import arviz as az
 
 #------------------------------------------------------------------------------------------------------------------------------------------
-# dir
-PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
-def ensure_dir(path):
-    Path(path).mkdir(parents=True, exist_ok=True)
-
-# BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
-# FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_27/diagnostics"
+# ---------------------------------------------------------------------
+PROJECT_DIR   = pathlib.Path("/workspace").resolve()
 BASE_MODEL_DIR = PROJECT_DIR / "models_dir_combined"
-FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_combined/combined_replication_ES_30/diagnostics"
 
+# Utility ----------------------------------------------------------------
 
-chain0 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_30_0.nc")
-chain1 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_30_1.nc")
-chain2 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_30_2.nc")
+def load_chains(model_dir: pathlib.Path, stem: str, n: int = 3) -> az.InferenceData:
+    """Load *n* consecutive NetCDF chains and concatenate along the chain dim."""
+    chains = [az.from_netcdf(model_dir / f"{stem}_{i}.nc") for i in range(n)]
+    return az.concat(chains, dim="chain")
 
+# ---------------------------------------------------------------------
 
-es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
+def extract_subject_means(infdata: az.InferenceData) -> pd.DataFrame:
+    """Return a tidy DataFrame with one row per subject, parameter columns."""
+    summary = az.summary(infdata, kind="stats").reset_index(names="param")
+    # pull out subject‑specific rows  --------------
+    pat = r"(?P<param>.*)_subj\.(?P<subj>\d+)"
+    long  = summary[param := summary["param"].str.extract(pat, expand=True)]
+    long  = long.dropna(subset=["subj"]).astype({"subj": int})
+    wide  = long.pivot(index="subj", columns="param", values="mean")
+    wide.index.name = "subj_idx"
+    return wide.reset_index()
 
+# ---------------------------------------------------------------------
 
-#--------------------------------------------------------------------------------------------------------------------------------------------
-#REG PLOT FUNCTION
-# AZ SUMMARY
-# some functions for some plots
-def regplot_with_corr(
-    data=None,
-    x="x",
-    y="y",
-    cor_anonot=True,
-    reg_anonot=True,
-    annot_kws={
-        "fontsize": 8,
-        "xy": (0.95, 0.05),
-        "ha": 'right',
-        "va": 'bottom'
-    },
-    scatter_kws={
-        's': 40,
-        "alpha": 0.4
-    },
-    ax=None,
-    **kwargs
-):
-    """
+def simulate_from_subject_params(data: pd.DataFrame,
+                                 pars: pd.DataFrame) -> pd.DataFrame:
+    """Simulate one trial *per real trial* using subject‑level parameters."""
+    sim_rows = []
 
-    Example:
-    --------
-    >>> Example usage
-    >>> import pandas as pd
-    >>> data = pd.DataFrame({'x': [1, 2, 3, 4, 5], 'y': [2, 3, 5, 7, 11]})
-    >>> regplot_with_corr(data)
-    >>> plt.show()
-    """
-    if ax is None:
-        ax = plt.gca()
-    if data is not None:
-        data_x = data[x]
-        data_y = data[y]
-    else: 
-        data_x = x
-        data_y = y
+    pars = pars.set_index("subj_idx")
 
-    # Plot regression line and scatter plot
-    sns.regplot(
-        x=data_x,
-        y=data_y,
-        ci=None if len(np.unique(data_y)) == 1 else 95,
-        scatter_kws=scatter_kws,
-        ax=ax
-    )
+    for (subj, ov), trials in data.groupby(["subj_idx", "OVcate"]):
+        p = pars.loc[subj]
+        # constant pieces for this subject / condition
+        v_int   = p["v_Intercept"]
+        v_c     = p["v_z_IAW_chart"]
+        v_i     = p["v_z_IAW_image"]
+        v_att   = p[f"v_z_AttentionW:C(OVcate)[{ov}]"]
+        a_val   = p[f"a({ov})"]
+        t_val   = p["t"]
 
-    annot_text = ""
-    if cor_anonot:
-        # Calculate Pearson correlation
-        correlation, p_value = pearsonr(data_x, data_y)
-        # if np.isnan(correlation):
-        #     correlation = 0
-        # if np.isnan(p_value):
-        #     p_value = 1
-        p_str = "p < 0.001" if p_value < 0.001 else f"p = {p_value:.3f}"
-        annot_text += f"$r={correlation:.2f}$\n${p_str}$"
+        for _, tr in trials.iterrows():
+            v_trial = (v_int +
+                       v_att * tr.get("z_AttentionW", 0.) +
+                       v_c   * tr.get("z_IAW_chart", 0.) +
+                       v_i   * tr.get("z_IAW_image", 0.))
 
-    if reg_anonot:
-        # Calculate regression coefficients
-        X = sm.add_constant(data_x)  # Adds a constant term to the predictor
-        model = sm.OLS(data_y, X).fit()
-        intercept, slope = model.params
-        annot_text += f"\n$\\beta_0={intercept:.2f}$\n$\\beta_1={slope:.2f}$"
+            sim_tr, _ = hddm.generate.gen_rand_data(
+                {"v": v_trial, "a": a_val, "t": t_val}, size=1, subjs=1)
 
-    # Annotate the plot with correlation, p-value, intercept, and slope
-    if annot_text != "":
-        ax.annotate(
-            annot_text,
-            **annot_kws,
-            xycoords='axes fraction',
-            bbox=dict(
-                boxstyle='round,pad=0.3', edgecolor='black', facecolor='white'
-            )
-        )
-    
-    return ax
+            sim_tr["subj_idx"]     = subj
+            sim_tr["OVcate"]       = ov
+            sim_tr["z_AttentionW"] = tr.get("z_AttentionW", 0.)
+            sim_tr["z_IAW_chart"]  = tr.get("z_IAW_chart", 0.)
+            sim_tr["z_IAW_image"]  = tr.get("z_IAW_image", 0.)
+            sim_rows.append(sim_tr)
 
+    sim_data = pd.concat(sim_rows, ignore_index=True)
 
-def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
+    # --- drop subjects whose *all* simulated RTs are NaN --------------
+    bad_subs = (sim_data.groupby("subj_idx")["rt"].apply(lambda s: s.isna().all()))
+    if bad_subs.any():
+        sim_data = sim_data[~sim_data["subj_idx"].isin(bad_subs.index[bad_subs])]
 
-    param_df = az.summary(infdata, kind="stats",
-                            **kwargs).reset_index(names="param_name")
-    # col_values = ['mean', 'sd', "hdi_3%", "hdi_97%"]
-    col_values = list(param_df.columns[1:5])
+    return sim_data.drop(columns=[c for c in ["condition"] if c in sim_data])
 
-    pattern = r'(.*)_subj\.(\d+)'
+# ---------------------------------------------------------------------
 
-    param_df[['param',
-                'subj_idx']] = param_df['param_name'].str.extract(pattern)
-    # param_df['param'] = param_df['param'].apply(lambda x: f'${x}$')
-    param_df = param_df.dropna(subset=['subj_idx'])
-    param_df['subj_idx'] = param_df['subj_idx'].astype(int)
+def fit_recovery_model(data: pd.DataFrame, out_dir: pathlib.Path):
+    v_reg   = {"model": "v ~ 1 + z_AttentionW:C(OVcate) + z_IAW_chart + z_IAW_image",
+               "link_func": lambda x: x}
+    model   = hddm.HDDMRegressor(data,
+                                 [v_reg],
+                                 depends_on={"a": "OVcate"},
+                                 include=["a", "t", "v"],
+                                 p_outlier=0.05,
+                                 keep_regressor_trace=True)
 
-    if half_a:
-        param_df.loc[param_df['param'] == 'a',
-                        col_values] = param_df.loc[param_df['param'] == 'a',
-                                                col_values] / 2
-
-    param_df = param_df.pivot(
-        index='subj_idx', columns='param', values=col_values
-    )
-
-    if param_names_order is not None:
-        new_index = pd.MultiIndex.from_tuples(
-            [
-                (level_0, param) for level_0 in col_values
-                for param in param_names_order
-            ],
-            names=[None, 'param']
-        )
-        param_df = param_df.reindex(columns=new_index)
-
-    param_df.reset_index(inplace=True)
-    param_df.columns.names = [None, None]
-
-    return param_df
-
-#  
-#-----------------------------------------------------------------------------------------------------------------------------------------
-summary_df = az_summary(es27_infdata)['mean']          
-# … but push the index out into a real column
-summary_df = summary_df.reset_index()                  
-print(summary_df.columns.tolist())
-
-# read in model
-data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
-
-# read in model and coerce subj_idx
-data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
-data_ES_27 = data_ES_27.copy()
-data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
-data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
-data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
-
-
-def az_summary_group(infdata, **kwargs):
-    # full summary as a DataFrame
-    summary_df = az.summary(infdata, kind="stats", **kwargs).reset_index()
-    # Check the actual column name for parameters (might be 'index' instead of 'param_name')
-    param_col = 'index' if 'index' in summary_df.columns else 'param_name'
-    # Set the index to the parameter names and select the mean estimates
-    return summary_df.set_index(param_col)["mean"]
-
-# check what's in the infdata
-group_params = az_summary_group(es27_infdata)
-print(group_params.index.tolist())
-
-
-group_params = az.summary(es27_infdata, var_names=['~subj', '~std'], filter_vars='regex')
-subject_params = az_summary(es27_infdata)['mean']
-
-
-            
-subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
-df_ind_summary = (
-    data_ES_27.groupby(['subj_idx', 'OVcate'])['rt']
-    .describe()
-    .reset_index()
-)
-df_ind_summary = (
-    df_ind_summary.set_index('subj_idx')
-    .join(subject_summary.set_index('subj_idx'))
-    .reset_index()
-)
-
-# get group/subject parameters for the weighted terms (if needed)
-# e.g., you might want to pull them per trial from df_ind_summary
-# ------------------------------------------------------------------
-# ----  Build a single table of subject-level parameters  ----------
-# (summary_df already has one row per subject, columns are parameters)
-subj_par  = summary_df.set_index('subj_idx')    #  rows = subj_idx
-
-# quick sanity check
-needed_cols = ['v_Intercept', 'v_z_IAW_chart', 'v_z_IAW_image',
-               't', 'a(high)', 'a(medium)', 'a(low)',
-               'v_z_AttentionW:C(OVcate)[high]',
-               'v_z_AttentionW:C(OVcate)[medium]',
-               'v_z_AttentionW:C(OVcate)[low]']
-missing = [c for c in needed_cols if c not in subj_par.columns]
-assert not missing, f"parameter(s) missing from summary_df: {missing}"
-
-# ------------------------------------------------------------------
-# ----  simulate ----------------------------------------------------
-sim_rows = []   # list of data frames (one per simulated trial)
-
-for (subj, ov), trial_grp in data_ES_27.groupby(['subj_idx', 'OVcate']):
-    
-    # -------- fixed parameters for THIS subject & OV ---------------
-    p        =  subj_par.loc[subj]                     # row of parameters
-    v_int    =  p['v_Intercept']
-    v_zIAWc  =  p['v_z_IAW_chart']
-    v_zIAWi  =  p['v_z_IAW_image']
-    v_zAttW  =  p[f'v_z_AttentionW:C(OVcate)[{ov}]']   # e.g. “high”
-    t_val    =  p['t']
-    a_val    =  p[f'a({ov})']                          # “a(high)” etc.
-    
-    # -------- iterate over that subject’s trials -------------------
-    for _, tr in trial_grp.iterrows():
-        # trial-wise predictors
-        zIAWc_trial  = tr.get('z_IAW_chart',  0)
-        zIAWi_trial  = tr.get('z_IAW_image',  0)
-        zAttW_trial  = tr.get('z_AttentionW', 0)
-
-        # drift & simulate one response
-        v_trial = (v_int +
-                   v_zAttW * zAttW_trial +
-                   v_zIAWc * zIAWc_trial +
-                   v_zIAWi * zIAWi_trial)
-
-        sim_tr, _ = hddm.generate.gen_rand_data(
-            dict(v=v_trial, a=a_val, t=t_val),
-            size=1, subjs=1
-        )
-
-        # annotate
-        sim_tr['subj_idx']      = subj
-        sim_tr['OVcate']        = ov
-        sim_tr['z_IAW_chart']   = zIAWc_trial
-        sim_tr['z_IAW_image']   = zIAWi_trial
-        sim_tr['z_AttentionW']  = zAttW_trial
-        sim_rows.append(sim_tr)
-
-# ------------------------------------------------------------------
-# ----  concatenate & clean  ---------------------------------------
-sim_data = pd.concat(sim_rows, ignore_index=True)
-
-dead_subs = (sim_data.groupby('subj_idx')['rt']
-                     .apply(lambda s: s.isna().all()))   # True = all NaN
-if dead_subs.any():
-    sim_data = sim_data[~sim_data['subj_idx'].isin(dead_subs[dead_subs].index)]
-
-# (optional) if you instead want to drop subjects with *any* NaN RT:
-# bad_subs = sim_data.loc[sim_data['rt'].isna(),'subj_idx'].unique()
-# sim_data = sim_data[~sim_data['subj_idx'].isin(bad_subs)]
-
-# ----------  tidy-up & quick diagnostics ----------------------------
-sim_data = sim_data.loc[:, ~sim_data.columns.isin(['condition'])]
-
-print(sim_data.head())
-print("subjects kept:", sim_data['subj_idx'].nunique(),
-      "| dropped:", dead_subs.sum())
-
-print(sim_data.to_string())
-
-
-print(sim_data[['subj_idx', 'OVcate', 'rt', 'response']].head())
-print("\nUnique subjects:", sim_data['subj_idx'].nunique())
-print("OVcate counts:\n", sim_data['OVcate'].value_counts())
-#-----------------------------------------------------------------------------------------------------------------------
-#Re-Fitting the model (like in hcp tutorial)
-
-# helper function to wrap the sampling procedure
-def run_sampling(model, model_db_name, progress_bar=True):
     model.find_starting_values()
-    result = model.sample(
-        1000,                # nr of samples (
-        burn=100,            # Burn-in samples
-        dbname=model_db_name,# path for saving the chain
-        db='pickle',         # Save chain using pickle
-        return_infdata=True, # Return an InferenceData object for diagnostics/plots
-        loglike=True,        # allow for loglikelihood computation
-        ppc=True             # to get the ppc
-    )
-    if isinstance(result, tuple):
-        model_out = result[0]
-        infdata = result[1]
-        return model_out, infdata
-    else:
-        return model, result
+    model, inf = model.sample(1000, burn=100, dbname=str(out_dir/"mES_30_recovery"),
+                              db="pickle", return_infdata=True,
+                              ppc=True, loglike=True)
+    az.to_netcdf(inf, out_dir/"mES_30_recovery.nc")
+    return model, inf
 
-# model specification 
-v_reg = {'model': 'v ~ 1 + z_AttentionW:C(OVcate) + z_IAW_chart + z_IAW_image', 'link_func': lambda x: x}
-reg_descr = [v_reg]
-depends_on={'a': 'OVcate'} 
-            
+# ---------------------------------------------------------------------
 
-# HDDMRegressor using simulated data
-m_recovery = hddm.HDDMRegressor(
-    sim_data,              
-    reg_descr,
-    depends_on=depends_on,         
-    include=['a', 't', 'v'], 
-    p_outlier=0.05,
-    group_only_regressors=False,
-    keep_regressor_trace=True
-)
+def main():
+    warnings.filterwarnings("ignore", category=FutureWarning)
 
-# full path for saving
-model_db_name = os.path.join(BASE_MODEL_DIR, "mES_30_recovery")
-m_recovery, m_recovery_infdata = run_sampling(m_recovery, model_db_name, progress_bar=False)
-az.to_netcdf(m_recovery_infdata, os.path.join(BASE_MODEL_DIR, "mES_30_recovery.nc"))
+    infdata   = load_chains(BASE_MODEL_DIR, "combined_replication_ES_30")
+    subject_df = extract_subject_means(infdata)
+
+    raw = infdata.observed_data.to_dataframe().reset_index(drop=True)
+    raw["subj_idx"] = raw["subj_idx"].astype(int)
+
+    sim = simulate_from_subject_params(raw, subject_df)
+    print(f"Simulated trials  : {len(sim):,}")
+    print(f"Subjects retained : {sim['subj_idx'].nunique()}")
+
+    fit_recovery_model(sim, BASE_MODEL_DIR)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    main()
 
 
 
