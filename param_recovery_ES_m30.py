@@ -286,7 +286,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
         # trial-specific predictor values (unchanged)
         zIAWc_trial = trial.get("z_IAW_chart", 0)
         zIAWi_trial = trial.get("z_IAW_image", 0)
-        zAttW_trial = trial.get(f"z_AttentionW:C(OVcate)[{ov}]", 0)
+        zAttW_trial = trial.get("z_AttentionW", 0)
 
         # compute drift for this trial
         v_trial = v_int + v_zAttW * zAttW_trial + v_zIAWc * zIAWc_trial + v_zIAWi * zIAWi_trial
@@ -304,9 +304,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
         sim_trial["OVcate"]        = ov
         sim_trial["z_IAW_chart"]   = zIAWc_trial     # was v_zAttW_trial
         sim_trial["z_IAW_image"]   = zIAWi_trial     # was v_zIAWc_trial
-        sim_trial[f"z_AttentionW:C(OVcate)[{ov}]"] = zAttW_trial   # correct
-
-        # --------------------------------------------------
+        sim_trial["z_AttentionW"] = zAttW_trial   # correct
 
         sim_data.append(sim_trial)
 
