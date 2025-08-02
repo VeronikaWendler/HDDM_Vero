@@ -268,7 +268,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
         val_diff_trial = trial.get("val_diff", 0)
         DwellPA_trial = trial.get("DwellPropAdvantage", 0)
         gaze_quad_trial = trial.get("gaze_quad", 0)
-        abs_DwellPAov_trial = trial.get(f"abs_DwellPropAdv:C(OVcate)[{ov}]")
+        abs_DwellPAov_trial = trial.get("abs_DwellPropAdv:C(OVcate)", 0)
 
 
         # weighted drift and boundary
