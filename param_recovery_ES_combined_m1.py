@@ -203,62 +203,47 @@ print(summary_df.columns.tolist())
 # read in model
 data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
 
-# read in model and coerce subj_idx
-data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
-data_ES_27 = data_ES_27.copy()
-data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
-data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
-data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
+# Normalize OVcate in the observed data early to avoid whitespace/casing mismatches
+data_ES_27['OVcate'] = data_ES_27['OVcate'].astype(str).str.strip()
 
-orig_subjects = sorted(data_ES_27['subj_idx'].unique())
-
-#data_ES_27 = data_ES_27.groupby('subj_idx').filter(lambda g: not g['rt'].isna().all())
-
-
-filtered_subjects = sorted(data_ES_27['subj_idx'].unique())
-
-print(f"Subjects before filtering: {orig_subjects}")
-print(f"Subjects after keeping subj_idx who dont hve all nans in their rt: {filtered_subjects}")
-
-# Subject-level summary restricted to kept subjects
+# Subject-level summary (means) once
 subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
-subject_summary = subject_summary[subject_summary['subj_idx'].isin(filtered_subjects)]
 
-
-def az_summary_group(infdata, **kwargs):
-    # full summary as a DataFrame
-    summary_df = az.summary(infdata, kind="stats", **kwargs).reset_index()
-    # Check the actual column name for parameters (might be 'index' instead of 'param_name')
-    param_col = 'index' if 'index' in summary_df.columns else 'param_name'
-    # Set the index to the parameter names and select the mean estimates
-    return summary_df.set_index(param_col)["mean"]
-
-# check what's in the infdata
-group_params = az_summary_group(es27_infdata)
-print(group_params.index.tolist())
-
-group_params = az.summary(es27_infdata, var_names=['~subj', '~std'], filter_vars='regex')
-subject_params = az_summary(es27_infdata)['mean']
-
-subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
+# Per-(subj, OVcate) RT summary
 df_ind_summary = (
     data_ES_27.groupby(['subj_idx', 'OVcate'])['rt']
     .describe()
     .reset_index()
 )
-df_ind_summary = (
-    df_ind_summary.set_index('subj_idx')
-    .join(subject_summary.set_index('subj_idx'))
-    .reset_index()
-)
 
+# Merge in subject-level parameter estimates
+df_ind_summary = df_ind_summary.merge(subject_summary, on='subj_idx', how='left')
+
+# Diagnostics: which subjects are in data but missing from df_ind_summary
+data_subjects = set(data_ES_27['subj_idx'].unique())
+df_subjects = set(df_ind_summary['subj_idx'].unique())
+missing = sorted(data_subjects - df_subjects)
+if missing:
+    print("WARNING: these subjects are in data_ES_27 but missing from df_ind_summary:", missing)
+print("Unique subjects in data_ES_27:", sorted(data_subjects))
+print("Unique subjects in df_ind_summary:", sorted(df_subjects))
 
 sim_data = []
 
 for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     ov = str(ov).strip()
-    j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
 
+    matching = df_ind_summary[
+        (df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'].astype(str).str.strip() == ov)
+    ]
+    if matching.empty:
+        print(f"Missing summary for subj {subj}, OVcate '{ov}' — skipping.")
+        continue
+    if len(matching) > 1:
+        print(f"Warning: multiple summary rows for subj {subj}, OVcate '{ov}'; using first.")
+
+    j = matching.iloc[0]
+    
     # safe extraction helper
     def safe_get(j, key, default=0.0):
         if key in j.index:
