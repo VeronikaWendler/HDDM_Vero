@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 32    # defining version
+version = 29    # defining version
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -94,10 +94,10 @@ parallel = True
 # dir
 PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 
-BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
-FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia"
+BASE_MODEL_DIR = PROJECT_DIR / "models_dir_combined"
+FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_combined"
 
-model_base_name = "garcia_replication_"
+model_base_name = "combined_replication_"
 
 model_versions = {
     'LE': ['LE_1', 'LE_2', 'LE_3', 'LE_4', 'LE_5', 'LE_6', 'LE_7'],
@@ -125,7 +125,7 @@ model_name = model_versions[phase][version]
 #data_path1 = os.path.join(current_directory, 'data_sets/data_sets_Garcia', 'GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv')
 #data = pd.read_csv(data_path1, sep=',')
 
-data = pd.read_csv((PROJECT_DIR / "data_sets" / "data_sets_Garcia" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix(), sep=",")
+data = pd.read_csv((PROJECT_DIR / "data_sets"  / "combined_Garcia_OV.csv").as_posix(), sep=",")
 
 source_phase = PHASE_TO_SOURCE.get(phase, phase)   #assignes ES_ZBIAS
 
