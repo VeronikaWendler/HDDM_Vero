@@ -70,11 +70,6 @@ BASE_MODEL_DIR = PROJECT_DIR / "models_dir_combined"
 FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_combined/combined_replication_ES_30/diagnostics"
 
 
-# here also improatant, set which model to lead (concatenate the chains you ran)
-# chain0 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_29_0.nc")
-# chain1 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_29_1.nc")
-# chain2 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_29_2.nc")
-
 chain0 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_30_0.nc")
 chain1 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_30_1.nc")
 chain2 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_30_2.nc")
@@ -207,7 +202,9 @@ def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
 
 #  
 #-----------------------------------------------------------------------------------------------------------------------------------------
-summary_df = az_summary(es27_infdata)['mean']
+summary_df = az_summary(es27_infdata)['mean']          
+# … but push the index out into a real column
+summary_df = summary_df.reset_index()                  
 print(summary_df.columns.tolist())
 
 # read in model
@@ -219,20 +216,6 @@ data_ES_27 = data_ES_27.copy()
 data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
 data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
 data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
-
-# Keep only subj_idx <= 20
-orig_subjects = sorted(data_ES_27['subj_idx'].unique())
-data_ES_27 = data_ES_27[data_ES_27['subj_idx'] <= 20]
-filtered_subjects = sorted(data_ES_27['subj_idx'].unique())
-
-print(f"Subjects before filtering: {orig_subjects}")
-print(f"Subjects after keeping subj_idx <= 20: {filtered_subjects}")
-assert all(s <= 20 for s in filtered_subjects), "Filtering failed: found subj_idx > 20."
-
-# Subject-level summary restricted to kept subjects
-subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
-subject_summary = subject_summary[subject_summary['subj_idx'].isin(filtered_subjects)]
-
 
 
 def az_summary_group(infdata, **kwargs):
@@ -326,16 +309,21 @@ for (subj, ov), trial_grp in data_ES_27.groupby(['subj_idx', 'OVcate']):
 # ----  concatenate & clean  ---------------------------------------
 sim_data = pd.concat(sim_rows, ignore_index=True)
 
-# keep only subjects ≤ 20 (just like your original script)
-sim_data['subj_idx'] = sim_data['subj_idx'].astype(int)
-sim_data = sim_data[sim_data['subj_idx'] <= 20]
+dead_subs = (sim_data.groupby('subj_idx')['rt']
+                     .apply(lambda s: s.isna().all()))   # True = all NaN
+if dead_subs.any():
+    sim_data = sim_data[~sim_data['subj_idx'].isin(dead_subs[dead_subs].index)]
 
-# drop any stray ‘condition’ column
+# (optional) if you instead want to drop subjects with *any* NaN RT:
+# bad_subs = sim_data.loc[sim_data['rt'].isna(),'subj_idx'].unique()
+# sim_data = sim_data[~sim_data['subj_idx'].isin(bad_subs)]
+
+# ----------  tidy-up & quick diagnostics ----------------------------
 sim_data = sim_data.loc[:, ~sim_data.columns.isin(['condition'])]
 
 print(sim_data.head())
-print("\nUnique subjects:", sim_data['subj_idx'].nunique())
-print("OVcate counts:\n", sim_data['OVcate'].value_counts())
+print("subjects kept:", sim_data['subj_idx'].nunique(),
+      "| dropped:", dead_subs.sum())
 
 print(sim_data.to_string())
 
