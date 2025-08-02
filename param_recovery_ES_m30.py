@@ -245,7 +245,38 @@ df_ind_summary = (
     .reset_index()
 )
 
-subject_params = az_summary(es27_infdata)['mean']
+import re
+
+def robust_lookup(series: pd.Series, base_pattern: str, ov: str):
+    """
+    Try to fetch the parameter for given OVcate, accounting for naming
+    variations like 'a(high)', 'a_high', 'a_subj(high)', etc.
+    base_pattern can be either a format string with '{}' for ov or a base name,
+    e.g. 'a({})' or 'v_z_AttentionW:C(OVcate)[{}]'.
+    """
+    candidates = []
+    if '{}' in base_pattern:
+        raw = base_pattern.format(ov)
+    else:
+        raw = f"{base_pattern}({ov})"
+    candidates.append(raw)
+    # sanitized variants
+    sanitized = (raw.replace("(", "_").replace(")", "")
+                     .replace(":", "_").replace("[", "_").replace("]", ""))
+    candidates.append(sanitized)
+    # subject-level style (if present)
+    if '{}' in base_pattern:
+        subj_raw = base_pattern.replace('{}', f"subj({ov})")
+        subj_raw = subj_raw.replace("subj(", "subj(")  # keep format
+    else:
+        subj_raw = f"{base_pattern}_subj({ov})"
+    candidates.append(subj_raw)
+    candidates.append(subj_raw.replace("(", "_").replace(")", "")
+                               .replace(":", "_").replace("[", "_").replace("]", ""))
+    for c in candidates:
+        if c in series:
+            return series[c]
+    raise KeyError(f"None of {candidates} found in index. Available (first 30): {series.index.tolist()[:30]}")
 
 sim_data = []
 
@@ -254,10 +285,10 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     v_int = j["v_Intercept"]
     v_chart = j["v_z_IAW_chart"]
     v_image = j["v_z_IAW_image"]
-    v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"] 
+    v_att = robust_lookup(j, "v_z_AttentionW:C(OVcate)[{}]", ov)
+    a_val = robust_lookup(j, "a({})", ov)
     t_val = j["t"]
-
-    a_val = subject_params.loc[(subject_params['subj_idx'] == subj), f"a_subj({ov})"].values[0]
+    
         
     for _, trial in trial_group.iterrows():
         v_chart_trial = trial.get("z_IAW_chart", 0)
