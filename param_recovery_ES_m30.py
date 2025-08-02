@@ -73,13 +73,19 @@ def load_chains(model_dir: pathlib.Path, stem: str, n: int = 3) -> az.InferenceD
 # ---------------------------------------------------------------------
 
 def extract_subject_means(infdata: az.InferenceData) -> pd.DataFrame:
-    """Return a tidy DataFrame with one row per subject, parameter columns."""
+    """Return one row per subject with the posterior‐mean of each parameter."""
     summary = az.summary(infdata, kind="stats").reset_index(names="param")
-    # pull out subject‑specific rows  --------------
+
+    # pull out "<parameter>_subj.<id>" parts
     pat = r"(?P<param>.*)_subj\.(?P<subj>\d+)"
-    long  = summary[param := summary["param"].str.extract(pat, expand=True)]
-    long  = long.dropna(subset=["subj"]).astype({"subj": int})
-    wide  = long.pivot(index="subj", columns="param", values="mean")
+    extracted = summary["param"].str.extract(pat, expand=True)      # <- safe
+    summary  = summary.join(extracted)                              # add cols
+
+    # keep only rows that actually matched the pattern
+    summary = summary.dropna(subset=["subj"]).astype({"subj": int})
+
+    # wide format: index = subj, columns = param
+    wide = summary.pivot(index="subj", columns="param", values="mean")
     wide.index.name = "subj_idx"
     return wide.reset_index()
 
