@@ -245,6 +245,7 @@ df_ind_summary = (
     .reset_index()
 )
 
+subject_params = az_summary(es27_infdata)['mean']
 
 sim_data = []
 
@@ -255,8 +256,9 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     v_image = j["v_z_IAW_image"]
     v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"] 
     t_val = j["t"]
-    a_val = j[f"a({ov})"]
 
+    a_val = subject_params.loc[(subject_params['subj_idx'] == subj), f"a_subj({ov})"].values[0]
+        
     for _, trial in trial_group.iterrows():
         v_chart_trial = trial.get("z_IAW_chart", 0)
         v_image_trial = trial.get("z_IAW_image", 0)
