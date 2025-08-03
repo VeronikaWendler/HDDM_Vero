@@ -91,33 +91,31 @@ def simulate_dataset(true_pars: dict, raw_df: pd.DataFrame) -> pd.DataFrame:
 
     return pd.concat(sim_rows, ignore_index=True)
 
+# ---------- helper ------------------------------------------------------
 def refit(sim_df: pd.DataFrame, seed: int) -> az.InferenceData:
     m = hddm.HDDMRegressor(
         sim_df,
         reg_descr,
         include=["a", "t", "v"],
         p_outlier=0.05,
-        keep_regressor_trace=True,
         group_only_regressors=False,
+        keep_regressor_trace=True,
         depends_on=depends_on,
-        is_group_model=True,
-        # no disk DB → faster & avoids stale-file errors
-        db='ram'
+        is_group_model=True
+        # ← NO  db / dbname  HERE
     )
 
-    # crude clipping to keep drift / a sane
-    for node in m.get_stochastic_nodes():
-        if hasattr(node, "value"):
-            node.value = np.clip(node.value, -5, 5)
-
     m.find_starting_values()
+
+    # sample straight to RAM (db='ram') so nothing is written to disk
     _, idata = m.sample(
         draws=N_SAMPLES,
         burn=BURN,
         chains=4,
         random_seed=seed,
-        progressbar=True,   # PyMC’s own progress bar
-        ppc=False,          # <- avoids deviance / ppc nodes
+        db='ram',          # <-- goes here
+        progressbar=True,
+        ppc=False,
         loglike=False
     )
     return idata
