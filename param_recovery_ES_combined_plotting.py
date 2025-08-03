@@ -161,25 +161,74 @@ recovered_summary = save_diagnostics(m_recovery_infdata, "recovered", FIG_DIR_RO
 #REG PLOT FUNCTION
 # AZ SUMMARY
 # some functions for some plots
+import numpy as np
+import pandas as pd
+import statsmodels.api as sm
+from scipy.stats import pearsonr, spearmanr, kendalltau
+import seaborn as sns
+import matplotlib.pyplot as plt
+
+def concordance_ccc(x, y):
+    """Lin’s concordance correlation coefficient."""
+    x = np.asarray(x)
+    y = np.asarray(y)
+    x_mean = np.mean(x)
+    y_mean = np.mean(y)
+    s_x = np.var(x, ddof=1)
+    s_y = np.var(y, ddof=1)
+    cov = np.cov(x, y, ddof=1)[0, 1]
+    numerator = 2 * cov
+    denominator = s_x + s_y + (x_mean - y_mean) ** 2
+    if denominator == 0:
+        return np.nan
+    return numerator / denominator
+
+def deming_regression(x, y, lambda_ratio=1.0):
+    """
+    Deming regression slope & intercept assuming error variance ratio lambda_ratio = var_x_error / var_y_error.
+    Default lambda_ratio=1 assumes equal error variance.
+    """
+    x = np.asarray(x)
+    y = np.asarray(y)
+    x_bar = np.mean(x)
+    y_bar = np.mean(y)
+    S_xx = np.sum((x - x_bar) ** 2)
+    S_yy = np.sum((y - y_bar) ** 2)
+    S_xy = np.sum((x - x_bar) * (y - y_bar))
+    # Using formula from Linnet (1990)
+    delta = S_yy - lambda_ratio * S_xx
+    denom = 2 * S_xy
+    if denom == 0:
+        return np.nan, np.nan
+    # slope
+    slope = (delta + np.sqrt(delta ** 2 + 4 * lambda_ratio * S_xy ** 2)) / denom
+    intercept = y_bar - slope * x_bar
+    return slope, intercept
+
 def regplot_with_corr(
     data=None,
     x="x",
     y="y",
     cor_anonot=True,
     reg_anonot=True,
+    show_bootstrap_ci=False,
+    bootstrap_iters=500,
     annot_kws={
         "fontsize": 8,
         "xy": (0.95, 0.05),
-        "ha": 'right',
-        "va": 'bottom'
+        "ha": "right",
+        "va": "bottom"
     },
-    scatter_kws={
-        's': 40,
-        "alpha": 0.4
-    },
+    scatter_kws={"s": 40, "alpha": 0.4},
+    deming_lambda=1.0,
     ax=None,
     **kwargs
 ):
+    """
+    Scatter + regression with multiple correlation/agreement metrics.
+    Shows Pearson, Spearman, Kendall, Lin’s CCC, R², and Deming slope/intercept.
+    Optionally bootstraps Pearson & Spearman for CIs.
+    """
     if ax is None:
         ax = plt.gca()
 
@@ -188,55 +237,106 @@ def regplot_with_corr(
         data_x = data[x]
         data_y = data[y]
     else:
-        # If they passed raw arrays or Series
         data_x = x if isinstance(x, pd.Series) else pd.Series(x)
         data_y = y if isinstance(y, pd.Series) else pd.Series(y)
 
-    # Align the two series: keep only indices present in both
+    # Align indices
     try:
-        data_x, data_y = data_x.align(data_y, join='inner')
-    except Exception:  # fallback if not alignment-compatible (e.g., different types)
+        data_x, data_y = data_x.align(data_y, join="inner")
+    except Exception:
         data_x = pd.Series(data_x).reset_index(drop=True)
         data_y = pd.Series(data_y).reset_index(drop=True)
         minlen = min(len(data_x), len(data_y))
         data_x = data_x.iloc[:minlen]
         data_y = data_y.iloc[:minlen]
 
-    # Drop any remaining NaNs
+    # Drop NaNs
     mask = data_x.notna() & data_y.notna()
     data_x = data_x[mask]
     data_y = data_y[mask]
 
-    # Plot regression line and scatter
+    if len(data_x) < 2 or len(data_y) < 2:
+        raise ValueError("Not enough data after filtering to compute correlations.")
+
+    # Scatter + OLS regression line
     sns.regplot(
         x=data_x,
         y=data_y,
         ci=None if len(np.unique(data_y)) == 1 else 95,
         scatter_kws=scatter_kws,
-        ax=ax
+        ax=ax,
+        **kwargs
     )
 
-    annot_text = ""
+    # Compute metrics
+    pearson_r, pearson_p = pearsonr(data_x, data_y)
+    spearman_r, spearman_p = spearmanr(data_x, data_y)
+    kendall_r, kendall_p = kendalltau(data_x, data_y)
+    ccc = concordance_ccc(data_x.values, data_y.values)
+
+    # OLS for R^2 and slope/intercept
+    X = sm.add_constant(data_x)
+    ols_model = sm.OLS(data_y, X).fit()
+    intercept_ols, slope_ols = ols_model.params
+    r2 = ols_model.rsquared
+
+    # Deming regression
+    deming_slope, deming_intercept = deming_regression(data_x.values, data_y.values, lambda_ratio=deming_lambda)
+
+    # Bootstrap CIs if requested (Pearson and Spearman)
+    pearson_ci = None
+    spearman_ci = None
+    if show_bootstrap_ci:
+        rng = np.random.default_rng()
+        prs = []
+        sps = []
+        n = len(data_x)
+        for _ in range(bootstrap_iters):
+            idx = rng.integers(0, n, size=n)
+            sample_x = data_x.iloc[idx].values
+            sample_y = data_y.iloc[idx].values
+            try:
+                pr, _ = pearsonr(sample_x, sample_y)
+            except Exception:
+                pr = np.nan
+            try:
+                sr, _ = spearmanr(sample_x, sample_y)
+            except Exception:
+                sr = np.nan
+            prs.append(pr)
+            sps.append(sr)
+        prs = np.array(prs)
+        sps = np.array(sps)
+        pearson_ci = np.nanpercentile(prs, [2.5, 97.5])
+        spearman_ci = np.nanpercentile(sps, [2.5, 97.5])
+
+    # Build annotation text
+    lines = []
     if cor_anonot:
-        # Pearson correlation
-        if len(data_x) > 1 and len(data_y) > 1:
-            correlation, p_value = pearsonr(data_x, data_y)
-            p_str = "p < 0.001" if p_value < 0.001 else f"p = {p_value:.3f}"
-            annot_text += f"$r={correlation:.2f}$\n${p_str}$"
+        line1 = f"Pearson r={pearson_r:.2f}"
+        if pearson_ci is not None:
+            line1 += f" [{pearson_ci[0]:.2f},{pearson_ci[1]:.2f}]"
+        line2 = f"Spearman ρ={spearman_r:.2f}"
+        if spearman_ci is not None:
+            line2 += f" [{spearman_ci[0]:.2f},{spearman_ci[1]:.2f}]"
+        line3 = f"Kendall τ={kendall_r:.2f}"
+        line4 = f"CCC={ccc:.2f}"
+        lines.extend([line1, line2, line3, line4])
     if reg_anonot:
-        # Linear regression coefficients
-        X = sm.add_constant(data_x)
-        model = sm.OLS(data_y, X).fit()
-        intercept, slope = model.params
-        annot_text += f"\n$\\beta_0={intercept:.2f}$\n$\\beta_1={slope:.2f}$"
+        lines.append(f"OLS: β₀={intercept_ols:.2f}, β₁={slope_ols:.2f}, $R^2$={r2:.2f}")
+        if not np.isnan(deming_slope):
+            lines.append(f"Deming: slope={deming_slope:.2f}, intercept={deming_intercept:.2f}")
+
+    annot_text = "\n".join(lines)
 
     if annot_text:
         ax.annotate(
             annot_text,
             **annot_kws,
-            xycoords='axes fraction',
-            bbox=dict(boxstyle='round,pad=0.3', edgecolor='black', facecolor='white')
+            xycoords="axes fraction",
+            bbox=dict(boxstyle="round,pad=0.3", edgecolor="black", facecolor="white")
         )
+
     return ax
 
 
