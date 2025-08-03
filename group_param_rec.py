@@ -113,7 +113,8 @@ def refit(sim_df: pd.DataFrame, seed: int) -> az.InferenceData:
         db     = 'ram',                 # keep everything in memory
         dbname = f'ram_{seed}',         # <- MUST be a string, not None
         progressbar=True,
-        ppc=False,          # keep PPC off – not needed for scatter
+        ppc=False,    
+        loglik=True,
     )
     
     # convert to ArviZ. Works in every HDDM version ≥ 0.8 
