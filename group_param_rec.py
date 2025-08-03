@@ -139,11 +139,11 @@ raw_df["subj_idx"] = raw_df["subj_idx"].astype(int)
 records = []
 for rep in trange(N_REPS, desc="parameter-recovery reps", unit="rep"):
 
-    θ_true = extract_group_sample(empirical, seed=rep)       # ❶ draw
-    sim_df = simulate_dataset(θ_true, raw_df)                # ❷ simulate
+    θ_true = extract_group_sample(empirical, seed=rep)       
+    sim_df = simulate_dataset(θ_true, raw_df)                
 
     # call refit **with only a seed** (we removed the tmp-pickle argument)
-    idata  = refit(sim_df, seed=10_000 + rep)                # ❸ refit
+    idata  = refit(sim_df, seed=10_000 + rep)                
     θ_hat  = group_means(idata)
 
     for p in PARAM_LIST:
