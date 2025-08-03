@@ -100,7 +100,6 @@ def refit(sim_df: pd.DataFrame, seed: int) -> az.InferenceData:
         group_only_regressors=False,
         keep_regressor_trace=True,
         depends_on=depends_on,
-        is_group_model=True,
     )
     m.find_starting_values()
     # Here: pass N_SAMPLES *positionally*, not as draws=…
@@ -112,7 +111,8 @@ def refit(sim_df: pd.DataFrame, seed: int) -> az.InferenceData:
         db="ram",         # keep in RAM, no disk file
         progressbar=True,
         ppc=False,
-        loglike=False,
+        loglike=True,
+        return_infdata=True,
     )
     return idata
 
