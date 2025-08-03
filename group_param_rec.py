@@ -28,8 +28,8 @@ EMPIRICAL_POST_PATHS = [                        # chains from your first fit
     BASE_MODEL_DIR / "garcia_replication_ES_31_2.nc",
 ]
 
-N_REPS    = 4        # raise later (≥ 500) when everything is stable
-N_SAMPLES = 600      # posterior draws per refit
+N_REPS    = 20        # raise later (≥ 500) when everything is stable
+N_SAMPLES = 800      # posterior draws per refit
 BURN      = 100
 
 PARAM_LIST = [       # parameters that **exist only at the group level**
@@ -53,7 +53,7 @@ depends_on = {'a': 'OVcate'}
 
 # ------------- helper functions ----------------------------------------
 def extract_group_sample(idata, *, seed=None):
-    """Pick ONE posterior draw for every group-level parameter."""
+    """Pick posterior draw for every group-level parameter."""
     rng   = np.random.default_rng(seed)
     draw  = rng.integers(idata.posterior.dims["draw"])
     chain = rng.integers(idata.posterior.dims["chain"])
@@ -128,13 +128,13 @@ for rep in trange(N_REPS, desc="parameter-recovery", unit="rep"):
                             true=θ_true[p], recovered=θ_hat[p]))
             
     if (rep+1) % 1 == 0:         # every rep 
-        pd.DataFrame(records).to_csv(FIG_DIR / "partial_results.csv",
+        pd.DataFrame(records).to_csv(FIG_DIR / "partial_results2.csv",
                                      index=False)
 
 
 # ---------- save & plot ------------------------------------------------
 results = pd.DataFrame(records)
-results.to_csv(FIG_DIR / "true_vs_recovered_ES31.csv", index=False)
+results.to_csv(FIG_DIR / "true_vs_recovered_ES31_2.csv", index=False)
 
 sns.set_style("white")
 g = sns.FacetGrid(results, col="parameter", col_wrap=3,
@@ -147,10 +147,10 @@ for ax in g.axes.ravel():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
 g.set_axis_labels("true value", "posterior mean (recovered)")
 g.tight_layout()
-png_out = FIG_DIR / "scatter_ES31.png"
+png_out = FIG_DIR / "scatter_ES31_2.png"
 g.savefig(png_out, dpi=300)
 
-print(f"Done.  CSV → {FIG_DIR/'true_vs_recovered_ES31.csv'}")
+print(f"Done.  CSV → {FIG_DIR/'true_vs_recovered_ES31_2.csv'}")
 print(f"           PNG → {png_out}")
 
 
