@@ -28,7 +28,7 @@ EMPIRICAL_POST_PATHS = [
     BASE_MODEL_DIR / "garcia_replication_ES_31_2.nc",
 ]
 
-N_REPS    = 10         # ≥ 500 recommended for a paper
+N_REPS    = 4         # ≥ 500 recommended for a paper
 N_SAMPLES = 600        # ↑ when you have cluster time
 BURN      = 100
 
