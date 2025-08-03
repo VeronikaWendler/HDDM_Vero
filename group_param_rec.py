@@ -92,28 +92,35 @@ def simulate_dataset(true_pars: dict, raw_df: pd.DataFrame) -> pd.DataFrame:
     return pd.concat(sim_rows, ignore_index=True)
 
 def refit(sim_df: pd.DataFrame, seed: int) -> az.InferenceData:
+    import numpy as np
+    np.random.seed(seed)                    # <- PyMC2 way to get repeatable chains
+
     m = hddm.HDDMRegressor(
         sim_df,
         reg_descr,
-        include=["a", "t", "v"],
+        include=['a', 't', 'v'],
         p_outlier=0.05,
-        group_only_regressors=False,
         keep_regressor_trace=True,
+        group_only_regressors=False,
         depends_on=depends_on,
+        is_group_model=True,               
     )
+
     m.find_starting_values()
-    # Here: pass N_SAMPLES *positionally*, not as draws=…
-    _, idata = m.sample(
-        N_SAMPLES,        # <-- number of posterior draws
+
+    # classic HDDM sample call: positional arguments only
+    m.sample(
+        N_SAMPLES,          # draws
         burn=BURN,
         chains=4,
-        random_seed=seed,
-        db="ram",         # keep in RAM, no disk file
+        dbname=None,        # keep chains in memory (no tmp_*.db files)
+        db='pickle',        # required, even when dbname=None
         progressbar=True,
-        ppc=False,
-        loglike=True,
-        return_infdata=True,
+        ppc=False,   
     )
+
+    # convert to ArviZ. Works in every HDDM version ≥ 0.8 
+    idata = hddm.utils.model_to_inference_data(m, include_ppc=False)
     return idata
 
 def group_means(idata):
