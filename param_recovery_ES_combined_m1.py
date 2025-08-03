@@ -291,7 +291,6 @@ sim_data = pd.concat(sim_data, ignore_index=True)
 
 sim_data['subj_idx'] = pd.to_numeric(sim_data['subj_idx'], errors='coerce').astype(int)
 
-sim_data = sim_data.groupby('subj_idx').filter(lambda g: not g['rt'].isna().all())
 
 # ---------------------------------------------------------------------
 if "condition" in sim_data.columns:
@@ -372,7 +371,7 @@ m_recovery = hddm.HDDMRegressor(
 )
 
 # full path for saving
-model_db_name = os.path.join(BASE_MODEL_DIR, "mES_1_combined_recovery_nr2")
+model_db_name = os.path.join(BASE_MODEL_DIR, "mES_1_combined_recovery_nr3")
 m_recovery, m_recovery_infdata = run_sampling(m_recovery, model_db_name, progress_bar=False)
-az.to_netcdf(m_recovery_infdata, os.path.join(BASE_MODEL_DIR, "mES_1_combined_recovery_nr2.nc"))
+az.to_netcdf(m_recovery_infdata, os.path.join(BASE_MODEL_DIR, "mES_1_combined_recovery_nr3.nc"))
 
