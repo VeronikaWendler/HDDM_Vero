@@ -91,23 +91,37 @@ def simulate_dataset(true_pars: dict, raw_df: pd.DataFrame) -> pd.DataFrame:
 
     return pd.concat(sim_rows, ignore_index=True)
 
-def refit(sim_df: pd.DataFrame, db_path: Path):
-    model = hddm.HDDMRegressor(
+def refit(sim_df: pd.DataFrame, seed: int) -> az.InferenceData:
+    m = hddm.HDDMRegressor(
         sim_df,
         reg_descr,
         include=["a", "t", "v"],
         p_outlier=0.05,
-        group_only_regressors=False,
         keep_regressor_trace=True,
+        group_only_regressors=False,
         depends_on=depends_on,
+        is_group_model=True,
+        # no disk DB → faster & avoids stale-file errors
+        db='ram'
     )
-    model.find_starting_values()
-    _, idata = model.sample(
-        N_SAMPLES, burn=BURN,chains=4, 
-        dbname=str(db_path), db="pickle",
-        return_infdata=True, progressbar=True,
+
+    # crude clipping to keep drift / a sane
+    for node in m.get_stochastic_nodes():
+        if hasattr(node, "value"):
+            node.value = np.clip(node.value, -5, 5)
+
+    m.find_starting_values()
+    _, idata = m.sample(
+        draws=N_SAMPLES,
+        burn=BURN,
+        chains=4,
+        random_seed=seed,
+        progressbar=True,   # PyMC’s own progress bar
+        ppc=False,          # <- avoids deviance / ppc nodes
+        loglike=False
     )
     return idata
+
 
 def group_means(idata):
     s = az.summary(idata, var_names=PARAM_LIST, stat_funcs=None)
@@ -120,20 +134,27 @@ empirical = az.concat(
 raw_df = empirical.observed_data.to_dataframe().reset_index(drop=True)
 raw_df["subj_idx"] = raw_df["subj_idx"].astype(int)
 
+
 # ---------- main loop ---------------------------------------------------
 records = []
-for rep in trange(N_REPS, desc="parameter-recovery rep", unit="rep"):
-    print(f"[rep {rep+1}/{N_REPS}]   draw → simulate → refit", flush=True)
-    θ_true   = extract_group_sample(empirical, seed=rep)
-    sim_df   = simulate_dataset(θ_true, raw_df)
-    θ_hat    = group_means(refit(sim_df,
-                         BASE_MODEL_DIR / f"_tmp_ES31_rep{rep}.pickle"))
+for rep in trange(N_REPS, desc="parameter-recovery reps", unit="rep"):
+
+    θ_true = extract_group_sample(empirical, seed=rep)       # ❶ draw
+    sim_df = simulate_dataset(θ_true, raw_df)                # ❷ simulate
+
+    # call refit **with only a seed** (we removed the tmp-pickle argument)
+    idata  = refit(sim_df, seed=10_000 + rep)                # ❸ refit
+    θ_hat  = group_means(idata)
 
     for p in PARAM_LIST:
         records.append(
-            {"rep": rep, "parameter": p,
-             "true": θ_true[p], "recovered": θ_hat[p]}
+            dict(rep=rep, parameter=p,
+                 true=θ_true[p], recovered=θ_hat[p])
         )
+
+
+
+print(idata.posterior.data_vars)
 
 # ---------- save CSV & scatter grid -------------------------------------
 results = pd.DataFrame(records)
