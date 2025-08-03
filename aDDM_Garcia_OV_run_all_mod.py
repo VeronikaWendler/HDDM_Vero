@@ -282,6 +282,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=400
         elif version == 1:
             v_reg = {'model': 'v ~ 1 + z_val_diff + z_DwellPropAdvantage + z_gaze_quad', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+        elif version == 2:
+            v_reg = {'model': 'v ~ 1 + z_AttentionW + z_IAW_chart + z_IAW_image', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'t': 'OVcate'} 
         elif version == 30:
             v_reg = {'model': 'v ~ 1 + z_AttentionW + z_IAW_chart:C(OVcate) + z_IAW_image:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
