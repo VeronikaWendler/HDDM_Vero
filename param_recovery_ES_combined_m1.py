@@ -326,12 +326,12 @@ for subj, cnt in sim_subj_counts.items():
     print(f"  Subject {subj}: {cnt} trials, OVcate breakdown: {ov_breakdown}")
 
 # Subjects with all-NaN RTs (before/after filtering)
-bad_sim = sim_data.groupby('subj_idx')['rt'].apply(lambda s: s.isna().all())
-subjects_all_nan = bad_sim[bad_sim].index.tolist()
-if subjects_all_nan:
-    print("Subjects whose simulated RTs are all NaN (will be or were removed):", subjects_all_nan)
-else:
-    print("No subjects have all-NaN simulated RTs.")
+# bad_sim = sim_data.groupby('subj_idx')['rt'].apply(lambda s: s.isna().all())
+# subjects_all_nan = bad_sim[bad_sim].index.tolist()
+# if subjects_all_nan:
+#     print("Subjects whose simulated RTs are all NaN (will be or were removed):", subjects_all_nan)
+# else:
+#     print("No subjects have all-NaN simulated RTs.")
 
 # Overview of unique subjects and counts
 print("Unique subjects retained:", sorted(sim_data['subj_idx'].unique()))
