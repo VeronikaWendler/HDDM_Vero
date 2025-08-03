@@ -12,6 +12,9 @@ import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 warnings.filterwarnings("ignore", category=FutureWarning)
+# very top of the script
+from tqdm.auto import trange, tqdm    
+
 
 # ---------- config ------------------------------------------------------
 PROJECT_DIR   = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
@@ -29,19 +32,19 @@ N_REPS    = 10         # ≥ 500 recommended for a paper
 N_SAMPLES = 1000        # ↑ when you have cluster time
 BURN      = 100
 
-# ---------- names that exist ONLY at the group level --------------------
 PARAM_LIST = [
     "t",
     "a(low)", "a(medium)", "a(high)",
     "v_Intercept",
-    "z_AttentionW",
-    "z_IAW_chart:C(OVcate)[low]",
-    "z_IAW_chart:C(OVcate)[medium]",
-    "z_IAW_chart:C(OVcate)[high]",
-    "z_IAW_image:C(OVcate)[low]",
-    "z_IAW_image:C(OVcate)[medium]",
-    "z_IAW_image:C(OVcate)[high]",
+    "v_z_AttentionW",
+    "v_z_IAW_chart:C(OVcate)[low]",
+    "v_z_IAW_chart:C(OVcate)[medium]",
+    "v_z_IAW_chart:C(OVcate)[high]",
+    "v_z_IAW_image:C(OVcate)[low]",
+    "v_z_IAW_image:C(OVcate)[medium]",
+    "v_z_IAW_image:C(OVcate)[high]",
 ]
+
 
 # ---------- HDDM model specification ------------------------------------
 v_reg = {'model': 'v ~ 1 + z_AttentionW + z_IAW_chart:C(OVcate) + z_IAW_image:C(OVcate)', 'link_func': lambda x: x}
@@ -65,17 +68,16 @@ def simulate_dataset(true_pars: dict, raw_df: pd.DataFrame) -> pd.DataFrame:
     """
     sim_rows = []
     for _, tr in raw_df.iterrows():
-        # choose the matching boundary height for this OV category
-        ov     = tr["OVcate"]          # must be 'low'/'medium'/'high'
+        ov     = tr["OVcate"]          
         a_val  = true_pars[f"a({ov})"]
 
         # compute trial-wise drift
-        v_trial = (
-            true_pars["v_Intercept"]
-            + true_pars["z_AttentionW"] * tr["z_AttentionW"]
-            + true_pars[f"z_IAW_chart:C(OVcate)[{ov}]"] * tr["z_IAW_chart"]
-            + true_pars[f"z_IAW_image:C(OVcate)[{ov}]"] * tr["z_IAW_image"]
-        )
+        v_trial = (true_pars["v_Intercept"]
+                   + true_pars["v_z_AttentionW"] * tr["z_AttentionW"]
+                   + true_pars[f"v_z_IAW_chart:C(OVcate)[{ov}]"] * tr["z_IAW_chart"]
+                + true_pars[f"v_z_IAW_image:C(OVcate)[{ov}]"] * tr["z_IAW_image"]
+                )
+
 
         trial_df, _ = hddm.generate.gen_rand_data(
             {"v": v_trial, "a": a_val, "t": true_pars["t"]},
@@ -120,9 +122,8 @@ raw_df["subj_idx"] = raw_df["subj_idx"].astype(int)
 
 # ---------- main loop ---------------------------------------------------
 records = []
-for rep in range(N_REPS):
+for rep in trange(N_REPS, desc="parameter-recovery rep", unit="rep"):
     print(f"[rep {rep+1}/{N_REPS}]   draw → simulate → refit", flush=True)
-
     θ_true   = extract_group_sample(empirical, seed=rep)
     sim_df   = simulate_dataset(θ_true, raw_df)
     θ_hat    = group_means(refit(sim_df,
