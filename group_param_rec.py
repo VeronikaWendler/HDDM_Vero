@@ -92,31 +92,27 @@ def simulate_dataset(true_pars: dict, raw_df: pd.DataFrame) -> pd.DataFrame:
     return pd.concat(sim_rows, ignore_index=True)
 
 def refit(sim_df: pd.DataFrame, seed: int) -> az.InferenceData:
-    import numpy as np
-    np.random.seed(seed)                    # <- PyMC2 way to get repeatable chains
+    np.random.seed(seed)                         # reproducible chains
 
     m = hddm.HDDMRegressor(
-        sim_df,
-        reg_descr,
+        sim_df, reg_descr,
         include=['a', 't', 'v'],
         p_outlier=0.05,
         keep_regressor_trace=True,
         group_only_regressors=False,
         depends_on=depends_on,
-        is_group_model=True,               
+        is_group_model=True,
     )
-
     m.find_starting_values()
 
-    # classic HDDM sample call: positional arguments only
+    # ---------- sample ----------
     m.sample(
         N_SAMPLES,          # draws
         burn=BURN,
         chains=4,
-        dbname=None,        # keep chains in memory (no tmp_*.db files)
-        db='pickle',        # required, even when dbname=None
+        db='ram',           # <-- the crucial change
         progressbar=True,
-        ppc=False,   
+        ppc=False,          # keep PPC off – not needed for scatter
     )
 
     # convert to ArviZ. Works in every HDDM version ≥ 0.8 
