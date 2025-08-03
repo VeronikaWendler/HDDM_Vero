@@ -29,7 +29,7 @@ EMPIRICAL_POST_PATHS = [                        # chains from your first fit
 ]
 
 N_REPS    = 20        # raise later (≥ 500) when everything is stable
-N_SAMPLES = 800      # posterior draws per refit
+N_SAMPLES = 600      # posterior draws per refit
 BURN      = 100
 
 PARAM_LIST = [       # parameters that **exist only at the group level**
