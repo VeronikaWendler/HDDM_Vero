@@ -29,7 +29,7 @@ EMPIRICAL_POST_PATHS = [
 ]
 
 N_REPS    = 10         # ≥ 500 recommended for a paper
-N_SAMPLES = 1000        # ↑ when you have cluster time
+N_SAMPLES = 600        # ↑ when you have cluster time
 BURN      = 100
 
 PARAM_LIST = [
