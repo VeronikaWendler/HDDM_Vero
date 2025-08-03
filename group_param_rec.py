@@ -109,11 +109,8 @@ def refit(sim_df: pd.DataFrame, seed: int) -> az.InferenceData:
     m.sample(
         N_SAMPLES,          # posterior draws
         burn=BURN,
-        chains=3,
         db='ram',           # keep everything in RAM
         dbname=f'ram_{seed}',
-        save_stats=True,    # ← THIS is the crucial line
-        thin=1              # (optional) thinning
     )
 
     
