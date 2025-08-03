@@ -91,7 +91,6 @@ def simulate_dataset(true_pars: dict, raw_df: pd.DataFrame) -> pd.DataFrame:
 
     return pd.concat(sim_rows, ignore_index=True)
 
-# ---------- helper ------------------------------------------------------
 def refit(sim_df: pd.DataFrame, seed: int) -> az.InferenceData:
     m = hddm.HDDMRegressor(
         sim_df,
@@ -101,25 +100,21 @@ def refit(sim_df: pd.DataFrame, seed: int) -> az.InferenceData:
         group_only_regressors=False,
         keep_regressor_trace=True,
         depends_on=depends_on,
-        is_group_model=True
-        # ← NO  db / dbname  HERE
+        is_group_model=True,
     )
-
     m.find_starting_values()
-
-    # sample straight to RAM (db='ram') so nothing is written to disk
+    # Here: pass N_SAMPLES *positionally*, not as draws=…
     _, idata = m.sample(
-        draws=N_SAMPLES,
+        N_SAMPLES,        # <-- number of posterior draws
         burn=BURN,
         chains=4,
         random_seed=seed,
-        db='ram',          # 
+        db="ram",         # keep in RAM, no disk file
         progressbar=True,
         ppc=False,
-        loglike=False
+        loglike=False,
     )
     return idata
-
 
 def group_means(idata):
     s = az.summary(idata, var_names=PARAM_LIST, stat_funcs=None)
