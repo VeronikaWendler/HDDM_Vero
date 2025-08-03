@@ -107,15 +107,15 @@ def refit(sim_df: pd.DataFrame, seed: int) -> az.InferenceData:
 
     # ---------- sample ----------
     m.sample(
-        N_SAMPLES,          # draws
+        N_SAMPLES,          # posterior draws
         burn=BURN,
-        chains=4,
-        db     = 'ram',                 # keep everything in memory
-        dbname = f'ram_{seed}',         # <- MUST be a string, not None
-        progressbar=True,
-        ppc=False,    
-        loglik=True,
+        chains=3,
+        db='ram',           # keep everything in RAM
+        dbname=f'ram_{seed}',
+        save_stats=True,    # ← THIS is the crucial line
+        thin=1              # (optional) thinning
     )
+
     
     # convert to ArviZ. Works in every HDDM version ≥ 0.8 
     idata = hddm.utils.model_to_inference_data(m, include_ppc=False)
