@@ -337,7 +337,7 @@ group_params = az.summary(es27_infdata, var_names=['~subj', '~std'], filter_vars
 subject_params = az_summary(es27_infdata)['mean']
 
 ##################################################################################################################################
-#PLOTTING
+#PLOTTING##
 
 param_list = [
     't',
