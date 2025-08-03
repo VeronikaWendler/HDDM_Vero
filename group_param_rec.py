@@ -113,7 +113,7 @@ def refit(sim_df: pd.DataFrame, seed: int) -> az.InferenceData:
         burn=BURN,
         chains=4,
         random_seed=seed,
-        db='ram',          # <-- goes here
+        db='ram',          # 
         progressbar=True,
         ppc=False,
         loglike=False
@@ -176,4 +176,4 @@ g.set_axis_labels("true value (one posterior draw)",
 g.tight_layout()
 png_out = FIG_DIR / "scatter_ES31.png"
 g.savefig(png_out, dpi=300)
-print(f"✓ scatter grid saved → {png_out}")
+print(f"scatter grid saved {png_out}")
