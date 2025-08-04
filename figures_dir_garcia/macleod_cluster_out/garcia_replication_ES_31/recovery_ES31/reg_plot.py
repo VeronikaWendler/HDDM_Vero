@@ -12,8 +12,8 @@ BASE_DIR = Path(r"C:\Cluster_Github\HDDM_Vero\figures_dir_garcia"
                 r"\macleod_cluster_out\garcia_replication_ES_31"
                 r"\recovery_ES31")
 
-CSV_PATH     = BASE_DIR / "true_vs_recovered_ES31.csv"
-OUT_FIG_PATH = BASE_DIR / "regplot_true_vs_recovered.png"
+CSV_PATH     = BASE_DIR / "true_vs_recovered_ES31_2.csv"
+OUT_FIG_PATH = BASE_DIR / "regplot_true_vs_recovered_2.png"
 
 
 def regplot_with_corr(data, x="true", y="recovered",
