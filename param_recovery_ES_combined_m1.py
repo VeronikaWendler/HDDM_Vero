@@ -69,7 +69,7 @@ FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_combined/combined_replication_ES_2/d
 
 chain0 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_2_0.nc")
 chain1 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_2_1.nc")
-chain2 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_2_2c")
+chain2 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_2_2.nc")
 
 es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
 
