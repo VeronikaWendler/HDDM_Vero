@@ -250,14 +250,14 @@ for subj, trial_group in data_ES_27.groupby('subj_idx'):
     t_val = j["t"]
     a_val = j["a"]
     v_int = j["v_Intercept"]
-    v_vald = j["v_val_diff"]
-    v_DwellPA = j["v_DwellPropAdvantage"]
-    v_gquad = j["v_gaze_quad"]
+    v_vald = j["v_z_val_diff"]
+    v_DwellPA = j["v_z_DwellPropAdvantage"]
+    v_gquad = j["v_z_gaze_quad"]
 
     for _, trial in trial_group.iterrows():
-        val_diff_trial = trial["val_diff"]
-        DwellPA_trial = trial["DwellPropAdvantage"]
-        gaze_quad_trial = trial["gaze_quad"]
+        val_diff_trial = trial["z_val_diff"]
+        DwellPA_trial = trial["z_DwellPropAdvantage"]
+        gaze_quad_trial = trial["z_gaze_quad"]
 
         v_trial = (
             v_int
@@ -353,7 +353,7 @@ def run_sampling(model, model_db_name, progress_bar=True):
         return model, result
 
 # model specification (best fitting OV-modulated Inattention and t model)
-v_reg = {'model': 'v ~ 1 + val_diff + DwellPropAdvantage + gaze_quad', 'link_func': lambda x: x}
+v_reg = {'model': 'v ~ 1 + z_val_diff + z_DwellPropAdvantage + z_gaze_quad', 'link_func': lambda x: x}
 reg_descr = [v_reg]
 
 # HDDMRegressor using simulated data
