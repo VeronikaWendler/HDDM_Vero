@@ -293,7 +293,6 @@ if 'condition' in sim_data.columns:
 # check simulated data
 print(sim_data.head(10))
 print("\nUnique subjects in simulation:", sim_data['subj_idx'].nunique())
-print("OVcate counts in simulation:\n", sim_data['OVcate'].value_counts())
 
 print(sim_data.to_string())
 
@@ -309,7 +308,6 @@ print(f"Removed {before - after} subjects with all-NaN RTs (kept {after}).")
 # Diagnostics
 print(sim_data.head(10))
 print("\nUnique subjects in simulation:", sorted(sim_data['subj_idx'].unique()))
-print("OVcate counts in simulation:\n", sim_data['OVcate'].value_counts())
 
 
 #print(sim_data.to_string())
