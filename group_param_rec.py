@@ -23,9 +23,9 @@ FIG_DIR        = PROJECT_DIR / "figures_dir_garcia/recovery_ES30"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 EMPIRICAL_POST_PATHS = [                        # chains from your first fit
-    BASE_MODEL_DIR / "garcia_replication_ES_29_0.nc",
-    BASE_MODEL_DIR / "garcia_replication_ES_29_1.nc",
-    BASE_MODEL_DIR / "garcia_replication_ES_29_2.nc",
+    BASE_MODEL_DIR / "garcia_replication_ES_30_0.nc",
+    BASE_MODEL_DIR / "garcia_replication_ES_30_1.nc",
+    BASE_MODEL_DIR / "garcia_replication_ES_30_2.nc",
 ]
 
 N_REPS    = 20        # raise later (≥ 500) when everything is stable
@@ -36,7 +36,6 @@ PARAM_LIST = [       # parameters that **exist only at the group level**
     "t",
     "a(low)", "a(medium)", "a(high)",
     "v_Intercept",
-    "v_z_AttentionW",
     "v_z_IAW_chart",
     "v_z_IAW_image",
     "v_z_AttentionW:C(OVcate)[low]",
