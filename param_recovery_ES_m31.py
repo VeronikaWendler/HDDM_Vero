@@ -208,7 +208,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
         sim_trial["OVcate"] = ov
         sim_trial["z_IAW_chart"] = v_chartInatt_trial
         sim_trial["z_IAW_image"] = v_imageInatt_trial
-        sim_trial["z_AttentionW:"] = v_att_trial
+        sim_trial["z_AttentionW"] = v_att_trial
 
         sim_data.append(sim_trial)
 

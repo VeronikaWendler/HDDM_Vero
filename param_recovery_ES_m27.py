@@ -284,7 +284,7 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
         sim_trial["val_diff"] = val_diff_trial
         sim_trial["DwellPropAdvantage"] = DwellPA_trial
         sim_trial["gaze_quad"] = gaze_quad_trial
-        sim_trial[f"abs_DwellPropAdv"] = abs_DwellPAov_trial
+        sim_trial["abs_DwellPropAdv"] = abs_DwellPAov_trial
 
         sim_data.append(sim_trial)
 
