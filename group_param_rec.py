@@ -19,13 +19,13 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # ---------------- configuration -----------------------------------------
 PROJECT_DIR   = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
-FIG_DIR        = PROJECT_DIR / "figures_dir_garcia/recovery_ES31"
+FIG_DIR        = PROJECT_DIR / "figures_dir_garcia/recovery_ES30"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 EMPIRICAL_POST_PATHS = [                        # chains from your first fit
-    BASE_MODEL_DIR / "garcia_replication_ES_31_0.nc",
-    BASE_MODEL_DIR / "garcia_replication_ES_31_1.nc",
-    BASE_MODEL_DIR / "garcia_replication_ES_31_2.nc",
+    BASE_MODEL_DIR / "garcia_replication_ES_30_0.nc",
+    BASE_MODEL_DIR / "garcia_replication_ES_30_1.nc",
+    BASE_MODEL_DIR / "garcia_replication_ES_30_2.nc",
 ]
 
 N_REPS    = 20        # raise later (≥ 500) when everything is stable
@@ -37,16 +37,15 @@ PARAM_LIST = [       # parameters that **exist only at the group level**
     "a(low)", "a(medium)", "a(high)",
     "v_Intercept",
     "v_z_AttentionW",
-    "v_z_IAW_chart:C(OVcate)[low]",
-    "v_z_IAW_chart:C(OVcate)[medium]",
-    "v_z_IAW_chart:C(OVcate)[high]",
-    "v_z_IAW_image:C(OVcate)[low]",
-    "v_z_IAW_image:C(OVcate)[medium]",
-    "v_z_IAW_image:C(OVcate)[high]",
+    "v_z_IAW_chart",
+    "v_z_IAW_image",
+    "v_z_Attention:C(OVcate)[low]",
+    "v_z_Attention:C(OVcate)[medium]",
+    "v_z_Attention:C(OVcate)[high]",
 ]
 
 # ­------------ HDDM model specification ---------------------------------
-v_reg     = {'model': 'v ~ 1 + z_AttentionW + z_IAW_chart:C(OVcate) + z_IAW_image:C(OVcate)',
+v_reg     = {'model': 'v ~ 1 + z_AttentionW:C(OVcate) + z_IAW_chart + z_IAW_image',
              'link_func': lambda x: x}
 reg_descr  = [v_reg]
 depends_on = {'a': 'OVcate'}
@@ -68,9 +67,9 @@ def simulate_dataset(true_pars, raw_df):
         a_val   = true_pars[f"a({ov})"]
 
         v_trial = (true_pars["v_Intercept"]
-                   + true_pars["v_z_AttentionW"]                 * tr["z_AttentionW"]
-                   + true_pars[f"v_z_IAW_chart:C(OVcate)[{ov}]"] * tr["z_IAW_chart"]
-                   + true_pars[f"v_z_IAW_image:C(OVcate)[{ov}]"] * tr["z_IAW_image"])
+                   + true_pars[f"v_z_AttentionW:C(OVcate)[{ov}]"] * tr["z_AttentionW"]
+                   + true_pars["v_z_IAW_chart"] * tr["z_IAW_chart"]
+                   + true_pars["v_z_IAW_image"] * tr["z_IAW_image"])
 
         trial_df, _ = hddm.generate.gen_rand_data(
             {"v": v_trial, "a": a_val, "t": true_pars["t"]},
@@ -128,13 +127,13 @@ for rep in trange(N_REPS, desc="parameter-recovery", unit="rep"):
                             true=θ_true[p], recovered=θ_hat[p]))
             
     if (rep+1) % 1 == 0:         # every rep 
-        pd.DataFrame(records).to_csv(FIG_DIR / "partial_results2.csv",
+        pd.DataFrame(records).to_csv(FIG_DIR / "partial_results.csv",
                                      index=False)
 
 
 # ---------- save & plot ------------------------------------------------
 results = pd.DataFrame(records)
-results.to_csv(FIG_DIR / "true_vs_recovered_ES31_2.csv", index=False)
+results.to_csv(FIG_DIR / "true_vs_recovered_ES30.csv", index=False)
 
 sns.set_style("white")
 g = sns.FacetGrid(results, col="parameter", col_wrap=3,
@@ -147,10 +146,10 @@ for ax in g.axes.ravel():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
 g.set_axis_labels("true value", "posterior mean (recovered)")
 g.tight_layout()
-png_out = FIG_DIR / "scatter_ES31_2.png"
+png_out = FIG_DIR / "scatter_ES30.png"
 g.savefig(png_out, dpi=300)
 
-print(f"Done.  CSV → {FIG_DIR/'true_vs_recovered_ES31_2.csv'}")
+print(f"Done.  CSV → {FIG_DIR/'true_vs_recovered_ES30.csv'}")
 print(f"           PNG → {png_out}")
 
 
