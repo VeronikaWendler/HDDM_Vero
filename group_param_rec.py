@@ -39,9 +39,9 @@ PARAM_LIST = [       # parameters that **exist only at the group level**
     "v_z_AttentionW",
     "v_z_IAW_chart",
     "v_z_IAW_image",
-    "v_z_Attention:C(OVcate)[low]",
-    "v_z_Attention:C(OVcate)[medium]",
-    "v_z_Attention:C(OVcate)[high]",
+    "v_z_AttentionW:C(OVcate)[low]",
+    "v_z_AttentionW:C(OVcate)[medium]",
+    "v_z_AttentionW:C(OVcate)[high]",
 ]
 
 # ­------------ HDDM model specification ---------------------------------
