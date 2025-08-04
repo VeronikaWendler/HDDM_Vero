@@ -128,9 +128,9 @@ data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
 data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
 data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
 
-#bad_raw = data_ES_27.groupby('subj_idx')['rt'].apply(lambda s: s.isna().all())
-# if bad_raw.any():
-#     data_ES_27 = data_ES_27[~data_ES_27['subj_idx'].isin(bad_raw[bad_raw].index)]
+bad_raw = data_ES_27.groupby('subj_idx')['rt'].apply(lambda s: s.isna().all())
+if bad_raw.any():
+     data_ES_27 = data_ES_27[~data_ES_27['subj_idx'].isin(bad_raw[bad_raw].index)]
 # ---------------------------------------------------------------------
 
 orig_subjects = sorted(data_ES_27['subj_idx'].unique())
@@ -215,9 +215,9 @@ for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
 sim_data = pd.concat(sim_data, ignore_index=True)
 
 # # dropping subs with nan simulations
-# bad_sim = sim_data.groupby('subj_idx')['rt'].apply(lambda s: s.isna().all())
-# if bad_sim.any():
-#     sim_data = sim_data[~sim_data['subj_idx'].isin(bad_sim[bad_sim].index)]
+bad_sim = sim_data.groupby('subj_idx')['rt'].apply(lambda s: s.isna().all())
+if bad_sim.any():
+    sim_data = sim_data[~sim_data['subj_idx'].isin(bad_sim[bad_sim].index)]
 
 sim_data['subj_idx'] = pd.to_numeric(sim_data['subj_idx'], errors='coerce').astype(int)
 
