@@ -354,6 +354,7 @@ def run_sampling(model, model_db_name, progress_bar=True):
 v_reg = {'model': 'v ~ 1 + z_val_diff + z_DwellPropAdvantage + z_gaze_quad', 'link_func': lambda x: x}
 reg_descr = [v_reg]
 
+
 # HDDMRegressor using simulated data
 m_recovery = hddm.HDDMRegressor(
     sim_data,              
