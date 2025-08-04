@@ -223,9 +223,6 @@ print("Unique subjects in df_ind_summary:", sorted(df_subjects))
 
 
 
-
-
-
 group_params = az.summary(es27_infdata, var_names=['~subj', '~std'], filter_vars='regex')
 subject_params = az_summary(es27_infdata)['mean']
 
@@ -241,50 +238,53 @@ subject_params = az_summary(es27_infdata)['mean']
 #             a_params[subj_id] = {}
 #         a_params[subj_id][ov_level] = group_params.loc[param, 'mean']
         
-sim_data = pd.DataFrame()
-# loop over each subject and condition from the original data
-for (subj, ov), trial_group in data_ES_27.groupby('subj_idx'):
-    # Get the subject-by-condition summary values from df_ind_summary
-    j = df_ind_summary[(df_ind_summary['subj_idx'] == subj)].iloc[0]
-    
+sim_data_list = []
+
+for subj, trial_group in data_ES_27.groupby('subj_idx'):
+    subj_row = df_ind_summary.loc[df_ind_summary['subj_idx'] == subj]
+    if subj_row.empty:
+        print(f"WARNING: subject {subj} missing from df_ind_summary; skipping.")
+        continue
+    j = subj_row.iloc[0]
+
     t_val = j["t"]
     a_val = j["a"]
     v_int = j["v_Intercept"]
     v_vald = j["v_val_diff"]
     v_DwellPA = j["v_DwellPropAdvantage"]
     v_gquad = j["v_gaze_quad"]
-    
-    # # Get a for this subject and condition from a_params mapping (group) 
-    # try:
-    #     a_val = a_params[int(subj)][ov.lower()]
-    # except KeyError:
-    #     a_val = group_params.loc[f'a({ov.lower()})', 'mean']
-    
-    # for each trial in this subject and condition, use actual AttentionW and InattentionW
-    for idx, trial in trial_group.iterrows():
-        
+
+    for _, trial in trial_group.iterrows():
         val_diff_trial = trial["val_diff"]
         DwellPA_trial = trial["DwellPropAdvantage"]
         gaze_quad_trial = trial["gaze_quad"]
 
-        v_trial = v_int + v_vald * val_diff_trial + v_DwellPA * DwellPA_trial + v_gquad * gaze_quad_trial
+        v_trial = (
+            v_int
+            + v_vald * val_diff_trial
+            + v_DwellPA * DwellPA_trial
+            + v_gquad * gaze_quad_trial
+        )
 
-        # we simulate one trial per original trial (size=1) – we could also simulate multiple trials per original trial
         sim_trial, _ = hddm.generate.gen_rand_data(
-            {"v": v_trial, 
-             "a": a_val,
-             "t": t_val},
+            {"v": v_trial, "a": a_val, "t": t_val},
             size=1,
             subjs=1,
         )
-        sim_trial["subj_idx"] = subj
-        sim_trial["val_diff"] = val_diff_trial
-        sim_trial["DwellPropAdvantage"] = DwellPA_trial
-        sim_trial["gaze_quad"] = gaze_quad_trial
 
-        sim_data.append(sim_trial)
+        sim_trial = sim_trial.assign(
+            subj_idx=subj,
+            val_diff=val_diff_trial,
+            DwellPropAdvantage=DwellPA_trial,
+            gaze_quad=gaze_quad_trial,
+        )
 
-        sim_data = pd.concat([sim_data, sim_trial], ignore_index=True)
+        sim_data_list.append(sim_trial)
+
+if not sim_data_list:
+    raise RuntimeError("No simulated data was generated")
+
+sim_data = pd.concat(sim_data_list, ignore_index=True)
 
 # drop any extra columns if needed
 if 'condition' in sim_data.columns:
@@ -332,7 +332,6 @@ sim_subj_counts = sim_data.groupby('subj_idx').size()
 
 # Overview of unique subjects and counts
 print("Unique subjects retained:", sorted(sim_data['subj_idx'].unique()))
-print("OVcate counts overall:\n", sim_data['OVcate'].value_counts())
 
 # helper function to wrap the sampling procedure
 def run_sampling(model, model_db_name, progress_bar=True):

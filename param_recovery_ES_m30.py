@@ -207,7 +207,7 @@ data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
 data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
 data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
 
-bad_raw = data_ES_27.groupby('subj_idx')['rt'].apply(lambda s: s.isna().all())
+#bad_raw = data_ES_27.groupby('subj_idx')['rt'].apply(lambda s: s.isna().all())
 if bad_raw.any():
     data_ES_27 = data_ES_27[~data_ES_27['subj_idx'].isin(bad_raw[bad_raw].index)]
 # ---------------------------------------------------------------------
