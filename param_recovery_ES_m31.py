@@ -62,11 +62,11 @@ def ensure_dir(path):
     Path(path).mkdir(parents=True, exist_ok=True)
 
 BASE_MODEL_DIR = PROJECT_DIR / "models_dir_combined"
-FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_combined/combined_replication_ES_31/diagnostics"
+FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_combined/combined_replication_ES_30/diagnostics"
 
-chain0 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_31_0.nc")
-chain1 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_31_1.nc")
-chain2 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_31_2.nc")
+chain0 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_30_0.nc")
+chain1 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_30_1.nc")
+chain2 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_30_2.nc")
 
 es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
 
@@ -274,9 +274,9 @@ m_recovery = hddm.HDDMRegressor(
     keep_regressor_trace=True
 )
 
-model_db_name = os.path.join(BASE_MODEL_DIR, "mES_combined_31_recovery")
+model_db_name = os.path.join(BASE_MODEL_DIR, "mES_combined_30_recovery")
 m_recovery, m_recovery_infdata = run_sampling(m_recovery, model_db_name, progress_bar=False)
-az.to_netcdf(m_recovery_infdata, os.path.join(BASE_MODEL_DIR, "mES_combined_31_recovery.nc"))
+az.to_netcdf(m_recovery_infdata, os.path.join(BASE_MODEL_DIR, "mES_combined_30_recovery.nc"))
 
 
 
