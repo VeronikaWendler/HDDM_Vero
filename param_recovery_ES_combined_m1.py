@@ -226,7 +226,7 @@ print("Unique subjects in df_ind_summary:", sorted(df_subjects))
 
 
 
-group_params = az.summary(es27_infdata=['~subj', '~std'], filter_vars='regex')
+group_params = az.summary(es27_infdata, var_names=['~subj', '~std'], filter_vars='regex')
 subject_params = az_summary(es27_infdata)['mean']
 
 # mapping of subject-specific t parameters
