@@ -61,12 +61,12 @@ PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 def ensure_dir(path):
     Path(path).mkdir(parents=True, exist_ok=True)
 
-BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
-FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_31/diagnostics"
+BASE_MODEL_DIR = PROJECT_DIR / "models_dir_combined"
+FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_combined/combined_replication_ES_31/diagnostics"
 
-chain0 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_31_0.nc")
-chain1 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_31_1.nc")
-chain2 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_31_2.nc")
+chain0 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_31_0.nc")
+chain1 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_31_1.nc")
+chain2 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_31_2.nc")
 
 es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
 
@@ -182,9 +182,9 @@ sim_data = []
 for (subj, ov), trial_group in data_ES_27.groupby(['subj_idx', 'OVcate']):
     j = df_ind_summary[(df_ind_summary['subj_idx'] == subj) & (df_ind_summary['OVcate'] == ov)].iloc[0]
     v_int = j["v_Intercept"]
-    v_chartInatt = j[f"v_z_IAW_chart:C(OVcate)[{ov}]"]
-    v_imageInatt = j[f"v_z_IAW_image:C(OVcate)[{ov}]"]
-    v_att = j["v_z_AttentionW"]
+    v_chartInatt = j["v_z_IAW_chart"]
+    v_imageInatt = j["v_z_IAW_image"]
+    v_att = j[f"v_z_AttentionW:C(OVcate)[{ov}]"]
     t_val = j["t"]
     
     try:
@@ -259,7 +259,7 @@ def run_sampling(model, model_db_name, progress_bar=True):
         return model, result
 
 
-v_reg = {'model': 'v ~ 1 + z_AttentionW + z_IAW_chart:C(OVcate) + z_IAW_image:C(OVcate)', 'link_func': lambda x: x}
+v_reg = {'model': 'v ~ 1 + z_AttentionW:C(OVcate) + z_IAW_chart + z_IAW_image', 'link_func': lambda x: x}
 reg_descr = [v_reg]
 depends_on={'a': 'OVcate'} 
 
@@ -274,9 +274,9 @@ m_recovery = hddm.HDDMRegressor(
     keep_regressor_trace=True
 )
 
-model_db_name = os.path.join(BASE_MODEL_DIR, "mES_31_recovery")
+model_db_name = os.path.join(BASE_MODEL_DIR, "mES_combined_31_recovery")
 m_recovery, m_recovery_infdata = run_sampling(m_recovery, model_db_name, progress_bar=False)
-az.to_netcdf(m_recovery_infdata, os.path.join(BASE_MODEL_DIR, "mES_31_recovery.nc"))
+az.to_netcdf(m_recovery_infdata, os.path.join(BASE_MODEL_DIR, "mES_combined_31_recovery.nc"))
 
 
 

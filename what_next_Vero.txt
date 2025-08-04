@@ -1,1 +1,4 @@
 # do early late trial like in the resposne time paper it is possible but check empriicl first
+# did I meaan within-participant analysis ? Like early vs laate trial decision-processes checking within first and then group level?
+#anyways, check Amir's recovery approch using R^2 - better than what you're doing with r and p val - also p val usage is a bit sus in Bayesian stats
+# 
