@@ -80,15 +80,26 @@ data['dta_norm'] = data['DwellTimeAdvantage'] / max_abs
 data['z_dynamic']   = (data['dta_norm'] + 1) / 2                            # dynamic z sscaled by gaze
 data['z_static'] = 0.55                                                     #Sebastian's idea 
 
+# Which option is the correct one?
 data['target_option'] = np.where(data['p1'] > data['p2'], 'E', 'S')
-data['stimulus']      = np.where(data['target_option'] == 'E', 1, 0)   # 1 = E, 0 = S
+# stimulus
+data['stimulus'] = np.where(data['target_option']=='E', 1, 0)
+# value difference
+data['val_diff'] = data['V_corr'] - data['V_sub']
+# Response code (0/1)
+data['resp'] = (data['chose_left']==data['stimulus']).astype(int)
+# flipping val_diff so it’s positive when resp=1 (when they chose the correct side)
+data['val_diff*'] = data['val_diff'] * data['resp'].map({1:1, 0:-1})
+# gaze-imbalance regressors because we can see in emp. data that much gaze to either option is disadvantageous
+data['abs_DwellPropAdv'] = data['DwellPropAdvantage'].abs()   # |Prop_S – Prop_E|
+data['gaze_quad']= data['DwellPropAdvantage'] ** 2             # (Prop_S – Prop_E)^2
 
-data["val_diff"] = data["V_corr"] - data["V_sub"]
-data['resp']  = (data['chose_left'] == data['stimulus']).astype(int)
-data['val_diff'] *= data['resp'].map({1: 1, 0: -1})
 
-data["abs_DwellPropAdv"]   = data['DwellPropAdvantage'].abs()
-data["gaze_quad"]  = data["DwellPropAdvantage"]**2
+
+
+
+
+
 
 # dwell_prop ranges roughly -1 … +1.  Centre it first.
 data["gaze_bal"]   = 1 - data["DwellPropAdvantage"]**2     # penalty (1 at centre, 0 at extremes)

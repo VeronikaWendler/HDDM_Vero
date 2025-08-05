@@ -663,12 +663,10 @@ a_recov  = extract_a_subject_means(m_recovery_infdata)
 fitted_subj  = param_fitted.join(a_fitted)
 recovered_subj = param_recov.join(a_recov)
 
-# now you have columns t, v_..., AND a(low), a(medium), a(high) for each subj.
-
-# 4) pick only subjects ≤ 26
-wanted = [s for s in fitted_subj.index if s <= 26]
+wanted = fitted_subj.index.intersection(recovered_subj.index).intersection(range(1,27))
 fitted_subset   = fitted_subj.loc[wanted]
 recovered_subset = recovered_subj.loc[wanted]
+
 
 
 fig, axes = plt.subplots(ncols=len(fitted_subset.columns),
