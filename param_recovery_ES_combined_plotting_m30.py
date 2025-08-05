@@ -273,6 +273,7 @@ print(summary_df.columns.tolist())
 
 # read in model
 data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
+data_ES_27 = data_ES_27[data_ES_27['subj_idx'] <= 26].copy()
 
 # read in model and coerce subj_idx
 data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
@@ -283,7 +284,6 @@ data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
 
 # Keep only subj_idx <= 20
 orig_subjects = sorted(data_ES_27['subj_idx'].unique())
-data_ES_27 = data_ES_27[data_ES_27['subj_idx'] <= 26]
 filtered_subjects = sorted(data_ES_27['subj_idx'].unique())
 
 print(f"Subjects before filtering: {orig_subjects}")
@@ -319,6 +319,8 @@ print(group_params.index.tolist())
 
 group_params = az.summary(es27_infdata, var_names=['~subj', '~std'], filter_vars='regex')
 subject_params = az_summary(es27_infdata)['mean']
+
+
 
 ##################################################################################################################################
 #PLOTTING
@@ -520,6 +522,7 @@ az.plot_forest(
     [es27_infdata, m_recovery_infdata],
     model_names=["Fitted", "Recovered"],
     var_names=ind_param_list,
+    coords={'subj_idx': np.arange(1,27)},
     combined=True,
     ridgeplot_alpha=0.5,
     hdi_prob=0.95,
