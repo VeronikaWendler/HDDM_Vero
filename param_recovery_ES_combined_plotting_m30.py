@@ -92,6 +92,17 @@ recovered_nc = os.path.join(BASE_MODEL_DIR, "mES_combined_30_recovery.nc")
 m_recovery_infdata = az.from_netcdf(recovered_nc)
 
 
+param_list = [
+    't',
+    'v_Intercept',
+    'v_z_IAW_chart',
+    'v_z_IAW_image',
+    'v_z_AttentionW:C(OVcate)',
+    'a(low)',
+    'a(medium)',
+    'a(high)',
+]
+
 def save_diagnostics(idata, label, outdir, var_names=None):
     outdir = Path(outdir)
     outdir.mkdir(parents=True, exist_ok=True)
@@ -311,17 +322,6 @@ subject_params = az_summary(es27_infdata)['mean']
 
 ##################################################################################################################################
 #PLOTTING
-
-param_list = [
-    't',
-    'v_Intercept',
-    'v_z_IAW_chart',
-    'v_z_IAW_image',
-    'v_z_AttentionW:C(OVcate)',
-    'a(low)',
-    'a(medium)',
-    'a(high)',
-]
 
 n_params = len(param_list)
 n_cols = 4
