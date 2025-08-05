@@ -284,7 +284,8 @@ def regplot_with_corr(
         if len(data_x) > 1 and len(data_y) > 1:
             correlation, p_value = pearsonr(data_x, data_y)
             p_str = "p < 0.001" if p_value < 0.001 else f"p = {p_value:.3f}"
-            annot_text += f"$r={correlation:.2f}$\n${p_str}$"
+            annot_text = f"$r={correlation:.2f}$\n${p_str}$"
+
     if reg_anonot:
         # Linear regression coefficients
         X = sm.add_constant(data_x)
