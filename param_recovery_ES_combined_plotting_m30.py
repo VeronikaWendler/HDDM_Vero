@@ -103,7 +103,7 @@ m_recovery_infdata = az.from_netcdf(recovered_nc)
 
 
 # list of parameters 
-pparam_list = [
+param_list = [
     't',
     'v_Intercept',
     'v_z_IAW_chart',
