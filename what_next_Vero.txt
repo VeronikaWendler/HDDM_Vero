@@ -2,3 +2,12 @@
 # did I meaan within-participant analysis ? Like early vs laate trial decision-processes checking within first and then group level?
 #anyways, check Amir's recovery approch using R^2 - better than what you're doing with r and p val - also p val usage is a bit sus in Bayesian stats
 # 
+# another thought - how about checking the correlation between drift rate (either attentional or inatt.) and learning rate or something like this from the LE phase? 
+# could be cool - because we could establish a relationship between learning and evidence accumulation
+# then, lastly - correlate this with conf or SP 
+
+# I still don't understand the theta values for InattWImage (0.8) and InattWCHart (1.2), ok so, when image has a lower EV, gaze is still indictive of choice, people are not so svayed by the image having a lower EV, 
+# but crazy things happen  when the chart has a lower EV  - then, theta is t ca 1.2 (even higher) 
+# so that probably means people don't just then automatically look at the image longer and chose it, 
+# rather, according to the addm 2 things are possible, either they look extra long at the image and chose chart (aligend with empirical pattern)
+#  

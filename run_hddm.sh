@@ -24,5 +24,5 @@ export MPLBACKEND=Agg
 singularity exec \
     --bind ${PROJECT}:/workspace \
     ${IMAGE} \
-    python /workspace/group_param_rec.py
+    python /workspace/param_recovery_ES_combined_plotting_m30.py
 

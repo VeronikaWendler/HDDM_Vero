@@ -9,9 +9,9 @@ import statsmodels.api as sm
 
 
 BASE_DIR = Path(r"C:\Cluster_Github\HDDM_Vero\figures_dir_garcia"
-                r"\macleod_cluster_out\garcia_replication_ES_31"
-                r"\recovery_ES31")
-CSV_PATH     = BASE_DIR / "true_vs_recovered_ES31_2.csv"
+                r"\macleod_cluster_out\garcia_replication_ES_30"
+                r"\recovery_ES30")
+CSV_PATH     = BASE_DIR / "true_vs_recovered_ES30.csv"
 OUT_FIG_PATH = BASE_DIR / "regplot_true_vs_recovered_2.png"
 
 
