@@ -1898,7 +1898,12 @@ if __name__ == "__main__":
                                        "z_IAW_chart",
                                        "z_IAW_image",
                                        "z_AttentionW",
-                                       "z_InattentionW",])   
+                                       "z_InattentionW",
+                                       'z_DwellPropAdvantage',
+                                       'z_abs_DwellPropAdv',
+                                       'z_val_diff_corr',
+                                       'z_w_dv',
+                                       'z_absDPAC'])   
             
             # put this near the top of the file, right after you finish preparing `data_full`
 
