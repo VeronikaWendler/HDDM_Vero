@@ -628,26 +628,29 @@ plt.show()
 import re
 
 def extract_a_subject_means(idata):
-
+    # Build one record per (subj_idx × OVcate) with the mean draw in the right column
     records = []
     pattern = re.compile(r'a_subj\((?P<ov>low|medium|high)\)\.(?P<subj>\d+)')
     for varname in idata.posterior.data_vars:
         m = pattern.fullmatch(varname)
         if not m:
             continue
-        ov = m.group('ov')
-        subj = int(m.group('subj'))
-        # flatten chains & draws
+        ov    = m.group('ov')
+        subj  = int(m.group('subj'))
         draws = idata.posterior[varname].values.ravel()
         records.append({
             'subj_idx': subj,
             f'a({ov})': draws.mean()
         })
-    # build DataFrame
+    # Create DataFrame and then wide‐format it by grouping:
     df = pd.DataFrame(records)
-    df = df.pivot(index='subj_idx', columns=None)
-    # ensure columns order
+    df = df.set_index('subj_idx')
+    # there will be exactly one non‐NaN per column in each index group,
+    # so a simple groupby‐first will give you one row per subject
+    df = df.groupby(level=0).first()
+    # Ensure correct column order
     return df[['a(low)', 'a(medium)', 'a(high)']]
+
 
 # NEW — set subj_idx index before slicing out 'mean'
 # Fitted
