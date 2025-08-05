@@ -72,6 +72,16 @@ import kabuki
 import arviz as az
 from pathlib import Path
 
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from scipy.stats import pearsonr
+from sklearn.metrics import r2_score
+import statsmodels.api as sm
+
+
+
 
 #------------------------------------------------------------------------------------------------------------------------------------------
 PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
@@ -92,12 +102,15 @@ recovered_nc = os.path.join(BASE_MODEL_DIR, "mES_combined_30_recovery.nc")
 m_recovery_infdata = az.from_netcdf(recovered_nc)
 
 
+# list of parameters 
 param_list = [
     't',
     'v_Intercept',
     'v_z_IAW_chart',
     'v_z_IAW_image',
-    'v_z_AttentionW:C(OVcate)',
+    'v_z_AttentionW:C(high)',
+    'v_z_AttentionW:C(low)',
+    'v_z_AttentionW:C(medium)',
     'a(low)',
     'a(medium)',
     'a(high)',
@@ -151,8 +164,63 @@ def save_diagnostics(idata, label, outdir, var_names=None):
 # Run diagnostics and persist
 fitted_summary = save_diagnostics(es27_infdata, "fitted", FIG_DIR_ROOT, var_names=param_list)
 recovered_summary = save_diagnostics(m_recovery_infdata, "recovered", FIG_DIR_ROOT, var_names=param_list)
+#-------------------------------------------------------------------------------------------------------------------------------------------
 
-#--------------------------------------------------------------------------------------------------------------------------------------------
+# def regplot_with_r2(x,y,ax=None,scatter_kws=None,line_kws=None,margin=0.05,annot_kws=None):
+    
+#     # Default settings
+#     if ax is None:
+#         ax = plt.gca()
+#     scatter_kws = {**{'s': 50, 'alpha': 0.6}, **(scatter_kws or {})}
+#     line_kws = {**{'color': 'red', 'linewidth': 2}, **(line_kws or {})}
+#     annot_kws = {**{'fontsize': 12, 'ha': 'left', 'va': 'top'}, **(annot_kws or {})}
+
+#     # Convert to pandas Series
+#     x = pd.Series(x).reset_index(drop=True)
+#     y = pd.Series(y).reset_index(drop=True)
+
+#     # Drop NaNs
+#     mask = x.notna() & y.notna()
+#     x = x[mask]
+#     y = y[mask]
+
+#     # Fit linear model
+#     X = sm.add_constant(x)
+#     model = sm.OLS(y, X).fit()
+#     intercept, slope = model.params
+#     y_pred = model.predict(X)
+
+#     # Metrics
+#     r2 = r2_score(y, y_pred)
+#     p_value = model.pvalues.get(x.name if hasattr(x, 'name') else 'x', model.f_pvalue)
+
+#     # Scatter and regression line
+#     ax.scatter(x, y, **scatter_kws)
+#     ax.plot(x, y_pred, **line_kws)
+
+#     # Axis limits with equal scale
+#     all_vals = np.concatenate([x, y])
+#     min_val, max_val = np.min(all_vals), np.max(all_vals)
+#     span = max_val - min_val
+#     ax.set_xlim(min_val - margin * span, max_val + margin * span)
+#     ax.set_ylim(min_val - margin * span, max_val + margin * span)
+
+#     # Annotation text
+#     p_text = "p<0.001" if p_value < 0.001 else f"p={p_value:.3f}"
+#     text = f"$R^2$={r2:.2f}\n{p_text}\n$\beta_1$={slope:.2f}"
+#     ax.text(
+#         0.02,
+#         0.98,
+#         text,
+#         transform=ax.transAxes,
+#         bbox=dict(boxstyle='round', fc='white', ec='black', alpha=0.8),
+#         **annot_kws
+#     )
+
+#     return ax
+
+
+
 #REG PLOT FUNCTION
 def regplot_with_corr(
     data=None,
@@ -232,7 +300,7 @@ def regplot_with_corr(
         )
     return ax
 
-
+#----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 
 def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
