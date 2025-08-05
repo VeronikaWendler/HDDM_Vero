@@ -42,7 +42,7 @@ from joblib import Parallel, delayed
 import time
 import arviz as az
 # patch: make a dummy _gdbm module so “import _gdbm” never fails
-import types, sys
+import seaborn as sns
 
 import dill as pickle
 from copy import deepcopy   # for modfiying z to be 0.55 (like in Sebastian's Matlab)
@@ -500,7 +500,6 @@ summary_data = []
 
 for i, param in enumerate(param_list):
     try:
-        # fitted posterior (specific colour for the phase)  darkorchid = ES, deepksyblue = EE, grey = ESEE
         az.plot_posterior(
             es27_infdata.posterior[param],
             ax=ax[i],
@@ -562,21 +561,51 @@ print(f"Summary exported to {csv_filename}")
 
 ind_param_list = [param for param in es27_infdata.posterior.data_vars if 'subj' in param and 'std' not in param]
 fig, ax = plt.subplots(figsize=(10, 20))
-az.plot_forest(
-    [es27_infdata, m_recovery_infdata],
-    model_names=["Fitted", "Recovered"],
-    var_names=ind_param_list,
-    coords={'subj_idx': np.arange(1,27)},
-    combined=True,
-    ridgeplot_alpha=0.5,
-    hdi_prob=0.95,
-    ax=ax
-)
-ax.set_title("Individual-level Comparison of Fitted and Recovered Parameters")
-plot_path2 = os.path.join(FIG_DIR_ROOT, "Forest_plot_ind.png")
-plt.savefig(plot_path2, dpi=300, bbox_inches='tight')
-plt.show()
 
+summary = []
+for param in ind_param_list:
+    # param looks like 'v_Intercept_subj.3' etc.
+    for model, idata in [('Fitted', es27_infdata), ('Recovered', m_recovery_infdata)]:
+        post = idata.posterior[param]  # shape (chain, draw)
+        flat = post.values.ravel()
+        mean = flat.mean()
+        lo, hi = np.percentile(flat, [2.5, 97.5])
+        subj = int(param.split('.')[-1])
+        summary.append({
+            'subj_idx': subj,
+            'param': param.replace(f'_subj.{subj}', ''),
+            'model': model,
+            'mean': mean,
+            'ci_lower': lo,
+            'ci_upper': hi
+        })
+df_forest = pd.DataFrame(summary)
+
+df_forest = df_forest[df_forest['subj_idx'] <= 26]
+
+# plot
+plt.figure(figsize=(6,10))
+sns.pointplot(
+    data=df_forest,
+    x='mean', y='subj_idx',
+    hue='model',
+    dodge=0.5,
+    join=False,
+    palette=['darkorchid','orange']
+)
+# add error bars:
+for _, row in df_forest.iterrows():
+    plt.plot(
+        [row.ci_lower, row.ci_upper],
+        [row.subj_idx, row.subj_idx],
+        color='gray', alpha=0.7
+    )
+plt.xlabel('Estimate')
+plt.ylabel('Subject idx')
+plt.title('Individual‐level parameter estimates (subjects 1–26)')
+plt.legend(title='')
+plt.tight_layout()
+plt.savefig(os.path.join(FIG_DIR_ROOT, "forest_plot_ind.png"), dpi=300)
 #----------------------------------------------------------------------------------------------------------------------------
 
 #'REG PLOTS'
