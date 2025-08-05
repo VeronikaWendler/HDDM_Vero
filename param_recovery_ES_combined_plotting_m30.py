@@ -652,6 +652,7 @@ fitted_subset   = fitted_subj.loc[wanted]
 recovered_subset = recovered_subj.loc[wanted]
 
 
+print(fitted_subset.columns.tolist())
 
 
 # 1) R²‐style regplot, saved
