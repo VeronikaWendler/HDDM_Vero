@@ -101,7 +101,21 @@ es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
 recovered_nc = os.path.join(BASE_MODEL_DIR, "mES_combined_30_recovery.nc")
 m_recovery_infdata = az.from_netcdf(recovered_nc)
 
+##------------------------------------------------------------------------------------------------------------
+def filter_idata_by_subject(idata, coord_name='subj_idx', max_subject=26):
+    # Drop all subjects above max_subject in every group of the InferenceData
+    subset = {}
+    for group in idata._groups_all:  # posterior, sample_stats, observed_data, etc.
+        data = getattr(idata, group)
+        if coord_name in data.coords:
+            subset[group] = data.sel({coord_name: slice(None, max_subject)})
+        else:
+            subset[group] = data
+    return az.InferenceData(**subset)
 
+# usage
+es27_infdata   = filter_idata_by_subject(es27_infdata,     'subj_idx', 26)
+m_recovery_infdata = filter_idata_by_subject(m_recovery_infdata, 'subj_idx', 26)
 # list of parameters 
 param_list = [
     't',
@@ -342,22 +356,9 @@ print(summary_df.columns.tolist())
 
 # read in model
 data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
-data_ES_27 = data_ES_27[data_ES_27['subj_idx'] <= 26].copy()
 
-# read in model and coerce subj_idx
-data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
-data_ES_27 = data_ES_27.copy()
-data_ES_27['subj_idx'] = pd.to_numeric(data_ES_27['subj_idx'], errors='coerce')
-data_ES_27 = data_ES_27.dropna(subset=['subj_idx'])
-data_ES_27['subj_idx'] = data_ES_27['subj_idx'].astype(int)
 
-# Keep only subj_idx <= 20
-orig_subjects = sorted(data_ES_27['subj_idx'].unique())
 filtered_subjects = sorted(data_ES_27['subj_idx'].unique())
-
-print(f"Subjects before filtering: {orig_subjects}")
-print(f"Subjects after keeping subj_idx <= 20: {filtered_subjects}")
-assert all(s <= 26 for s in filtered_subjects), "Filtering failed: found subj_idx > 20."
 
 # Subject-level summary restricted to kept subjects
 subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])

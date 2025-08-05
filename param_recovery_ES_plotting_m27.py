@@ -95,21 +95,7 @@ es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
 recovered_nc = os.path.join(BASE_MODEL_DIR, "mES_27_recovery_nr2.nc")
 m_recovery_infdata = az.from_netcdf(recovered_nc)
 
-##------------------------------------------------------------------------------------------------------------
-def filter_idata_by_subject(idata, coord_name='subj_idx', max_subject=26):
-    # Drop all subjects above max_subject in every group of the InferenceData
-    subset = {}
-    for group in idata._groups_all:  # posterior, sample_stats, observed_data, etc.
-        data = getattr(idata, group)
-        if coord_name in data.coords:
-            subset[group] = data.sel({coord_name: slice(None, max_subject)})
-        else:
-            subset[group] = data
-    return az.InferenceData(**subset)
 
-# usage
-es27_infdata_filt     = filter_idata_by_subject(es27_infdata,     'subj_idx', 26)
-m_recovery_infdata_filt = filter_idata_by_subject(m_recovery_infdata, 'subj_idx', 26)
 
 ##-------------------------------------------------------------------------------------------------------------
 
