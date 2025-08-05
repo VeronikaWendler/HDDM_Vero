@@ -107,15 +107,13 @@ data['AttentionW'] = (data['PropDwell_opt'] * data['V_corr']) - (data['PropDwell
 data['InattentionW'] = (data['PropDwell_sub'] * data['V_corr']) - (data['PropDwell_opt'] * data['V_sub'])
 data['AttentionW'] = data['AttentionW'].round(3)
 data['InattentionW'] = data['InattentionW'].round(3)
-
 V_C = data['p2']          # chart EV
 V_I = data['p1']          # image EV
-
-# 2. dummies: which format is lower EV?
+# dummies which format has lower EV
 data['chart_is_sub']  = (V_C < V_I).astype(int)
 data['image_is_sub']  = (V_I < V_C).astype(int)
 
-# 3. split inattention term
+#splitting InattentionW
 data['IAW_chart'] = data['InattentionW'] * data['chart_is_sub']
 data['IAW_image'] = data['InattentionW'] * data['image_is_sub']
 data['IAW_chart'] = data['IAW_chart'].round(3)

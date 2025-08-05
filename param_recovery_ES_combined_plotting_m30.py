@@ -101,21 +101,7 @@ es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
 recovered_nc = os.path.join(BASE_MODEL_DIR, "mES_combined_30_recovery.nc")
 m_recovery_infdata = az.from_netcdf(recovered_nc)
 
-##------------------------------------------------------------------------------------------------------------
-def filter_idata_by_subject(idata, coord_name='subj_idx', max_subject=26):
-    # Drop all subjects above max_subject in every group of the InferenceData
-    subset = {}
-    for group in idata._groups_all:  # posterior, sample_stats, observed_data, etc.
-        data = getattr(idata, group)
-        if coord_name in data.coords:
-            subset[group] = data.sel({coord_name: slice(None, max_subject)})
-        else:
-            subset[group] = data
-    return az.InferenceData(**subset)
 
-# usage
-es27_infdata   = filter_idata_by_subject(es27_infdata,     'subj_idx', 26)
-m_recovery_infdata = filter_idata_by_subject(m_recovery_infdata, 'subj_idx', 26)
 # list of parameters 
 param_list = [
     't',
@@ -613,43 +599,46 @@ if len(common) < max(len(fitted_subj), len(recovered_subj)):
 fitted_aligned = fitted_subj.loc[common]
 recovered_aligned = recovered_subj.loc[common]
 
-# regression plots: one panel per parameter
-fig, ax = plt.subplots(ncols=len(param_list), figsize=(3 * len(param_list), 3))
+
+# pick only subjects 1–26
+wanted = sorted(fitted_subj.index.intersection(recovered_subj.index))
+wanted = [s for s in wanted if s <= 26]
+
+fitted_subset   = fitted_subj.loc[wanted]
+recovered_subset = recovered_subj.loc[wanted]
+
+
+
+
+# 1) R²‐style regplot, saved
+fig_r2, axes_r2 = plt.subplots(ncols=len(param_list), figsize=(3*len(param_list), 3))
 for i, param in enumerate(param_list):
-    x = fitted_aligned[param]
-    y = recovered_aligned[param]
-    regplot_with_corr(x=x, y=y, ax=ax[i])
-    if i == 0:
-        ax[i].set_ylabel('Recovered')
-    else:
-        ax[i].set_ylabel('')
-    ax[i].set_title(param)
-
-plt.tight_layout()
-plot_path3 = os.path.join(FIG_DIR_ROOT, "Reg_plots.png")
-plt.savefig(plot_path3, dpi=300, bbox_inches='tight')
-plt.close(fig)
-
-
-
-for i, param in enumerate(param_list):
-    ax = regplot_with_r2(
-        fitted_aligned[param],
-        recovered_aligned[param],
-        ax=ax[i],
-        scatter_kws={'s':30, 'alpha':0.5},
-        line_kws={'color':'green', 'linewidth':2},
+    regplot_with_r2(
+        fitted_subset[param],
+        recovered_subset[param],
+        ax=axes_r2[i],
+        scatter_kws={'s':30,'alpha':0.5},
+        line_kws={'color':'blue'},
         margin=0.1
     )
-    ax.set_title(param)
+    axes_r2[i].set_title(param)
+plt.tight_layout()
+fig_r2.savefig(os.path.join(FIG_DIR_ROOT, "regplot_r2.png"), dpi=300, bbox_inches='tight')
 
 
-
-
-
-
-
-
+# 2) Pearson‐r style regplot, saved
+fig_r, axes_r = plt.subplots(ncols=len(param_list), figsize=(3*len(param_list), 3))
+for i, param in enumerate(param_list):
+    regplot_with_corr(
+        x=fitted_subset[param],
+        y=recovered_subset[param],
+        ax=axes_r[i],
+        scatter_kws={'s':30,'alpha':0.5},
+        annot_kws={'fontsize':8,'xy':(0.95,0.05),'ha':'right','va':'bottom'}
+    )
+    axes_r[i].set_title(param)
+plt.tight_layout()
+fig_r.savefig(os.path.join(FIG_DIR_ROOT, "regplot_r.png"), dpi=300, bbox_inches='tight')
 
 
 
