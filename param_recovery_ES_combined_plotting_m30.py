@@ -649,9 +649,16 @@ def extract_a_subject_means(idata):
     # ensure columns order
     return df[['a(low)', 'a(medium)', 'a(high)']]
 
-# 1) build subject‐means for all parameters
-param_fitted  = az_summary(es27_infdata)['mean'].set_index('subj_idx')
-param_recov   = az_summary(m_recovery_infdata)['mean'].set_index('subj_idx')
+# NEW — set subj_idx index before slicing out 'mean'
+# Fitted
+summary_fitted = az_summary(es27_infdata)          # DataFrame with subj_idx + multi-level cols
+summary_fitted = summary_fitted.set_index('subj_idx')
+param_fitted  = summary_fitted['mean']             # now indexed by subj_idx
+
+# Recovered
+summary_recov = az_summary(m_recovery_infdata)
+summary_recov = summary_recov.set_index('subj_idx')
+param_recov   = summary_recov['mean']
 
 # 2) extract a‐values
 a_fitted = extract_a_subject_means(es27_infdata)
