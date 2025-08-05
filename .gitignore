@@ -1,3 +1,4 @@
 # my gitignore file
 .env
 models_dir_garcia/*.hddm
+figures_dir_combined
