@@ -559,7 +559,22 @@ print(f"Summary exported to {csv_filename}")
 #---------------------------------------------------------------------------------------------------------------------------
 # Individual-level Comparison, forest plot
 
-ind_param_list = [param for param in es27_infdata.posterior.data_vars if 'subj' in param and 'std' not in param]
+# 1) grab all subj‐level var names from the fitted idata
+all_subj_vars = [
+    v for v in es27_infdata.posterior.data_vars
+    if '_subj.' in v
+]
+
+# 2) parse out their subject indices
+def subj_index(varname):
+    # e.g. "a_subj(high).12"  -> 12
+    return int(varname.split('.')[-1])
+
+# 3) keep only those ≤26 *and* that also exist in the recovered idata
+ind_param_list = [
+    v for v in all_subj_vars
+    if subj_index(v) <= 26 and v in m_recovery_infdata.posterior.data_vars
+]
 fig, ax = plt.subplots(figsize=(10, 20))
 
 summary = []
