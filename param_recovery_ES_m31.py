@@ -61,12 +61,12 @@ PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 def ensure_dir(path):
     Path(path).mkdir(parents=True, exist_ok=True)
 
-BASE_MODEL_DIR = PROJECT_DIR / "models_dir_combined"
-FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_combined/combined_replication_ES_30/diagnostics"
+BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
+FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_30/diagnostics"
 
-chain0 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_30_0.nc")
-chain1 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_30_1.nc")
-chain2 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_30_2.nc")
+chain0 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_30_0.nc")
+chain1 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_30_1.nc")
+chain2 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_30_2.nc")
 
 es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
 
