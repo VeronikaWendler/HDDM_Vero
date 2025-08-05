@@ -548,7 +548,7 @@ for j in range(i + 1, len(ax)):
 handles, labels = ax[0].get_legend_handles_labels()
 f.legend(handles, labels, loc='lower center', bbox_to_anchor=(0.5, -0.05), ncol=2)
 plt.tight_layout()
-#plt.show()
+plt.show()
 
 # CSV
 summary_df = pd.DataFrame(summary_data)
@@ -621,55 +621,69 @@ plt.title('Individual‐level parameter estimates (subjects 1–26)')
 plt.legend(title='')
 plt.tight_layout()
 plt.savefig(os.path.join(FIG_DIR_ROOT, "forest_plot_ind.png"), dpi=300)
+
+plt.show()
 #----------------------------------------------------------------------------------------------------------------------------
 
-#'REG PLOTS'
-def get_subject_means(df):
-    df = df.reset_index(names="subj_idx")
-    df["subj_idx"] = df["subj_idx"].astype(int)
-    return df.set_index("subj_idx")
+import re
 
-param_fitted = az_summary(es27_infdata)["mean"]
-param_recovery = az_summary(m_recovery_infdata)["mean"]
+def extract_a_subject_means(idata):
 
-fitted_subj = get_subject_means(param_fitted)
-recovered_subj = get_subject_means(param_recovery)
+    records = []
+    pattern = re.compile(r'a_subj\((?P<ov>low|medium|high)\)\.(?P<subj>\d+)')
+    for varname in idata.posterior.data_vars:
+        m = pattern.fullmatch(varname)
+        if not m:
+            continue
+        ov = m.group('ov')
+        subj = int(m.group('subj'))
+        # flatten chains & draws
+        draws = idata.posterior[varname].values.ravel()
+        records.append({
+            'subj_idx': subj,
+            f'a({ov})': draws.mean()
+        })
+    # build DataFrame
+    df = pd.DataFrame(records)
+    df = df.pivot(index='subj_idx', columns=None)
+    # ensure columns order
+    return df[['a(low)', 'a(medium)', 'a(high)']]
 
-common = fitted_subj.index.intersection(recovered_subj.index)
-if len(common) < max(len(fitted_subj), len(recovered_subj)):
-    print(f"Warning: only comparing {len(common)} common subjects "
-          f"(fitted had {len(fitted_subj)}, recovered had {len(recovered_subj)})")
+# 1) build subject‐means for all parameters
+param_fitted  = az_summary(es27_infdata)['mean'].set_index('subj_idx')
+param_recov   = az_summary(m_recovery_infdata)['mean'].set_index('subj_idx')
 
-fitted_aligned = fitted_subj.loc[common]
-recovered_aligned = recovered_subj.loc[common]
+# 2) extract a‐values
+a_fitted = extract_a_subject_means(es27_infdata)
+a_recov  = extract_a_subject_means(m_recovery_infdata)
 
+# 3) join them onto your tables
+fitted_subj  = param_fitted.join(a_fitted)
+recovered_subj = param_recov.join(a_recov)
 
-# pick only subjects 1–26
-wanted = sorted(fitted_subj.index.intersection(recovered_subj.index))
-wanted = [s for s in wanted if s <= 26]
+# now you have columns t, v_..., AND a(low), a(medium), a(high) for each subj.
 
+# 4) pick only subjects ≤ 26
+wanted = [s for s in fitted_subj.index if s <= 26]
 fitted_subset   = fitted_subj.loc[wanted]
 recovered_subset = recovered_subj.loc[wanted]
 
 
-print(fitted_subset.columns.tolist())
-
-
-# 1) R²‐style regplot, saved
-fig_r2, axes_r2 = plt.subplots(ncols=len(param_list), figsize=(3*len(param_list), 3))
-for i, param in enumerate(param_list):
+fig, axes = plt.subplots(ncols=len(fitted_subset.columns),
+                         figsize=(3*len(fitted_subset.columns), 3))
+for i, param in enumerate(fitted_subset.columns):
     regplot_with_r2(
         fitted_subset[param],
         recovered_subset[param],
-        ax=axes_r2[i],
+        ax=axes[i],
         scatter_kws={'s':30,'alpha':0.5},
-        line_kws={'color':'blue'},
+        line_kws={'color':'darkblue'},
         margin=0.1
     )
-    axes_r2[i].set_title(param)
+    axes[i].set_title(param)
 plt.tight_layout()
-fig_r2.savefig(os.path.join(FIG_DIR_ROOT, "regplot_r2.png"), dpi=300, bbox_inches='tight')
-
+plt.savefig(os.path.join(FIG_DIR_ROOT, "regplot_all_params_1-26.png"), dpi=300)
+plt.show()
 
 # 2) Pearson‐r style regplot, saved
 fig_r, axes_r = plt.subplots(ncols=len(param_list), figsize=(3*len(param_list), 3))
@@ -684,7 +698,7 @@ for i, param in enumerate(param_list):
     axes_r[i].set_title(param)
 plt.tight_layout()
 fig_r.savefig(os.path.join(FIG_DIR_ROOT, "regplot_r.png"), dpi=300, bbox_inches='tight')
-
+plt.show()
 
 
 
