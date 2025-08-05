@@ -70,6 +70,12 @@ import hddm
 import kabuki
 import arviz as az
 from pathlib import Path
+import seaborn as sns
+from scipy.stats import pearsonr
+from sklearn.metrics import r2_score
+import statsmodels.api as sm
+
+
 
 
 #------------------------------------------------------------------------------------------------------------------------------------------
@@ -247,7 +253,60 @@ def regplot_with_corr(
         )
     return ax
 
+def regplot_with_r2(x,y,ax=None,scatter_kws=None,line_kws=None,margin=0.05,annot_kws=None):
+    
+    # Default settings
+    if ax is None:
+        ax = plt.gca()
+    scatter_kws = {**{'s': 50, 'alpha': 0.6}, **(scatter_kws or {})}
+    line_kws = {**{'color': 'red', 'linewidth': 2}, **(line_kws or {})}
+    annot_kws = {**{'fontsize': 12, 'ha': 'left', 'va': 'top'}, **(annot_kws or {})}
 
+    # Convert to pandas Series
+    x = pd.Series(x).reset_index(drop=True)
+    y = pd.Series(y).reset_index(drop=True)
+
+    # Drop NaNs
+    mask = x.notna() & y.notna()
+    x = x[mask]
+    y = y[mask]
+
+    # Fit linear model
+    X = sm.add_constant(x)
+    model = sm.OLS(y, X).fit()
+    intercept, slope = model.params
+    y_pred = model.predict(X)
+
+    # Metrics
+    r2 = r2_score(y, y_pred)
+    p_value = model.pvalues.get(x.name if hasattr(x, 'name') else 'x', model.f_pvalue)
+
+    # Scatter and regression line
+    ax.scatter(x, y, **scatter_kws)
+    ax.plot(x, y_pred, **line_kws)
+
+    # Axis limits with equal scale
+    all_vals = np.concatenate([x, y])
+    min_val, max_val = np.min(all_vals), np.max(all_vals)
+    span = max_val - min_val
+    ax.set_xlim(min_val - margin * span, max_val + margin * span)
+    ax.set_ylim(min_val - margin * span, max_val + margin * span)
+
+    # Annotation text (plain text, no TeX)
+    p_text = "p<0.001" if p_value < 0.001 else f"p={p_value:.3f}"
+    # use Unicode superscript 2 for R²
+    text = f"R²={r2:.2f}\n{p_text}\nβ₁={slope:.2f}"
+    ax.text(
+        0.02,
+        0.98,
+        text,
+        transform=ax.transAxes,
+        bbox=dict(boxstyle='round', fc='white', ec='black', alpha=0.8),
+        **annot_kws
+    )
+
+
+    return ax
 
 def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
 
@@ -560,42 +619,89 @@ plt.show()
 
 #----------------------------------------------------------------------------------------------------------------------------
 
-#'REG PLOTS'
-def get_subject_means(df):
-    df = df.reset_index(names="subj_idx")
-    df["subj_idx"] = df["subj_idx"].astype(int)
-    return df.set_index("subj_idx")
+def extract_a_subject_means(idata):
+    # Build one record per (subj_idx × OVcate) with the mean draw in the right column
+    records = []
+    pattern = re.compile(r'a_subj\((?P<ov>low|medium|high)\)\.(?P<subj>\d+)')
+    for varname in idata.posterior.data_vars:
+        m = pattern.fullmatch(varname)
+        if not m:
+            continue
+        ov    = m.group('ov')
+        subj  = int(m.group('subj'))
+        draws = idata.posterior[varname].values.ravel()
+        records.append({
+            'subj_idx': subj,
+            f'a({ov})': draws.mean()
+        })
+    # Create DataFrame and then wide‐format it by grouping:
+    df = pd.DataFrame(records)
+    df = df.set_index('subj_idx')
+    # there will be exactly one non‐NaN per column in each index group,
+    # so a simple groupby‐first will give you one row per subject
+    df = df.groupby(level=0).first()
+    # Ensure correct column order
+    return df[['a(low)', 'a(medium)', 'a(high)']]
 
-param_fitted = az_summary(es27_infdata)["mean"]
-param_recovery = az_summary(m_recovery_infdata)["mean"]
 
-fitted_subj = get_subject_means(param_fitted)
-recovered_subj = get_subject_means(param_recovery)
+# NEW — set subj_idx index before slicing out 'mean'
+# Fitted
+summary_fitted = az_summary(es27_infdata)          # DataFrame with subj_idx + multi-level cols
+summary_fitted = summary_fitted.set_index('subj_idx')
+param_fitted  = summary_fitted['mean']             # now indexed by subj_idx
 
-common = fitted_subj.index.intersection(recovered_subj.index)
-if len(common) < max(len(fitted_subj), len(recovered_subj)):
-    print(f"Warning: only comparing {len(common)} common subjects "
-          f"(fitted had {len(fitted_subj)}, recovered had {len(recovered_subj)})")
+# Recovered
+summary_recov = az_summary(m_recovery_infdata)
+summary_recov = summary_recov.set_index('subj_idx')
+param_recov   = summary_recov['mean']
 
-fitted_aligned = fitted_subj.loc[common]
-recovered_aligned = recovered_subj.loc[common]
+# 2) extract a‐values
+a_fitted = extract_a_subject_means(es27_infdata)
+a_recov  = extract_a_subject_means(m_recovery_infdata)
 
-# regression plots: one panel per parameter
-fig, ax = plt.subplots(ncols=len(param_list), figsize=(3 * len(param_list), 3))
-for i, param in enumerate(param_list):
-    x = fitted_aligned[param]
-    y = recovered_aligned[param]
-    regplot_with_corr(x=x, y=y, ax=ax[i])
-    if i == 0:
-        ax[i].set_ylabel('Recovered')
-    else:
-        ax[i].set_ylabel('')
-    ax[i].set_title(param)
+# 3) join them onto your tables
+fitted_subj  = param_fitted.join(a_fitted)
+recovered_subj = param_recov.join(a_recov)
 
+# now you have columns t, v_..., AND a(low), a(medium), a(high) for each subj.
+
+# 4) pick only subjects ≤ 26
+wanted = [s for s in fitted_subj.index if s <= 26]
+fitted_subset   = fitted_subj.loc[wanted]
+recovered_subset = recovered_subj.loc[wanted]
+
+
+fig, axes = plt.subplots(ncols=len(fitted_subset.columns),
+                         figsize=(3*len(fitted_subset.columns), 3))
+for i, param in enumerate(fitted_subset.columns):
+    regplot_with_r2(
+        fitted_subset[param],
+        recovered_subset[param],
+        ax=axes[i],
+        scatter_kws={'s':30,'alpha':0.5},
+        line_kws={'color':'darkblue'},
+        margin=0.1
+    )
+    axes[i].set_title(param)
 plt.tight_layout()
-plot_path3 = os.path.join(FIG_DIR_ROOT, "Reg_plots.png")
-plt.savefig(plot_path3, dpi=300, bbox_inches='tight')
-plt.close(fig)
+plt.savefig(os.path.join(FIG_DIR_ROOT, "regplot_all_params.png"), dpi=300)
+plt.show()
+
+# 2) Pearson‐r style regplot, saved
+fig_r, axes_r = plt.subplots(ncols=len(param_list), figsize=(3*len(param_list), 3))
+for i, param in enumerate(param_list):
+    regplot_with_corr(
+        x=fitted_subset[param],
+        y=recovered_subset[param],
+        ax=axes_r[i],
+        scatter_kws={'s':30,'alpha':0.5},
+        annot_kws={'fontsize':8,'xy':(0.95,0.05),'ha':'right','va':'bottom'}
+    )
+    axes_r[i].set_title(param)
+plt.tight_layout()
+fig_r.savefig(os.path.join(FIG_DIR_ROOT, "Regplot.png"), dpi=300, bbox_inches='tight')
+plt.show()
+
 
 
 
