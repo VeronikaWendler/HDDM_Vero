@@ -88,22 +88,9 @@ chain2 = az.from_netcdf(BASE_MODEL_DIR / "combined_replication_ES_30_2.nc")
 es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
 
 # getting the recovered data
-recovered_nc = os.path.join(BASE_MODEL_DIR, "mES_30_combined_recovery_nr2.nc")
+recovered_nc = os.path.join(BASE_MODEL_DIR, "mES_combined_30_recovery.nc")
 m_recovery_infdata = az.from_netcdf(recovered_nc)
 
-
-
-# list of parameters you care about
-param_list = [
-    't',
-    'v_Intercept',
-    'v_val_diff',
-    'v_DwellPropAdvantage',
-    'v_gaze_quad',
-    'a_Intercept',
-    'a_OVcate[T.low]',
-    'a_OVcate[T.medium]',
-]
 
 def save_diagnostics(idata, label, outdir, var_names=None):
     outdir = Path(outdir)
