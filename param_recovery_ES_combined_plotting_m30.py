@@ -206,9 +206,10 @@ def regplot_with_r2(x,y,ax=None,scatter_kws=None,line_kws=None,margin=0.05,annot
     ax.set_xlim(min_val - margin * span, max_val + margin * span)
     ax.set_ylim(min_val - margin * span, max_val + margin * span)
 
-    # Annotation text
+    # Annotation text (plain text, no TeX)
     p_text = "p<0.001" if p_value < 0.001 else f"p={p_value:.3f}"
-    text = f"$R^2$={r2:.2f}\n{p_text}\n$\beta_1$={slope:.2f}"
+    # use Unicode superscript 2 for R²
+    text = f"R²={r2:.2f}\n{p_text}\nβ₁={slope:.2f}"
     ax.text(
         0.02,
         0.98,
@@ -217,6 +218,7 @@ def regplot_with_r2(x,y,ax=None,scatter_kws=None,line_kws=None,margin=0.05,annot
         bbox=dict(boxstyle='round', fc='white', ec='black', alpha=0.8),
         **annot_kws
     )
+
 
     return ax
 
@@ -279,19 +281,20 @@ def regplot_with_corr(
     )
 
     annot_text = ""
+    # … inside regplot_with_corr …
     if cor_anonot:
-        # Pearson correlation
-        if len(data_x) > 1 and len(data_y) > 1:
-            correlation, p_value = pearsonr(data_x, data_y)
-            p_str = "p < 0.001" if p_value < 0.001 else f"p = {p_value:.3f}"
-            annot_text = f"$r={correlation:.2f}$\n${p_str}$"
+        correlation, p_value = pearsonr(data_x, data_y)
+        p_str = "p < 0.001" if p_value < 0.001 else f"p = {p_value:.3f}"
+        # drop all dollar signs:
+        annot_text = f"r={correlation:.2f}\n{p_str}"
 
     if reg_anonot:
-        # Linear regression coefficients
         X = sm.add_constant(data_x)
         model = sm.OLS(data_y, X).fit()
         intercept, slope = model.params
-        annot_text += f"\n$\\beta_0={intercept:.2f}$\n$\\beta_1={slope:.2f}$"
+        # use plain‐text β₀ and β₁:
+        annot_text += f"\nβ₀={intercept:.2f}\nβ₁={slope:.2f}"
+
 
     if annot_text:
         ax.annotate(
