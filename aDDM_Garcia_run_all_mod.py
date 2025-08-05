@@ -135,7 +135,9 @@ parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
     "LE":      ["LE_1","LE_2","LE_3","LE_4"],     #"LE_5","LE_6","LE_7"
-    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27", "ES_28", "ES_29", "ES_30", "ES_31", "ES_32"],
+    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27", "ES_28", "ES_29", "ES_30", "ES_31", "ES_32",
+                "ES_33","ES_34","ES_35","ES_36","ES_37","ES_38","ES_39","ES_40","ES_41"],
+    
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
@@ -156,7 +158,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 29
+start_version = 33
 started = False
 
 # dir
@@ -340,25 +342,25 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             reg_descr = [v_reg]
             depends_on={'t': 'chose_left'}
         elif version == 17:
-            stim_vec = data["stimulus"].values         # *all* trials after filtering
+            stim_vec = data["stimulus"].values         
             z_link   = make_z_link(stim_vec)            
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 18:
-            stim_vec = data["stimulus"].values         # *all* trials after filtering
+            stim_vec = data["stimulus"].values        
             z_link   = make_z_link(stim_vec) 
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 19:
-            stim_vec = data["stimulus"].values         # *all* trials after filtering
+            stim_vec = data["stimulus"].values         
             z_link   = make_z_link(stim_vec) 
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link}
             reg_descr = [v_reg, z_reg]
         elif version == 20:
-            stim_vec = data["stimulus"].values         # *all* trials after filtering
+            stim_vec = data["stimulus"].values       
             z_link   = make_z_link(stim_vec) 
             v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             z_reg = {'model': 'z ~ 1 + C(OVcate)', 'link_func': z_link}
@@ -417,6 +419,37 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             v_reg = {'model': 'v ~ 1 + z_val_diff + z_DwellPropAdvantage + z_gaze_quad:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on={'a': 'OVcate'}
+            
+            
+        elif version == 33:
+            v_reg = {'model': 'v ~ 1 + z_AttentionW + z_IAW_chart:C(OVcate) + z_IAW_image:C(OVcate)', 'link_func': lambda x: x}
+            a_reg = {'model': 'a ~ 1 + OVcate', 'link_func': lambda x: x}
+            reg_descr = [v_reg, a_reg]
+        elif version == 34:
+            v_reg = {'model': 'v ~ 1 + z_AttentionW:C(OVcate) + z_IAW_chart + z_IAW_image', 'link_func': lambda x: x}
+            a_reg = {'model': 'a ~ 1 + OVcate', 'link_func': lambda x: x}
+            reg_descr = [v_reg, a_reg]
+        elif version == 35:
+            v_reg = {'model': 'v ~ 1 + z_AttentionW:C(OVcate) + z_IAW_chart + z_IAW_image', 'link_func': lambda x: x}
+            t_reg = {'model': 't ~ 1 + OVcate', 'link_func': lambda x: x}
+            reg_descr = [v_reg, t_reg]
+        elif version == 36:
+            v_reg = {'model': 'v ~ 1 + z_val_diff_corr + z_w_dv + FirstFix_Left', 'link_func': lambda x: x}
+            a_reg = {'model': 'a ~ 1 + z_absDPAC','link_func': lambda x: x}
+            reg_descr = [v_reg, a_reg]
+        elif version == 37:
+            v_reg = {'model': 'v ~ 1 + z_val_diff_corr + z_w_dv:C(OVcate) + FirstFix_Left', 'link_func': lambda x: x}
+            a_reg = {'model': 'a ~ 1 + z_absDPAC','link_func': lambda x: x}
+            reg_descr = [v_reg, a_reg]
+        elif version == 38:
+            v_reg = {'model': 'v ~ 1 + z_val_diff_corr + z_w_dv:C(OVcate) + FirstFix_Left', 'link_func': lambda x: x}
+            t_reg = {'model': 't ~ 1 + z_absDPAC','link_func': lambda x: x}
+            reg_descr = [v_reg, t_reg]
+        elif version == 39:
+            v_reg = {'model': 'v ~ 1 + z_val_diff_corr + z_w_dv', 'link_func': lambda x: x}
+            a_reg = {'model': 'a ~ 1 + z_absDPAC','link_func': lambda x: x}
+            reg_descr = [v_reg, a_reg]
+
         else:
             raise ValueError(f"check version {version} ??")   
         
@@ -434,7 +467,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
         m = hddm.models.HDDMRegressor(
             data,
             reg_descr,
-            depends_on=depends_on,
             p_outlier=.05,
             include=include_list,         
             group_only_regressors=False,

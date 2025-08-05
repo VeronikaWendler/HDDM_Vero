@@ -96,7 +96,7 @@ data['gaze_quad']= data['DwellPropAdvantage'] ** 2             # (Prop_S – Pro
 
 
 
-
+# v = β0  + β_deltaV * (V_S - V_E) + β_lin * (G_S - G_E) + β_quad * (G_S - G_E)**2
 
 
 
@@ -131,13 +131,26 @@ data['IAW_chart'] = data['IAW_chart'].round(3)
 data['IAW_image'] = data['IAW_image'].round(3)
 
 
+
+#regressors
+data['val_diff_corr'] = data['V_corr'] - data['V_sub']
+# gaze balance weight - gaze is disadvantageous for choice --> reduces accuracy
+# given teh strange u shape, we could assume that at both extremes gaze acts even more
+# --> non-linear effect
+data['w'] = 1 - data['DwellPropAdvantageCorrect']**2  
+data['w_dv'] = data['w'] * data['val_diff_corr']   # --> in a second model this could also interact with OV
+data['absDPAC']= np.abs(data['DwellPropAdvantageCorrect'])
+
 # ---------- choose which columns to standardise --------------
 to_z = ['AttentionW',            # symmetric, continuous
         'InattentionW',          # symmetric, continuous
         'gaze_quad',             # if you use it
         'val_diff',
         'DwellPropAdvantage',
-        'abs_DwellPropAdv']              # etc. add more if needed
+        'abs_DwellPropAdv',
+        'val_diff_corr',
+        'w_dv',
+        'absDPAC']              # etc. add more if needed
 
 # ---------------------------------------------
 # z-score, then round to 3 decimals (example)
@@ -153,3 +166,7 @@ data.to_csv(
     "C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/"
     "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
     index=False,)
+
+
+
+
