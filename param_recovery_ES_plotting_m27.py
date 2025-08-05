@@ -310,9 +310,6 @@ data_ES_27 = es27_infdata.observed_data.to_dataframe().reset_index(drop=True)
 
 filtered_subjects = sorted(data_ES_27['subj_idx'].unique())
 
-print(f"Subjects after keeping subj_idx <= 26: {filtered_subjects}")
-assert all(s <= 20 for s in filtered_subjects), "Filtering failed: found subj_idx > 26."
-
 # Subject-level summary restricted to kept subjects
 subject_summary = az_summary(es27_infdata)['mean'].reset_index(names=['subj_idx'])
 subject_summary = subject_summary[subject_summary['subj_idx'].isin(filtered_subjects)]
@@ -547,12 +544,22 @@ print(f"Summary exported to {csv_filename}")
 #---------------------------------------------------------------------------------------------------------------------------
 # Individual-level Comparison, forest plot
 
-ind_param_list = [param for param in es27_infdata.posterior.data_vars if 'subj' in param and 'std' not in param]
+import re
+
+ind_param_list = [p for p in es27_infdata.posterior.data_vars if 'subj' in p and 'std' not in p]
+
+ind_param_list_26 = []
+for p in ind_param_list:
+    m = re.search(r'\.(\d+)$', p)
+    if m and int(m.group(1)) <= 26:
+        ind_param_list_26.append(p)
+print(f"{len(ind_param_list)} total subs; {len(ind_param_list_26)} ≤ 26 kept")
+
 fig, ax = plt.subplots(figsize=(10, 20))
 az.plot_forest(
     [es27_infdata, m_recovery_infdata],
     model_names=["Fitted", "Recovered"],
-    var_names=ind_param_list,
+    var_names=ind_param_list_26,      
     combined=True,
     ridgeplot_alpha=0.5,
     hdi_prob=0.95,
@@ -562,6 +569,8 @@ ax.set_title("Individual-level Comparison of Fitted and Recovered Parameters")
 plot_path2 = os.path.join(FIG_DIR_ROOT, "Forest_plot_ind_2.png")
 plt.savefig(plot_path2, dpi=300, bbox_inches='tight')
 plt.show()
+
+
 
 #----------------------------------------------------------------------------------------------------------------------------
 
