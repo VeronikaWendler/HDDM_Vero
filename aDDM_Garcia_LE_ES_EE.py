@@ -1893,9 +1893,9 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_z_IAW_image:C(OVcate)[medium]',
                 'v_z_IAW_image:C(OVcate)[high]',
                 'a_Intercept',
-                'a(low)',
-                'a(medium)',
-                'a(high)']
+                'a_OVcate[T.low]',
+                'a_OVcate[T.medium]',
+                'a_OVcate[T.high]']
             
             params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
             titles = [
