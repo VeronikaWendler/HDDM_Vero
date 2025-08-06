@@ -133,23 +133,26 @@ model_versions  = {
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
     "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5"],
-    "ES_quad": ["ES_quad_1","ES_quad_2"]
+    "ES_quad": ["ES_quad_1","ES_quad_2"],
+    "LE_RL": ["LE_RL_1","LE_RL_2"],
+   
 }
 
 
 PHASE_TO_SOURCE = {
     "ES_ZBIAS": "ES", 
     "ES_quad": "ES",    
+    "LE_RL": "LE",
 }
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["ES"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","EE","ES_quad", "ESEE", "LEESEE"}                 # ignored this phase
+PHASE_RUN_ORDER = ["LE"]                                         # order
+SKIP_PHASES     = {"LE","ES_ZBIAS","EE","ES_quad", "ESEE", "LEESEE", "ES"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "ES"
-start_version = 41
+start_phase = "LE_RL"
+start_version = 0
 started = False
 
 # dir
@@ -745,6 +748,20 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
 
         return m, infdata
     
+    elif phase == 'LE_RL':
+        if version == 0:
+            m = hddm.models.HDDMrl(data)
+            m.find_starting_values()
+            infdata = m.sample(samples,
+                               burn=100,
+                               dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                               db='pickle',
+                               return_infdata=True, loglike=True, ppc=True)
+
+            return m, infdata
+        else:
+            raise ValueError(f"Invalid version {version}")
+     
 ###############################################################################################################    
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -819,8 +836,8 @@ def drift_diffusion_hddm(data,
 import dill as pickle
 
 def drift_diffusion_hddmRL(data, 
-                         samples=11000, 
-                         n_jobs=5,
+                         samples=2000, 
+                         n_jobs=3,
                          run=True,
                          parallel=True,
                          model_name='model',
@@ -841,40 +858,41 @@ def drift_diffusion_hddmRL(data,
                     phase=phase,
                     samples=samples,
                     accuracy_coding=accuracy_coding
-            )
-    for trace_id in range(n_jobs)
-)
+                    )
+                for trace_id in range(n_jobs))
             print("Time elapsed:", time.time() - start_time, "s")
             
             for i in range(n_jobs):
-                model = results[i]
-                
-                # Save in HDDM format
+                model, infdata = results[i]
                 model.save(os.path.join(model_dir, f"{model_name}_{i}.hddm"))
-
+                
                 with open(os.path.join(model_dir, f"{model_name}_{i}.pkl"), "wb") as f:
-                    model = pickle.load(f)
+                    pickle.dump(model, f)
+                infdata = sanitize_infdata(infdata)  # clean before saving
+                az.to_netcdf(infdata, os.path.join(model_dir, f"{model_name}_{i}.nc"))
 
-        else:
-            model = run_model(1,
-                              data,
-                              model_dir,
-                              model_name,
-                              version, 
-                              samples,
-                              accuracy_coding 
-                              )
-            
+
+        else: 
+            model, infdata = run_model(1,
+                                       data,
+                                       model_dir,
+                                       model_name,
+                                       version, 
+                                       samples,
+                                       accuracy_coding 
+                                       )
             model.save(os.path.join(model_dir, model_name + ".hddm"))
 
-            with open(os.path.join(model_dir, model_name + ".pkl"), 'wb') as f:
+            with open(os.path.join(model_dir, f"{model_name}.pkl"), "wb") as f:
                 pickle.dump(model, f)
+            infdata = sanitize_infdata(infdata)
+            az.to_netcdf(infdata, os.path.join(model_dir, f"{model_name}.nc"))
 
     else:
         print('Loading existing models')
         models = [hddm.load(os.path.join(model_dir, f"{model_name}_{i}.hddm")) for i in range(n_jobs)]
         return models
-
+#----------------------------
 #########################################################################################################################################################
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1917,6 +1935,18 @@ if __name__ == "__main__":
 
             # run hddm function ------------------------------------------
             drift_diffusion_hddm(
+                data=data,
+                samples=nr_samples,
+                n_jobs=nr_models,
+                run=RUN_ALL_MODELS,
+                parallel=parallel,
+                model_name=full_model_name,
+                model_dir=BASE_MODEL_DIR,        
+                version=version,
+                phase=phase,
+                accuracy_coding=True
+            )
+            drift_diffusion_hddmRL(
                 data=data,
                 samples=nr_samples,
                 n_jobs=nr_models,
