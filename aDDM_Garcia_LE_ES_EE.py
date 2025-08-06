@@ -1917,11 +1917,11 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             params_of_interest = [
                 't',
                 'v_Intercept',
-                'z_AttentionW:C(OVcate)[low]',
-                'z_AttentionW:C(OVcate)[medium]',
-                'z_AttentionW:C(OVcate)[high]',
-                'z_IAW_chart',
-                'z_IAW_image',
+                'v_z_AttentionW:C(OVcate)[low]',
+                'v_z_AttentionW:C(OVcate)[medium]',
+                'v_z_AttentionW:C(OVcate)[high]',
+                'v_z_IAW_chart',
+                'v_z_IAW_image',
                 'a_Intercept'
                 'a_OVcate[T.low]',
                 'a_OVcate[T.medium]',
@@ -1944,11 +1944,11 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             params_of_interest = [
                 'a',
                 'v_Intercept',
-                'z_AttentionW:C(OVcate)[low]',
-                'z_AttentionW:C(OVcate)[medium]',
-                'z_AttentionW:C(OVcate)[high]',
-                'z_IAW_chart',
-                'z_IAW_image',
+                'v_z_AttentionW:C(OVcate)[low]',
+                'v_z_AttentionW:C(OVcate)[medium]',
+                'v_z_AttentionW:C(OVcate)[high]',
+                'v_z_IAW_chart',
+                'v_z_IAW_image',
                 't_Intercept'
                 't_OVcate[T.low]',
                 't_OVcate[T.medium]',
