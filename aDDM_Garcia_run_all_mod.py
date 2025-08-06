@@ -127,7 +127,7 @@ model_versions  = {
                 "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", 
                 "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", 
                 "ES_27", "ES_28", "ES_29", "ES_30", "ES_31", "ES_32",
-                "ES_33","ES_34","ES_35","ES_36","ES_37","ES_38","ES_39","ES_40","ES_41"],
+                "ES_33","ES_34","ES_35","ES_36","ES_37","ES_38","ES_39","ES_40","ES_41", "ES_42"],
     
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
@@ -149,7 +149,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 40
+start_version = 41
 started = False
 
 # dir
@@ -443,7 +443,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
         elif version == 40:
             v_reg = {'model': 'v ~ 1 + z_val_diff + z_val_bal_int:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-
+        elif version == 41:
+            v_reg = {'model': 'v ~ 1 + z_w + z_w:C(OVcate)','link_func': lambda x: x }
+            a_reg = {'model': 'a ~ 1 + OVcate', 'link_func': lambda x: x}
+            reg_descr = [v_reg, a_reg]
         else:
             raise ValueError(f"check version {version} ??")   
         

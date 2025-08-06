@@ -151,6 +151,7 @@ to_z = ['AttentionW',            # symmetric, continuous
         'abs_DwellPropAdv',
         'val_diff_corr',
         'w_dv',
+        'w',
         'absDPAC']              # etc. add more if needed
 
 # ---------------------------------------------
