@@ -109,18 +109,6 @@ def make_z_link(full_stimulus_vector):
 # V_opt​ = value if the better option
 # V_sub = value of the worse option
 
-# I wnt a new model with a gaze term and a no-gaze term both interacting with value somehow so that every option and value and gaze is soemhwo concisely integrated similar to the ddm
-#why do I wnt this? simply because wehn you look at my gaze nd value plots you can see that the longer people gaze at either option, e.g. left or right, disproportionlly much, the less likely are tehy to make a correct choice. In my model (unlike the addm) gaze is misleading when its disproportional, but wehn gaze is 
-# almost equally distributed between both options the choice accurcy is ver high 
-
-# Importantly, this is now for the regression models where we are interested in the z bias towards E and a drift formula similar to Sebastian's matlab code, see below:
-# the Sebastian drift rate regression - p1 is value on the left (E value) and p2 (S value) is value on the right ...this is how we get teh attntional and inattentional parameters..
-# v = b0 + b1(PropDwell_Right * p2 - PropDwell_Left * p1) + b2(PropDwell_Right* p1 - PropDwell_Left*p2) + e
-
-# now instead of gaze_aligned vs gaze_missaligned I want some sort of more precice definition... we know:
-#1. the longer gaze is spent on either option the lower accurcy - strange but true 
-# so approx. equal gaze and short gaze as well as short RT increases accuracy
-
 
 # created these new columns
 #data['ES_AttentionW'] = (data['PropDwell_Right'] * data['p2']) - (data['PropDwell_Left'] * data['p1'])
@@ -135,7 +123,10 @@ parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
     "LE":      ["LE_1","LE_2","LE_3","LE_4"],     #"LE_5","LE_6","LE_7"
-    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10", "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27", "ES_28", "ES_29", "ES_30", "ES_31", "ES_32",
+    "ES":      ["ES_1","ES_2","ES_3","ES_4","ES_5","ES_6","ES_7","ES_8","ES_9","ES_10",
+                "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", 
+                "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", 
+                "ES_27", "ES_28", "ES_29", "ES_30", "ES_31", "ES_32",
                 "ES_33","ES_34","ES_35","ES_36","ES_37","ES_38","ES_39","ES_40","ES_41"],
     
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],

@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 29    # defining version
+version = 33    # defining version
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -101,7 +101,11 @@ model_base_name = "combined_replication_"
 
 model_versions = {
     'LE': ['LE_1', 'LE_2', 'LE_3', 'LE_4', 'LE_5', 'LE_6', 'LE_7'],
-    'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4','ES_5', 'ES_6', 'ES_7', 'ES_8', 'ES_9', 'ES_10', 'ES_11','ES_12', 'ES_13', 'ES_14', 'ES_15', 'ES_16', 'ES_17', 'ES_18', 'ES_19','ES_20', 'ES_21', "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27","ES_28", "ES_29", "ES_30", "ES_31", "ES_32", "ES_33"],   
+    'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4','ES_5', 'ES_6', 'ES_7', 'ES_8', 'ES_9', 'ES_10',
+           'ES_11','ES_12', 'ES_13', 'ES_14', 'ES_15', 'ES_16', 'ES_17', 'ES_18', 'ES_19','ES_20',
+           'ES_21', "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27","ES_28", "ES_29", "ES_30",
+           "ES_31", "ES_32", "ES_33", "ES_34", "ES_35", "ES_36",  "ES_37", "ES_38", "ES_39", "ES_40"],  
+     
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
     'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5'],
@@ -1875,6 +1879,177 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Drift z_gaze_quad:C(OVcate)[high]',
             ]
             
+
+            
+        elif version == 33:
+            params_of_interest = [
+                't',
+                'v_Intercept',
+                'v_z_AttentionW',
+                'v_z_IAW_chart:C(OVcate)[low]',
+                'v_z_IAW_chart:C(OVcate)[medium]',
+                'v_z_IAW_chart:C(OVcate)[high]',
+                'v_z_IAW_image:C(OVcate)[low]',
+                'v_z_IAW_image:C(OVcate)[medium]',
+                'v_z_IAW_image:C(OVcate)[high]',
+                'a_Intercept',
+                'a_OVcate[low]',
+                'a_OVcate[medium]',
+                'a_OVcate[high]']
+            
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'Non-dec. time',
+                'Intercept drift rate',
+                'Drift z_AttentionW',
+                'Drift z_IAW_chart:C(OVcate)[low]',
+                'Drift z_IAW_chart:C(OVcate)[medium]',
+                'Drift z_IAW_chart:C(OVcate)[high]',
+                'Drift z_IAW_image:C(OVcate)[low]',
+                'Drift z_IAW_image:C(OVcate)[medium]',
+                'Drift z_IAW_image:C(OVcate)[high]',
+                'Boundary Intercept',
+                'Boundary OV low',
+                'Boundary OV medium',
+                'Boundary OV high']
+            
+        elif version == 34:
+            params_of_interest = [
+                't',
+                'v_Intercept',
+                'z_AttentionW:C(OVcate)[low]',
+                'z_AttentionW:C(OVcate)[medium]',
+                'z_AttentionW:C(OVcate)[high]',
+                'z_IAW_chart',
+                'z_IAW_image',
+                'a_OVcate[low]',
+                'a_OVcate[medium]',
+                'a_OVcate[high]']
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'Non-dec. time',
+                'v_Intercept',
+                'Drift z_AttentionW:C(OVcate)[low]',
+                'Drift z_AttentionW:C(OVcate)[medium]',
+                'Drift z_AttentionW:C(OVcate)[high]',
+                'Drift z_IAW_chart',
+                'Drift z_IAW_image',
+                'a_Intercept',
+                'Boundary OV low',
+                'Boundary OV medium',
+                'Boundary OV high']
+            
+        elif version == 35:
+            params_of_interest = [
+                'a',
+                'v_Intercept',
+                'z_AttentionW:C(OVcate)[low]',
+                'z_AttentionW:C(OVcate)[medium]',
+                'z_AttentionW:C(OVcate)[high]',
+                'z_IAW_chart',
+                'z_IAW_image',
+                't_OVcate[low]',
+                't_OVcate[medium]',
+                't_OVcate[high]']
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'Boundary sep.',
+                'v_Intercept',
+                'Drift z_AttentionW:C(OVcate)[low]',
+                'Drift z_AttentionW:C(OVcate)[medium]',
+                'Drift z_AttentionW:C(OVcate)[high]',
+                'Drift z_IAW_chart',
+                'Drift z_IAW_image',
+                't_Intercept',
+                't OV low',
+                't OV medium',
+                't OV high']
+            
+        elif version == 36:
+            params_of_interest = [
+                't',
+                'v_Intercept',
+                'v_z_val_diff_corr',
+                'v_z_w_dv',
+                'v_FirstFix_Left',
+                'a_Intercept',
+                'a_z_absDPAC']
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            
+            titles = [
+                'Non dec. time',
+                'v_Intercept',
+                'v_z_val_diff_corr',
+                'v_z_w_dv',
+                'v_FirstFix_Left',
+                'a_Intercept',
+                'a_z_absDPAC'
+            ]
+            
+        elif version == 37:
+            params_of_interest = [
+                't',
+                'v_Intercept',
+                'v_z_val_diff_corr',
+                'v_z_w_dv',
+                'v_FirstFix_Left',
+                'a_Intercept',
+                'a_z_absDPAC']
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'Non dec. time',
+                'v_Intercept',
+                'v_z_val_diff_corr',
+                'v_z_w_dv:C(OVcate)[low]',
+                'v_z_w_dv:C(OVcate)[medium]',
+                'v_z_w_dv:C(OVcate)[high]',
+                'v_FirstFix_Left',
+                'a_Intercept',
+                'a_z_absDPAC'
+            ]
+            
+        elif version == 38:
+            params_of_interest = [
+                'a',
+                'v_Intercept',
+                'v_z_val_diff_corr',
+                'v_z_w_dv',
+                'v_FirstFix_Left',
+                't_Intercept',
+                't_z_absDPAC']
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'Boundary sep.',
+                'v_Intercept',
+                'v_z_val_diff_corr',
+                'v_z_w_dv:C(OVcate)[low]',
+                'v_z_w_dv:C(OVcate)[medium]',
+                'v_z_w_dv:C(OVcate)[high]',
+                'v_FirstFix_Left',
+                't_Intercept',
+                't_z_absDPAC'
+            ]
+            
+        elif version == 39:
+            params_of_interest = [
+                'Nond dec. time',
+                'v_Intercept',
+                'v_z_val_diff_corr',
+                'v_z_w_dv',
+                'a_Intercept',
+                'a_z_absDPAC']
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'Non dec. time',
+                'v_Intercept',
+                'v_z_val_diff_corr',
+                'v_z_w_dv',
+                'a_Intercept',
+                'a_z_absDPAC'
+            ]
+            
+                
+
             
     elif phase == 'EE':
         if version == 0:
