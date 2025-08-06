@@ -146,6 +146,7 @@ to_z = ['AttentionW',            # symmetric, continuous
         'InattentionW',          # symmetric, continuous
         'gaze_quad',             # if you use it
         'val_diff',
+        'val_bal_int',
         'DwellPropAdvantage',
         'abs_DwellPropAdv',
         'val_diff_corr',

@@ -149,7 +149,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 33
+start_version = 40
 started = False
 
 # dir
@@ -440,6 +440,9 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
             v_reg = {'model': 'v ~ 1 + z_val_diff_corr + z_w_dv', 'link_func': lambda x: x}
             a_reg = {'model': 'a ~ 1 + z_absDPAC','link_func': lambda x: x}
             reg_descr = [v_reg, a_reg]
+        elif version == 40:
+            v_reg = {'model': 'v ~ 1 + z_val_diff + z_val_bal_int:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
 
         else:
             raise ValueError(f"check version {version} ??")   

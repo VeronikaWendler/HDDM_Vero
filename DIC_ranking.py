@@ -7,7 +7,7 @@ BASE_DIR = Path(r"C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/macleod_cluster
 # ---- 2.  Collect DIC values
 models = {}  # { "ES_1": 123.4, ... }
 
-for i in range(1, 32):          # ES_1 .. ES_11
+for i in range(1, 41):          # ES_1 .. ES_11
     dic_file = BASE_DIR / f"garcia_replication_ES_{i}" / "diagnostics" / "DIC.txt"
     try:
         with dic_file.open() as f:
