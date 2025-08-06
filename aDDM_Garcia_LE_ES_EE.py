@@ -2055,7 +2055,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             ]
             
         elif version == 40:
-            params_of_interet = [
+            params_of_interest = [
                 't',
                 'a',
                 'v_Intercept',
