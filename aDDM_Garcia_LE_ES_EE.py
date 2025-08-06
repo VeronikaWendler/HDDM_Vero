@@ -1893,9 +1893,9 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_z_IAW_image:C(OVcate)[medium]',
                 'v_z_IAW_image:C(OVcate)[high]',
                 'a_Intercept',
-                'a_OVcate[low]',
-                'a_OVcate[medium]',
-                'a_OVcate[high]']
+                'a_OVcate[T.low]',
+                'a_OVcate[T.medium]',
+                ]
             
             params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
             titles = [
@@ -1908,10 +1908,10 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Drift z_IAW_image:C(OVcate)[low]',
                 'Drift z_IAW_image:C(OVcate)[medium]',
                 'Drift z_IAW_image:C(OVcate)[high]',
-                'Boundary Intercept',
+                'Boundary Intercept (high)',
                 'Boundary OV low',
                 'Boundary OV medium',
-                'Boundary OV high']
+                ]
             
         elif version == 34:
             params_of_interest = [
@@ -1922,9 +1922,10 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'z_AttentionW:C(OVcate)[high]',
                 'z_IAW_chart',
                 'z_IAW_image',
-                'a_OVcate[low]',
-                'a_OVcate[medium]',
-                'a_OVcate[high]']
+                'a_Intercept'
+                'a_OVcate[T.low]',
+                'a_OVcate[T.medium]',
+                ]
             params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
             titles = [
                 'Non-dec. time',
@@ -1935,9 +1936,9 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Drift z_IAW_chart',
                 'Drift z_IAW_image',
                 'a_Intercept',
+                'Boundary Intercept (high)',
                 'Boundary OV low',
-                'Boundary OV medium',
-                'Boundary OV high']
+                'Boundary OV medium']
             
         elif version == 35:
             params_of_interest = [
@@ -1948,9 +1949,10 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'z_AttentionW:C(OVcate)[high]',
                 'z_IAW_chart',
                 'z_IAW_image',
-                't_OVcate[low]',
-                't_OVcate[medium]',
-                't_OVcate[high]']
+                't_Intercept'
+                't_OVcate[T.low]',
+                't_OVcate[T.medium]',
+               ]
             params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
             titles = [
                 'Boundary sep.',
@@ -1960,10 +1962,10 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'Drift z_AttentionW:C(OVcate)[high]',
                 'Drift z_IAW_chart',
                 'Drift z_IAW_image',
-                't_Intercept',
+                't_Intercept (high)',
                 't OV low',
                 't OV medium',
-                't OV high']
+                ]
             
         elif version == 36:
             params_of_interest = [
@@ -2049,7 +2051,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             ]
             
                 
-
             
     elif phase == 'EE':
         if version == 0:
