@@ -1993,7 +1993,9 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 't',
                 'v_Intercept',
                 'v_z_val_diff_corr',
-                'v_z_w_dv',
+                'v_z_w_dv:C(OVcate)[low]',
+                'v_z_w_dv:C(OVcate)[medium]',
+                'v_z_w_dv:C(OVcate)[high]',
                 'v_FirstFix_Left',
                 'a_Intercept',
                 'a_z_absDPAC']
@@ -2015,7 +2017,9 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'a',
                 'v_Intercept',
                 'v_z_val_diff_corr',
-                'v_z_w_dv',
+                'v_z_w_dv:C(OVcate)[low]',
+                'v_z_w_dv:C(OVcate)[medium]',
+                'v_z_w_dv:C(OVcate)[high]',                
                 'v_FirstFix_Left',
                 't_Intercept',
                 't_z_absDPAC']
