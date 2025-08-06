@@ -69,7 +69,7 @@ from pathlib import Path
 # V_sub = value of the worse option
 
 # params:
-version = 39    # defining version
+version = 40    # defining version
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -104,7 +104,7 @@ model_versions = {
     'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4','ES_5', 'ES_6', 'ES_7', 'ES_8', 'ES_9', 'ES_10',
            'ES_11','ES_12', 'ES_13', 'ES_14', 'ES_15', 'ES_16', 'ES_17', 'ES_18', 'ES_19','ES_20',
            'ES_21', "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27","ES_28", "ES_29", "ES_30",
-           "ES_31", "ES_32", "ES_33", "ES_34", "ES_35", "ES_36",  "ES_37", "ES_38", "ES_39", "ES_40"],  
+           "ES_31", "ES_32", "ES_33", "ES_34", "ES_35", "ES_36",  "ES_37", "ES_38", "ES_39", "ES_40", "ES_41"],  
      
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
@@ -2054,7 +2054,26 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'a_z_absDPAC'
             ]
             
-                
+        elif version == 40:
+            params_of_interet = [
+                't',
+                'a',
+                'v_Intercept',
+                'v_z_val_diff',
+                'v_z_val_bal_int:C(OVcate)[low]',
+                'v_z_val_bal_int:C(OVcate)[medium]',
+                'v_z_val_bal_int:C(OVcate)[high]'
+            ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'Non decision time',
+                'Boundary sep.',
+                'v_Intercept',
+                'v_z_val_diff',
+                'gaze-balanced VD low',
+                'gaze-balanced VD medium',
+                'gaze-balanced VD high'
+            ]
             
     elif phase == 'EE':
         if version == 0:
