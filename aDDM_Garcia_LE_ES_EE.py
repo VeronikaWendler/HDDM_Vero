@@ -2038,7 +2038,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             
         elif version == 39:
             params_of_interest = [
-                'Nond dec. time',
+                't',
                 'v_Intercept',
                 'v_z_val_diff_corr',
                 'v_z_w_dv',
