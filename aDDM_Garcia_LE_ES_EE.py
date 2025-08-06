@@ -94,10 +94,10 @@ parallel = True
 # dir
 PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 
-BASE_MODEL_DIR = PROJECT_DIR / "models_dir_combined"
-FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_combined"
+BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
+FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia"
 
-model_base_name = "combined_replication_"
+model_base_name = "garcia_replication_"
 
 model_versions = {
     'LE': ['LE_1', 'LE_2', 'LE_3', 'LE_4', 'LE_5', 'LE_6', 'LE_7'],
