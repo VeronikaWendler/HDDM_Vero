@@ -1922,7 +1922,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_z_AttentionW:C(OVcate)[high]',
                 'v_z_IAW_chart',
                 'v_z_IAW_image',
-                'a_Intercept'
+                'a_Intercept',
                 'a_OVcate[T.low]',
                 'a_OVcate[T.medium]',
                 ]
@@ -1949,7 +1949,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_z_AttentionW:C(OVcate)[high]',
                 'v_z_IAW_chart',
                 'v_z_IAW_image',
-                't_Intercept'
+                't_Intercept',
                 't_OVcate[T.low]',
                 't_OVcate[T.medium]',
                ]
@@ -1985,7 +1985,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_z_w_dv',
                 'v_FirstFix_Left',
                 'a_Intercept',
-                'a_z_absDPAC'
+                'a_z_absDPAC',
             ]
             
         elif version == 37:
