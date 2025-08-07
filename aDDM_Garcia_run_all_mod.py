@@ -902,9 +902,9 @@ def drift_diffusion_hddmRL(
         for i, (model, infdata) in enumerate(results):
             fname = f"{model_name}_{i}"
             # this save now happens in the main thread
-            model.save(os.path.join(model_dir, fname + ".hddm"))
-            with open(os.path.join(model_dir, fname + ".pkl"), "wb") as f:
-                pickle.dump(model, f)
+            # model.save(os.path.join(model_dir, fname + ".hddm"))
+            # with open(os.path.join(model_dir, fname + ".pkl"), "wb") as f:
+            #     pickle.dump(model, f)
             infdata = sanitize_infdata(infdata)
             az.to_netcdf(infdata, os.path.join(model_dir, fname + ".nc"))
 
