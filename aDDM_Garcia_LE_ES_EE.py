@@ -50,8 +50,6 @@ import re
 from pathlib import Path
 
 
-
-
 #------------------------------------------------------------------------------------------------------------------
 # Structure of saving:
 
@@ -516,6 +514,20 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=600, accur
 
         return m, infdata
     
+    elif phase == 'LE_RL':
+        if version == 0:
+            m = hddm.models.HDDMrl(data)
+            m.find_starting_values()
+            infdata = m.sample(samples,
+                               burn=100,
+                               dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                               db='pickle',
+                               return_infdata=True, loglike=True, ppc=False)
+
+            return m, infdata
+        else:
+            raise ValueError(f"Invalid version {version}")
+    
     elif phase == 'ES_ZBIAS':
         if version == 0:   
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
@@ -728,7 +740,8 @@ def drift_diffusion_hddmRL(data,
         print('Loading existing models')
         models = [hddm.load(os.path.join(model_dir, f"{model_name}_{i}.hddm")) for i in range(n_jobs)]
         return models
-
+    
+    
 #########################################################################################################################################################
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -3084,7 +3097,21 @@ else:
             accuracy_coding=True
         )
         analyze_model(models, fig_dir, nr_models, version, phase)
-        
+    
+    elif phase == 'LE_RL':  
+        print(f'loading DDM Model (ES_ZBIAS)... {model_base_name + model_name}')
+        models = drift_diffusion_hddmRL(
+            data=data,
+            samples=nr_samples,
+            n_jobs=nr_models,
+            run=run,
+            parallel=parallel,
+            model_name=model_base_name + model_name,
+            model_dir=model_dir,
+            version=version,
+            phase=phase,  
+        )
+        analyze_model(models, fig_dir, nr_models, version, phase)    
     else:
         print(f'Running HDDMRL... {model_base_name + model_name}')
         models = drift_diffusion_hddmRL(
