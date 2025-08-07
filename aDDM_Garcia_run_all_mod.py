@@ -768,6 +768,30 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Main function for running/loading models
 
+#
+### ONLY FOR RL ##-------------------------------------------------------------------------------------------
+def run_and_save(trace_id, data, model_dir, model_name, version, phase, samples):
+    # 1) instantiate + sample exactly as you do in run_model()
+    model, infdata = run_model(
+        trace_id=trace_id,
+        data=data,
+        model_dir=model_dir,
+        model_name=model_name,
+        version=version,
+        phase=phase,
+        samples=samples,
+    )
+    # 2) save *inside* the worker
+    fname = f"{model_name}_{trace_id}"
+    model.save(os.path.join(model_dir, fname + ".hddm"))
+    with open(os.path.join(model_dir, fname + ".pkl"), "wb") as f:
+        pickle.dump(model, f)
+    infdata = sanitize_infdata(infdata)
+    az.to_netcdf(infdata, os.path.join(model_dir, fname + ".nc"))
+
+    # 3) return something small
+    return fname
+#----------------------------------------------------------------------------------------------------------------
 
 import dill as pickle  # to create the pkl object
 
@@ -837,64 +861,51 @@ def drift_diffusion_hddm(data,
 import dill as pickle
 
 def drift_diffusion_hddmRL(data, 
-                         samples=600,
-                         n_jobs=3,
-                         run=True,
-                         parallel=True,
-                         model_name='model',
-                         model_dir='.', 
-                         accuracy_coding=True,
-                         version=None,
-                         phase=None):
+                           samples=600,
+                           n_jobs=3,
+                           run=True,
+                           parallel=True,
+                           model_name='model',
+                           model_dir='.', 
+                           version=None,
+                           phase=None):
 
-    if run:
-        if parallel:
-            start_time = time.time()
-            results = Parallel(n_jobs=n_jobs)(
-                delayed(run_model)(
-                    trace_id=trace_id,
-                    data=data,
-                    model_dir=model_dir,
-                    model_name=model_name,
-                    version=version,
-                    phase=phase,
-                    samples=samples,
-                    accuracy_coding=accuracy_coding
-                    )
-                for trace_id in range(n_jobs))
-            print("Time elapsed:", time.time() - start_time, "s")
-            
-            for i in range(n_jobs):
-                model, infdata = results[i]
-                model.save(os.path.join(model_dir, f"{model_name}_{i}.hddm"))
-                
-                with open(os.path.join(model_dir, f"{model_name}_{i}.pkl"), "wb") as f:
-                    pickle.dump(model, f)
-                infdata = sanitize_infdata(infdata)  # clean before saving
-                az.to_netcdf(infdata, os.path.join(model_dir, f"{model_name}_{i}.nc"))
+    if not run:
+        print('Loading existing RL models')
+        return [hddm.load(os.path.join(model_dir, f"{model_name}_{i}.hddm"))
+                for i in range(n_jobs)]
 
-
-        else: 
-            model, infdata = run_model(1,
-                                       data,
-                                       model_dir,
-                                       model_name,
-                                       version, 
-                                       samples,
-                                       accuracy_coding 
-                                       )
-            model.save(os.path.join(model_dir, model_name + ".hddm"))
-
-            with open(os.path.join(model_dir, f"{model_name}.pkl"), "wb") as f:
-                pickle.dump(model, f)
-            infdata = sanitize_infdata(infdata)
-            az.to_netcdf(infdata, os.path.join(model_dir, f"{model_name}.nc"))
-
+    start_time = time.time()
+    if parallel:
+        # Each worker runs & saves its own files
+        fnames = Parallel(n_jobs=n_jobs, backend="threading")(
+            delayed(run_and_save)(
+                trace_id=tid,
+                data=data,
+                model_dir=model_dir,
+                model_name=model_name,
+                version=version,
+                phase=phase,
+                samples=samples
+            )
+            for tid in range(n_jobs)
+        )
+        print(f"Chains written: {fnames}")
     else:
-        print('Loading existing models')
-        models = [hddm.load(os.path.join(model_dir, f"{model_name}_{i}.hddm")) for i in range(n_jobs)]
-        return models
-#----------------------------
+        # Single‐threaded: just call run_and_save(0,…)
+        fname = run_and_save(
+            trace_id=0,
+            data=data,
+            model_dir=model_dir,
+            model_name=model_name,
+            version=version,
+            phase=phase,
+            samples=samples
+        )
+        print(f"Chain written: {fname}")
+
+    print("Time elapsed:", time.time() - start_time, "s")
+
 #########################################################################################################################################################
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
