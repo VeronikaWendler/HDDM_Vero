@@ -51,8 +51,13 @@ from pathlib import Path
 
 import arviz as az
 
-# disable numba JIT‐caching for KDE in ArviZ
-az.rcParams["plot.kde.disable_numba"] = True
+import os
+# disable _all_ Numba JIT caching & compilation
+os.environ["NUMBA_DISABLE_JIT"] = "1"
+
+import numba
+numba.config.CACHE_ENABLE = False
+
 
 
 #------------------------------------------------------------------------------------------------------------------
