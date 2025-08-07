@@ -1969,5 +1969,4 @@ if __name__ == "__main__":
                 model_dir=BASE_MODEL_DIR,        
                 version=version,
                 phase=phase,
-                accuracy_coding=True
             )
