@@ -836,15 +836,16 @@ def drift_diffusion_hddm(data,
 # for the RL models (if used)
 import dill as pickle
 
-def drift_diffusion_hddmRL(data, 
-                         samples=2000, 
+def drift_diffusion_hddmRL(dadata, 
+                         samples=600,
                          n_jobs=3,
                          run=True,
                          parallel=True,
                          model_name='model',
                          model_dir='.', 
-                         version=None,       
-                         accuracy_coding=True):
+                         accuracy_coding=True,
+                         version=None,
+                         phase=None):
 
     if run:
         if parallel:
