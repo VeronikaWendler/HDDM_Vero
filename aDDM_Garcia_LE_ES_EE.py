@@ -19,7 +19,7 @@ import glob
 import itertools
 #import pp
 import joblib
-from IPython import embed as shell
+from IPython import embed as shells
 import hddm
 import kabuki
 import statsmodels.formula.api as sm
@@ -738,9 +738,15 @@ def drift_diffusion_hddmRL(data,
 
     else:
         print('Loading existing models')
-        models = [hddm.load(os.path.join(model_dir, f"{model_name}_{i}.hddm")) for i in range(n_jobs)]
-        return models
-    
+        # models = [hddm.load(os.path.join(model_dir, f"{model_name}_{i}.hddm")) for i in range(n_jobs)]
+        # return models
+      
+        infdatas = []
+        for i in range(n_jobs):
+            nc_path = os.path.join(model_dir, f"{model_name}_{i}.nc")
+            infdatas.append(az.from_netcdf(nc_path))
+        return infdatas
+
     
 #########################################################################################################################################################
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2853,7 +2859,89 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
 
     
 
+def analyze_rl(infdatas, fig_dir, version):
+    """
+    infdatas : list of arviz.InferenceData, one per chain
+    fig_dir  : Path or str, root directory for figures / diagnostics
+    version  : int, model version index (used only for labeling)
+    """
+    fig_dir = Path(fig_dir)
+    diag_dir = fig_dir / "diagnostics"
+    diag_dir.mkdir(parents=True, exist_ok=True)
 
+    # 1) concatenate chains
+    idata = az.concat(infdatas, dim="chain")
+
+    # 2) Gelman–Rubin (R-hat)
+    rhat = az.rhat(idata)
+    with open(diag_dir / "gelman_rubin.txt", "w") as f:
+        for var, val in rhat.to_series().items():
+            f.write(f"{var}: {val:.3f}\n")
+
+    # 3) “DIC” substitute: WAIC
+    waic = az.waic(idata)
+    (diag_dir / "DIC.txt").write_text(f"WAIC: {waic.waic:.3f} ±{waic.waic_se:.3f}\n")
+
+    # 4) Posterior predictive check
+    #    if you have an RL PPC simulator you can plug it in here; otherwise skip
+    # az.plot_ppc(idata)  
+    # plt.savefig(diag_dir / "posterior_predictive.pdf")
+    # plt.close()
+
+    # 5) Summary stats table
+    summary = az.summary(idata)
+    summary.to_csv(diag_dir / "results.csv")
+
+    # 6) Posterior‐trace + KDE plots (one PDF each)
+    var_names = ["a", "t", "v", "alpha"]
+    titles = ["a", "t", "v", "alpha"]
+    # Trace
+    az.plot_trace(idata, var_names=var_names)
+    plt.tight_layout()
+    plt.savefig(diag_dir / "trace_plots.pdf")
+    plt.close()
+
+    # Posterior KDEs
+    matplotlib.rcParams.update({"font.size": 6})
+    fig, axes = plt.subplots(1, len(var_names), figsize=(len(var_names)*2, 4))
+    for i, p in enumerate(var_names):
+        arr = idata.posterior[p].values.reshape(-1)
+        # if alpha needs inv-logit:
+        if p == "alpha":
+            arr = np.exp(arr) / (1 + np.exp(arr))
+        sns = __import__("seaborn")  # seaborn just for shade=; you can replace with pure matplotlib
+        sns.kdeplot(arr, vertical=True, shade=True, ax=axes[i])
+        axes[i].set_title(p)
+        axes[i].set_xlim(left=0)
+        axes[i].set_ylabel("Density")
+        axes[i].set_xlabel("Value")
+    plt.tight_layout()
+    fig.savefig(diag_dir / "posteriors.pdf", bbox_inches="tight")
+    plt.close(fig)
+    matplotlib.rcParams.update({"font.size": 12})
+
+    # 7) Per-subject parameter CSV
+    #    we assume your RL model stored subj-indexed draws under e.g. idata.posterior["a_subj"]
+    subj_params = []
+    for p in var_names:
+        key = f"{p}_subj"
+        if key not in idata.posterior:
+            continue
+        # shape (chain, draw, subject)
+        arr = idata.posterior[key].values
+        # flatten chain+draw into one axis, keep subject axis
+        flat = arr.reshape(-1, arr.shape[-1])
+        # mean per subject
+        subj_params.append(flat.mean(axis=0))
+    df = pd.DataFrame(np.stack(subj_params, axis=1), columns=[f"{p}_subj" for p in var_names if f"{p}_subj" in idata.posterior])
+    df.to_csv(diag_dir / "params_of_interest_s.csv", index=False)
+    
+    
+    
+    
+    
+
+    
 model_dir = BASE_MODEL_DIR
 ensure_dir(model_dir)
 
@@ -3098,20 +3186,20 @@ else:
         )
         analyze_model(models, fig_dir, nr_models, version, phase)
     
-    elif phase == 'LE_RL':  
-        print(f'loading DDM Model (ES_ZBIAS)... {model_base_name + model_name}')
-        models = drift_diffusion_hddmRL(
+    elif phase == 'LE_RL':
+        print(f'Loading RL chains for {full_model_name}…')
+        infdatas = drift_diffusion_hddmRL(
             data=data,
             samples=nr_samples,
             n_jobs=nr_models,
             run=run,
             parallel=parallel,
-            model_name=model_base_name + model_name,
+            model_name=full_model_name,
             model_dir=model_dir,
             version=version,
-            phase=phase,  
-        )
-        analyze_model(models, fig_dir, nr_models, version, phase)    
+            phase=phase,
+            )
+        analyze_rl(infdatas, fig_dir, version)
     else:
         print(f'Running HDDMRL... {model_base_name + model_name}')
         models = drift_diffusion_hddmRL(
