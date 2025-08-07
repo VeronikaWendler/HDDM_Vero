@@ -2917,26 +2917,29 @@ def analyze_rl(infdatas, fig_dir, version):
 
     # Posterior KDEs
     matplotlib.rcParams.update({"font.size": 6})
-    # make sure it's always an array, even if there's just one axis
+    
+    # create a figure with one column per variable
+    fig, axes = plt.subplots(1, len(var_names), figsize=(len(var_names) * 2, 4))
+    
+    # flatten into a 1-d array no matter what matplotlib gives you
     axes_flat = np.atleast_1d(axes).flatten()
     
     for i, p in enumerate(var_names):
-       ax = axes_flat[i]
-       arr = idata.posterior[p].values.reshape(-1)
-       if p == "alpha":
-           arr = np.exp(arr) / (1 + np.exp(arr))
-       sns.kdeplot(arr, vertical=True, shade=True, ax=ax)
-       ax.set_title(p)
-       ax.set_xlim(left=0)
-       ax.set_ylabel("Density")
-       ax.set_xlabel("Value")
+        ax = axes_flat[i]
+        arr = idata.posterior[p].values.reshape(-1)
+        if p == "alpha":
+            arr = np.exp(arr) / (1 + np.exp(arr))
+        sns.kdeplot(arr, vertical=True, shade=True, ax=ax)
+        ax.set_title(p)
+        ax.set_xlim(left=0)
+        ax.set_ylabel("Density")
+        ax.set_xlabel("Value")
     
     plt.tight_layout()
-    plt.savefig(diag_dir / "posteriors.pdf")
+    plt.savefig(diag_dir / "posteriors.pdf", bbox_inches="tight")
     plt.close(fig)
-    
-    # 7) Per-subject parameter CSV
-    #    we assume your RL model stored subj-indexed draws under e.g. idata.posterior["a_subj"]
+        # 7) Per-subject parameter CSV
+        #    we assume your RL model stored subj-indexed draws under e.g. idata.posterior["a_subj"]
     subj_params = []
     for p in var_names:
         key = f"{p}_subj"
