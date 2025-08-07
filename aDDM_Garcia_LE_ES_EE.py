@@ -49,6 +49,11 @@ def ensure_dir(path):
 import re
 from pathlib import Path
 
+import arviz as az
+
+# disable numba JIT‐caching for KDE in ArviZ
+az.rcParams["plot.kde.disable_numba"] = True
+
 
 #------------------------------------------------------------------------------------------------------------------
 # Structure of saving:
