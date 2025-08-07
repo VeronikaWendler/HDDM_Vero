@@ -2877,6 +2877,12 @@ def analyze_rl(infdatas, fig_dir, version):
     with open(diag_dir / "gelman_rubin.txt", "w") as f:
         for var, val in rhat.to_series().items():
             f.write(f"{var}: {val:.3f}\n")
+            
+    rhat = az.rhat(idata)
+    with open(diag_dir / "gelman_rubin.txt", "w") as f:
+        for var in rhat.data_vars:
+            val = float(rhat[var].values)  # extract scalar
+            f.write(f"{var}: {val:.3f}\n")
 
     # 3) “DIC” substitute: WAIC
     waic = az.waic(idata)
