@@ -11,3 +11,7 @@
 # so that probably means people don't just then automatically look at the image longer and chose it, 
 # rather, according to the addm 2 things are possible, either they look extra long at the image and chose chart (aligend with empirical pattern)
 #  
+
+## memory - less gaze 
+## chart - extensive gaze 
+

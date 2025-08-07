@@ -118,7 +118,7 @@ def make_z_link(full_stimulus_vector):
 ##
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
-nr_samples      = 2000       # samples per chain - do 11000 but for now for a quick one we do 600
+nr_samples      = 600       # samples per chain - do 11000 but for now for a quick one we do 600
 parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
@@ -756,7 +756,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
                                burn=100,
                                dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                                db='pickle',
-                               return_infdata=True, loglike=True, ppc=True)
+                               return_infdata=True, loglike=True, ppc=False)
 
             return m, infdata
         else:
