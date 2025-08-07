@@ -2879,13 +2879,12 @@ def analyze_rl(infdatas, fig_dir, version):
             val = float(rhat[var].values)  # extract scalar
             f.write(f"{var}: {val:.3f}\n")
 
-    # 3) DIC → CSV
-    dic_res = az.waic(idata)
+    waic_res = az.waic(idata)
     dic_df = pd.DataFrame({
-        "metric": ["waic"],
-        "value":  [dic_res.waic]
+        "metric": ["DIC", "DIC_se"],
+        "value":  [waic_res.waic, waic_res.waic_se]
     })
-    dic_df.to_csv(diag_dir / "waic.csv", index=False)
+    dic_df.to_csv(diag_dir/"dic.csv", index=False)
 
     # 4) Posterior predictive check
     #    if you have an RL PPC simulator you can plug it in here; otherwise skip
