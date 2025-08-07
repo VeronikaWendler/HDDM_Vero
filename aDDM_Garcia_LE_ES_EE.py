@@ -2872,11 +2872,6 @@ def analyze_rl(infdatas, fig_dir, version):
     # 1) concatenate chains
     idata = az.concat(infdatas, dim="chain")
 
-    # 2) Gelman–Rubin (R-hat)
-    rhat = az.rhat(idata)
-    with open(diag_dir / "gelman_rubin.txt", "w") as f:
-        for var, val in rhat.to_series().items():
-            f.write(f"{var}: {val:.3f}\n")
             
     rhat = az.rhat(idata)
     with open(diag_dir / "gelman_rubin.txt", "w") as f:
@@ -2884,9 +2879,13 @@ def analyze_rl(infdatas, fig_dir, version):
             val = float(rhat[var].values)  # extract scalar
             f.write(f"{var}: {val:.3f}\n")
 
-    # 3) “DIC” substitute: WAIC
-    waic = az.waic(idata)
-    (diag_dir / "DIC.txt").write_text(f"WAIC: {waic.waic:.3f} ±{waic.waic_se:.3f}\n")
+    # 3) DIC → CSV
+    dic_res = az.dic(idata)
+    dic_df = pd.DataFrame({
+        "metric": ["dic"],
+        "value":  [dic_res.dic]
+    })
+    dic_df.to_csv(diag_dir / "dic.csv", index=False)
 
     # 4) Posterior predictive check
     #    if you have an RL PPC simulator you can plug it in here; otherwise skip
