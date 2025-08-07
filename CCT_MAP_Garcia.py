@@ -1283,173 +1283,285 @@ def run_version_14():
     print("OV Combined Parameter Comparison Table:")
     print(df_combined_OV)
 
-def run_version_35():
-    #---------------------------------------------------------------------------------------------------------------
-    # Version 1: OV-modulated models (high, medium, low)
-    # load and combine OV model files (set which model)
-    MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_garcia")
-    model_paths_OV = [
-        os.path.join(MODELS_DIR, "garcia_replication_ES_35_2.pkl"),
-        os.path.join(MODELS_DIR, "garcia_replication_ES_35_1.pkl"),
-        os.path.join(MODELS_DIR, "garcia_replication_ES_35_0.pkl"),
-        ]
+# def run_version_35():
+#     #---------------------------------------------------------------------------------------------------------------
+#     # Version 1: OV-modulated models (high, medium, low)
+#     # load and combine OV model files (set which model)
+#     MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_garcia")
+#     model_paths_OV = [
+#         os.path.join(MODELS_DIR, "garcia_replication_ES_35_2.pkl"),
+#         os.path.join(MODELS_DIR, "garcia_replication_ES_35_1.pkl"),
+#         os.path.join(MODELS_DIR, "garcia_replication_ES_35_0.pkl"),
+#         ]
  
-    models_OV = []
-    for path in model_paths_OV:
-        with open(path, "rb") as f:
-            models_OV.append(pickle.load(f))
+#     models_OV = []
+#     for path in model_paths_OV:
+#         with open(path, "rb") as f:
+#             models_OV.append(pickle.load(f))
             
-    combinedModels_OV = kabuki.utils.concat_models(models_OV)
+#     combinedModels_OV = kabuki.utils.concat_models(models_OV)
     
-    # summary stats for relevant nodes:
-    stats_summary_OV = combinedModels_OV.gen_stats()
-    print(stats_summary_OV[stats_summary_OV.index.isin([
-        't',
-        'v_Intercept',
-        'v_z_AttentionW:C(OVcate)[low]',
-        'v_z_AttentionW:C(OVcate)[medium]',
-        'v_z_AttentionW:C(OVcate)[high]',
-        'v_z_IAW_chart',
-        'v_z_IAW_image',
-        'a_Intercept',
-        'a_OVcate[T.low]',
-        'a_OVcate[T.medium]',
-    ])])
+#     # summary stats for relevant nodes:
+#     stats_summary_OV = combinedModels_OV.gen_stats()
+#     print(stats_summary_OV[stats_summary_OV.index.isin([
+#         't',
+#         'v_Intercept',
+#         'v_z_AttentionW:C(OVcate)[low]',
+#         'v_z_AttentionW:C(OVcate)[medium]',
+#         'v_z_AttentionW:C(OVcate)[high]',
+#         'v_z_IAW_chart',
+#         'v_z_IAW_image',
+#         'a_Intercept',
+#         'a_OVcate[T.low]',
+#         'a_OVcate[T.medium]',
+#     ])])
     
-    print("DIC (OV):", combinedModels_OV.dic)            # some diagnostics
-    print("BPIC (OV):", combinedModels_OV.mc.BPIC)
+#     print("DIC (OV):", combinedModels_OV.dic)            # some diagnostics
+#     print("BPIC (OV):", combinedModels_OV.mc.BPIC)
     
-    # nodes for OV:
-    t_OV     = combinedModels_OV.nodes_db.node['t']
-    inter_OV = combinedModels_OV.nodes_db.node['v_Intercept']
-    vA_low  = combinedModels_OV.nodes_db.node['v_z_AttentionW:C(OVcate)[low]']
-    vA_med  = combinedModels_OV.nodes_db.node['v_z_AttentionW:C(OVcate)[medium]']
-    vA_high = combinedModels_OV.nodes_db.node['v_z_AttentionW:C(OVcate)[high]']
-    vIA_chart = combinedModels_OV.nodes_db.node['v_z_IAW_chart']
-    vIA_image = combinedModels_OV.nodes_db.node['v_z_IAW_image']
-    a_int = combinedModels_OV.nodes_db.node['a_Intercept']
-    a_OV_low    = combinedModels_OV.nodes_db.node['a_OVcate[T.low]']
-    a_OV_medium    = combinedModels_OV.nodes_db.node['a_OVcate[T.medium]']
+#     # nodes for OV:
+#     t_OV     = combinedModels_OV.nodes_db.node['t']
+#     inter_OV = combinedModels_OV.nodes_db.node['v_Intercept']
+#     vA_low  = combinedModels_OV.nodes_db.node['v_z_AttentionW:C(OVcate)[low]']
+#     vA_med  = combinedModels_OV.nodes_db.node['v_z_AttentionW:C(OVcate)[medium]']
+#     vA_high = combinedModels_OV.nodes_db.node['v_z_AttentionW:C(OVcate)[high]']
+#     vIA_chart = combinedModels_OV.nodes_db.node['v_z_IAW_chart']
+#     vIA_image = combinedModels_OV.nodes_db.node['v_z_IAW_image']
+#     a_int = combinedModels_OV.nodes_db.node['a_Intercept']
+#     a_OV_low    = combinedModels_OV.nodes_db.node['a_OVcate[T.low]']
+#     a_OV_medium    = combinedModels_OV.nodes_db.node['a_OVcate[T.medium]']
     
-    # Group-level Table for OV (theta = b2 / b1 per OV level)
-    thetaS_low  = vIA_chart.trace() / vA_low.trace()
-    thetaS_med  = vIA_chart.trace() / vA_med.trace()
-    thetaS_high = vIA_chart.trace() / vA_high.trace()
+#     # Group-level Table for OV (theta = b2 / b1 per OV level)
+#     thetaS_low  = vIA_chart.trace() / vA_low.trace()
+#     thetaS_med  = vIA_chart.trace() / vA_med.trace()
+#     thetaS_high = vIA_chart.trace() / vA_high.trace()
     
-    thetaE_low  = vIA_image.trace() / vA_low.trace()
-    thetaE_med  = vIA_image.trace() / vA_med.trace()
-    thetaE_high = vIA_image.trace() / vA_high.trace()
+#     thetaE_low  = vIA_image.trace() / vA_low.trace()
+#     thetaE_med  = vIA_image.trace() / vA_med.trace()
+#     thetaE_high = vIA_image.trace() / vA_high.trace()
     
     
-    group_params_OV = {        
-        "t": t_OV.trace(),
-        "v_Intercept": inter_OV.trace(),
-        "v_z_AttentionW:C(OVcate)[low]": vA_low.trace() ,
-        "v_z_AttentionW:C(OVcate)[medium]": vA_med.trace(),
-        'v_z_AttentionW:C(OVcate)[high]': vA_high.trace(),
-        'v_z_IAW_chart': vIA_chart.trace(),
-        'v_z_IAW_image': vIA_image.trace(),
-        'a_Intercept': a_int.trace(),
-        'a_OVcate[T.low]': a_OV_low.trace(),
-        'a_OVcate[T.medium]': a_OV_medium.trace(),
-    }
+#     group_params_OV = {        
+#         "t": t_OV.trace(),
+#         "v_Intercept": inter_OV.trace(),
+#         "v_z_AttentionW:C(OVcate)[low]": vA_low.trace() ,
+#         "v_z_AttentionW:C(OVcate)[medium]": vA_med.trace(),
+#         'v_z_AttentionW:C(OVcate)[high]': vA_high.trace(),
+#         'v_z_IAW_chart': vIA_chart.trace(),
+#         'v_z_IAW_image': vIA_image.trace(),
+#         'a_Intercept': a_int.trace(),
+#         'a_OVcate[T.low]': a_OV_low.trace(),
+#         'a_OVcate[T.medium]': a_OV_medium.trace(),
+#     }
 
-    group_results_OV = {"Parameter": [], "MAP": [], "HDI_lower": [], "HDI_upper": []}
-    for name, trace in group_params_OV.items():
-        group_results_OV["Parameter"].append(name)
-        group_results_OV["MAP"].append(trace.mean())
-        group_results_OV["HDI_lower"].append(stats.mstats.mquantiles(trace, [0.025])[0])
-        group_results_OV["HDI_upper"].append(stats.mstats.mquantiles(trace, [0.975])[0])
+#     group_results_OV = {"Parameter": [], "MAP": [], "HDI_lower": [], "HDI_upper": []}
+#     for name, trace in group_params_OV.items():
+#         group_results_OV["Parameter"].append(name)
+#         group_results_OV["MAP"].append(trace.mean())
+#         group_results_OV["HDI_lower"].append(stats.mstats.mquantiles(trace, [0.025])[0])
+#         group_results_OV["HDI_upper"].append(stats.mstats.mquantiles(trace, [0.975])[0])
     
-    df_group_OV = pd.DataFrame(group_results_OV)
-    FIG_DIR = os.path.join(PROJECT_DIR, "figures_dir_garcia", "garcia_replication_ES_35")
-    os.makedirs(FIG_DIR, exist_ok=True)
+#     df_group_OV = pd.DataFrame(group_results_OV)
+#     FIG_DIR = os.path.join(PROJECT_DIR, "figures_dir_garcia", "garcia_replication_ES_35")
+#     os.makedirs(FIG_DIR, exist_ok=True)
     
-    df_group_OV.to_csv(
-        os.path.join(FIG_DIR, "group_level_MAP_table_ES_garcia_m35.csv"),index=False)
-    print("group-level parameter estimates:")
-    print(df_group_OV)
+#     df_group_OV.to_csv(
+#         os.path.join(FIG_DIR, "group_level_MAP_table_ES_garcia_m35.csv"),index=False)
+#     print("group-level parameter estimates:")
+#     print(df_group_OV)
     
-    #Combined Parameter Comparison Table
-    def format_estimate(trace):
-        m = trace.mean()
-        l = stats.mstats.mquantiles(trace, [0.025])[0]
-        u = stats.mstats.mquantiles(trace, [0.975])[0]
-        return f"{m:.3f} [{l:.3f}, {u:.3f}]"
+#     #Combined Parameter Comparison Table
+#     def format_estimate(trace):
+#         m = trace.mean()
+#         l = stats.mstats.mquantiles(trace, [0.025])[0]
+#         u = stats.mstats.mquantiles(trace, [0.975])[0]
+#         return f"{m:.3f} [{l:.3f}, {u:.3f}]"
     
-    def format_diff(diff_trace):
-        m = diff_trace.mean()
-        l = stats.mstats.mquantiles(diff_trace, [0.025])[0]
-        u = stats.mstats.mquantiles(diff_trace, [0.975])[0]
-        return f"{m:.3f} [{l:.3f}, {u:.3f}]"
+#     def format_diff(diff_trace):
+#         m = diff_trace.mean()
+#         l = stats.mstats.mquantiles(diff_trace, [0.025])[0]
+#         u = stats.mstats.mquantiles(diff_trace, [0.975])[0]
+#         return f"{m:.3f} [{l:.3f}, {u:.3f}]"
     
-    # get theta for each category: theta = v_InattentionW / v_AttentionW
-    # Group-level Table for OV (theta = b2 / b1 per OV level)
-    thetaS_low  = vIA_chart.trace() / vA_low.trace()
-    thetaS_med  = vIA_chart.trace() / vA_med.trace()
-    thetaS_high = vIA_chart.trace() / vA_high.trace()
+#     # get theta for each category: theta = v_InattentionW / v_AttentionW
+#     # Group-level Table for OV (theta = b2 / b1 per OV level)
+#     thetaS_low  = vIA_chart.trace() / vA_low.trace()
+#     thetaS_med  = vIA_chart.trace() / vA_med.trace()
+#     thetaS_high = vIA_chart.trace() / vA_high.trace()
     
-    thetaE_low  = vIA_image.trace() / vA_low.trace()
-    thetaE_med  = vIA_image.trace() / vA_med.trace()
-    thetaE_high = vIA_image.trace() / vA_high.trace()
+#     thetaE_low  = vIA_image.trace() / vA_low.trace()
+#     thetaE_med  = vIA_image.trace() / vA_med.trace()
+#     thetaE_high = vIA_image.trace() / vA_high.trace()
     
-    rows_OV = []
-    # (group-level from t)  this obviously depends on which model you are running (4 = a varies by OV, 5 = t varies by OV - code below would need to be adjusted)
-    rows_OV.append({
-        "Parameter": "t",
-        "Group-level": format_estimate(t_OV.trace()),
-        "Med-Low": "",
-        "High-Low": "",
-        "High-Med": ""
-    })
-    # θ differences across OVcate:
-    rows_OV.append({
-        "Parameter": "θS",
-        "Group-level": "",
-        "Med-Low": format_diff(thetaS_med - thetaS_low),
-        "High-Low": format_diff(thetaS_high - thetaS_low),
-        "High-Med": format_diff(thetaS_high - thetaS_med)
-    })
-    rows_OV.append({
-        "Parameter": "θE",
-        "Group-level": "",
-        "Med-Low": format_diff(thetaE_med - thetaE_low),
-        "High-Low": format_diff(thetaE_high - thetaE_low),
-        "High-Med": format_diff(thetaE_high - thetaE_med)
-    })
-    # b0 and b1 (group-level):
-    rows_OV.append({
-        "Parameter": "b0",
-        "Group-level": format_estimate(inter_OV.trace()),
-        "Med-Low": "",
-        "High-Low": "",
-        "High-Med": ""
-    })
-    rows_OV.append({
-        "Parameter": "b1",
-        "Group-level": "",
-        "Med-Low": format_diff(vA_med.trace() - vA_low.trace()),
-        "High-Low": format_diff(vA_high.trace() - vA_low.trace()),
-        "High-Med": format_diff(vA_high.trace() - vA_med.trace())
-    })
-    # b2: differences in v_InattentionW across OVcate:
-    rows_OV.append({
-        "Parameter": "b2",
-        "Group-level": "",
-        "Category difference": format_diff(vIA_chart.trace() - vIA_image.trace()),
-    })
-    # a: differences in OVcate:
-    rows_OV.append({
-        "Parameter": "a",
-        "Group-level": "",
-        "Med-Low": format_diff(a_OV_medium.trace() - a_OV_low.trace()), 
-        "High-Low": format_diff(a_int.trace() - a_OV_low.trace()),
-        "High-Med": format_diff(a_int.trace() - a_OV_medium.trace())
-    })
-    df_combined_OV = pd.DataFrame(rows_OV, columns=["Parameter", "Group-level", "Med-Low", "High-Low", "High-Med", "Category difference"])
-    df_combined_OV.to_csv(os.path.join(FIG_DIR, "combined_parameter_comparison_table_ES_garcia_m35.csv"),index=False)
-    print("OV Combined Parameter Comparison Table:")
-    print(df_combined_OV)
+#     rows_OV = []
+#     # (group-level from t)  this obviously depends on which model you are running (4 = a varies by OV, 5 = t varies by OV - code below would need to be adjusted)
+#     rows_OV.append({
+#         "Parameter": "t",
+#         "Group-level": format_estimate(t_OV.trace()),
+#         "Med-Low": "",
+#         "High-Low": "",
+#         "High-Med": ""
+#     })
+#     # θ differences across OVcate:
+#     rows_OV.append({
+#         "Parameter": "θS",
+#         "Group-level": "",
+#         "Med-Low": format_diff(thetaS_med - thetaS_low),
+#         "High-Low": format_diff(thetaS_high - thetaS_low),
+#         "High-Med": format_diff(thetaS_high - thetaS_med)
+#     })
+#     rows_OV.append({
+#         "Parameter": "θE",
+#         "Group-level": "",
+#         "Med-Low": format_diff(thetaE_med - thetaE_low),
+#         "High-Low": format_diff(thetaE_high - thetaE_low),
+#         "High-Med": format_diff(thetaE_high - thetaE_med)
+#     })
+#     # b0 and b1 (group-level):
+#     rows_OV.append({
+#         "Parameter": "b0",
+#         "Group-level": format_estimate(inter_OV.trace()),
+#         "Med-Low": "",
+#         "High-Low": "",
+#         "High-Med": ""
+#     })
+#     rows_OV.append({
+#         "Parameter": "b1",
+#         "Group-level": "",
+#         "Med-Low": format_diff(vA_med.trace() - vA_low.trace()),
+#         "High-Low": format_diff(vA_high.trace() - vA_low.trace()),
+#         "High-Med": format_diff(vA_high.trace() - vA_med.trace())
+#     })
+#     # b2: differences in v_InattentionW across OVcate:
+#     rows_OV.append({
+#         "Parameter": "b2",
+#         "Group-level": "",
+#         "Category difference": format_diff(vIA_chart.trace() - vIA_image.trace()),
+#     })
+#     # a: differences in OVcate:
+#     rows_OV.append({
+#         "Parameter": "a",
+#         "Group-level": "",
+#         "Med-Low": format_diff(a_OV_medium.trace() - a_OV_low.trace()), 
+#         "High-Low": format_diff(a_int.trace() - a_OV_low.trace()),
+#         "High-Med": format_diff(a_int.trace() - a_OV_medium.trace())
+#     })
+#     df_combined_OV = pd.DataFrame(rows_OV, columns=["Parameter", "Group-level", "Med-Low", "High-Low", "High-Med", "Category difference"])
+#     df_combined_OV.to_csv(os.path.join(FIG_DIR, "combined_parameter_comparison_table_ES_garcia_m35.csv"),index=False)
+#     print("OV Combined Parameter Comparison Table:")
+#     print(df_combined_OV)
+
+import arviz as az
+import pandas as pd
+PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
+
+def run_version_35():
+    import arviz as az
+    import pandas as pd
+    import os
+    PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
+    MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_garcia")    
+    nc_paths = [
+        os.path.join(MODELS_DIR,"garcia_replication_ES_35_2.nc"),
+        os.path.join(MODELS_DIR,"garcia_replication_ES_35_1.nc"),
+        os.path.join(MODELS_DIR,"garcia_replication_ES_35_0.nc"),
+    ]
+    idatas = [az.from_netcdf(p) for p in nc_paths]
+
+    # 2. concatenate along a new “chain” axis
+    idata = az.concat(idatas, dim="chain")
+
+    # shortcut to pull out a flattened array of draws for any var
+    def draws(varname):
+        da = idata.posterior[varname]
+        return da.stack(sample=["chain","draw"]).values
+
+    # 3. extract everything you need
+    t        = draws("t")
+    inter    = draws("v_Intercept")
+    vA_low   = draws("v_z_AttentionW:C(OVcate)[low]")
+    vA_med   = draws("v_z_AttentionW:C(OVcate)[medium]")
+    vA_high  = draws("v_z_AttentionW:C(OVcate)[high]")
+    vIA_c    = draws("v_z_IAW_chart")
+    vIA_i    = draws("v_z_IAW_image")
+    a_int    = draws("a_Intercept")
+    a_low    = draws("a_OVcate[T.low]")
+    a_med    = draws("a_OVcate[T.medium]")
+
+    # 4. compute the θ’s
+    thetaS_low  = vIA_c / vA_low
+    thetaS_med  = vIA_c / vA_med
+    thetaS_high = vIA_c / vA_high
+
+    thetaE_low  = vIA_i / vA_low
+    thetaE_med  = vIA_i / vA_med
+    thetaE_high = vIA_i / vA_high
+
+    # helper for 95% HDI
+    def hdi(arr):
+        lo, hi = az.hdi(arr, hdi_prob=0.95)
+        return lo, hi
+
+    # 5A. build the group‐level MAP / HDI table
+    group = []
+    for name, arr in [
+        ("t",        t),
+        ("v_Intercept", inter),
+        ("v_z_AttentionW:low",  vA_low),
+        ("v_z_AttentionW:med",  vA_med),
+        ("v_z_AttentionW:high", vA_high),
+        ("v_z_IAW_chart",       vIA_c),
+        ("v_z_IAW_image",       vIA_i),
+        ("a_Intercept",         a_int),
+        ("a_low",               a_low),
+        ("a_med",               a_med),
+        ("θS_low",              thetaS_low),
+        ("θS_med",              thetaS_med),
+        ("θS_high",             thetaS_high),
+        ("θE_low",              thetaE_low),
+        ("θE_med",              thetaE_med),
+        ("θE_high",             thetaE_high),
+    ]:
+        m = arr.mean()
+        lo, hi = hdi(arr)
+        group.append({"Parameter": name, "MAP": m, "HDI_lower": lo, "HDI_upper": hi})
+
+    df_group = pd.DataFrame(group)
+    df_group.to_csv(
+        os.path.join(MODELS_DIR, "group_level_MAP_table_ES_garcia_m35.csv"),
+        index=False
+        )
+    print("group‐level estimates:")
+    print(df_group)
+
+    # 5B. build the paired‐difference table
+    rows = []
+    def diff(x, y): 
+        return x.mean() - y.mean(), *hdi(x - y)
+
+    for (label, xa, xb) in [
+        ("Med−Low θS", thetaS_med, thetaS_low),
+        ("High−Low θS", thetaS_high, thetaS_low),
+        ("High−Med θS", thetaS_high, thetaS_med),
+
+        ("Med−Low θE", thetaE_med, thetaE_low),
+        ("High−Low θE", thetaE_high, thetaE_low),
+        ("High−Med θE", thetaE_high, thetaE_med),
+
+        ("Chart−Image b2", vIA_c, vIA_i),
+
+        ("Med−Low a", a_med, a_low),
+        ("High−Low a", a_int, a_low),
+        ("High−Med a", a_int, a_med),
+    ]:
+        m, lo, hi = diff(xa, xb)
+        rows.append({"Comparison": label, "MeanDiff": m, "HDI_lower": lo, "HDI_upper": hi})
+
+    df_comp = pd.DataFrame(rows)
+    df_comp.to_csv(
+        os.path.join(MODELS_DIR, "combined_parameter_comparison_table_ES_garcia_m35.csv"),
+        index=False
+        )
       
 ################################### for LEESEE phase differences ##############################################################################
 ################################### for LEESEE phase differences ##############################################################################
