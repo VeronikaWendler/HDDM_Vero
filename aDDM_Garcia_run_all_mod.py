@@ -27,6 +27,7 @@ from patsy import dmatrix
 from joblib import Parallel, delayed
 import time
 import arviz as az
+from joblib import Parallel, delayed
 
 # -------------------------------------------------------------------------
 # patch: make a dummy _gdbm module so “import _gdbm” never fails
@@ -848,7 +849,7 @@ def drift_diffusion_hddmRL(data,
     if run:
         if parallel:
             start_time = time.time()
-            results = Parallel(n_jobs=n_jobs)(
+            results = Parallel(n_jobs=n_jobs, backend='threading')(
                 delayed(run_model)(
                     trace_id=trace_id,
                     data=data,
