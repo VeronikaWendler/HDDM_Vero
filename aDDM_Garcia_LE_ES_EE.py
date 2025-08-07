@@ -2881,6 +2881,11 @@ def analyze_rl(infdatas, fig_dir, version):
 
     # 1) concatenate chains
     idata = az.concat(infdatas, dim="chain")
+    # 1) concatenate chains
+    print(idata)
+
+    print(idata.posterior)
+    print("Data variables in posterior:", list(idata.posterior.data_vars))
 
             
     rhat = az.rhat(idata)
