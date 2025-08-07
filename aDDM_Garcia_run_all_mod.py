@@ -878,7 +878,7 @@ def drift_diffusion_hddmRL(data,
     start_time = time.time()
     if parallel:
         # Each worker runs & saves its own files
-        fnames = Parallel(n_jobs=n_jobs, backend="threading")(
+        fnames = Parallel(n_jobs=n_jobs)(
             delayed(run_and_save)(
                 trace_id=tid,
                 data=data,
