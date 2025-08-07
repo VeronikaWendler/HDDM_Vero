@@ -2945,20 +2945,23 @@ def analyze_rl(infdatas, fig_dir, version):
     plt.close(fig)
         # 7) Per-subject parameter CSV
         #    we assume your RL model stored subj-indexed draws under e.g. idata.posterior["a_subj"]
-    subj_params = []
-    for p in var_names:
-        key = f"{p}_subj"
-        if key not in idata.posterior:
-            continue
-        # shape (chain, draw, subject)
-        arr = idata.posterior[key].values
-        # flatten chain+draw into one axis, keep subject axis
-        flat = arr.reshape(-1, arr.shape[-1])
-        # mean per subject
-        subj_params.append(flat.mean(axis=0))
-    df = pd.DataFrame(np.stack(subj_params, axis=1), columns=[f"{p}_subj" for p in var_names if f"{p}_subj" in idata.posterior])
-    df.to_csv(diag_dir / "params_of_interest_s.csv", index=False)
-    
+        # 7) Per-subject parameter CSV
+    subj_vars = [v for v in idata.posterior.data_vars if v.startswith("alpha_subj.")]
+    if subj_vars:
+        subj_means = {}
+        for var in subj_vars:
+            subj = int(var.split("alpha_subj.")[-1])
+            arr  = idata.posterior[var].values  # (chain, draw)
+            subj_means[subj] = arr.reshape(-1).mean()
+        df = pd.DataFrame.from_dict(
+            subj_means, orient="index", columns=["alpha_subj"]
+        )
+        df.index.name = "subj_idx"
+        df.reset_index(inplace=True)
+        df.to_csv(diag_dir/"params_of_interest_s.csv", index=False)
+    else:
+        print("No subject-level 'alpha_subj.*' variables found; skipping CSV.")
+        
     
     
     
