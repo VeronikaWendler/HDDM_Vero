@@ -2934,7 +2934,8 @@ def analyze_rl(infdatas, fig_dir, version):
         arr = idata.posterior[p].values.reshape(-1)
         if p == "alpha":
             arr = np.exp(arr) / (1 + np.exp(arr))
-        sns.kdeplot(arr, vertical=True, shade=True, ax=ax)
+        sns.kdeplot(y=arr, fill=True, ax=ax)
+
         ax.set_title(p)
         ax.set_xlim(left=0)
         ax.set_ylabel("Density")
