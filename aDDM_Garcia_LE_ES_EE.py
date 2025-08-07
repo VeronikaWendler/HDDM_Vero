@@ -2917,23 +2917,24 @@ def analyze_rl(infdatas, fig_dir, version):
 
     # Posterior KDEs
     matplotlib.rcParams.update({"font.size": 6})
-    fig, axes = plt.subplots(1, len(var_names), figsize=(len(var_names)*2, 4))
+    # make sure it's always an array, even if there's just one axis
+    axes_flat = np.atleast_1d(axes).flatten()
+    
     for i, p in enumerate(var_names):
-        arr = idata.posterior[p].values.reshape(-1)
-        # if alpha needs inv-logit:
-        if p == "alpha":
-            arr = np.exp(arr) / (1 + np.exp(arr))
-        sns = __import__("seaborn")  # seaborn just for shade=; you can replace with pure matplotlib
-        sns.kdeplot(arr, vertical=True, shade=True, ax=axes[i])
-        axes[i].set_title(p)
-        axes[i].set_xlim(left=0)
-        axes[i].set_ylabel("Density")
-        axes[i].set_xlabel("Value")
+       ax = axes_flat[i]
+       arr = idata.posterior[p].values.reshape(-1)
+       if p == "alpha":
+           arr = np.exp(arr) / (1 + np.exp(arr))
+       sns.kdeplot(arr, vertical=True, shade=True, ax=ax)
+       ax.set_title(p)
+       ax.set_xlim(left=0)
+       ax.set_ylabel("Density")
+       ax.set_xlabel("Value")
+    
     plt.tight_layout()
-    fig.savefig(diag_dir / "posteriors.pdf", bbox_inches="tight")
+    plt.savefig(diag_dir / "posteriors.pdf")
     plt.close(fig)
-    matplotlib.rcParams.update({"font.size": 12})
-
+    
     # 7) Per-subject parameter CSV
     #    we assume your RL model stored subj-indexed draws under e.g. idata.posterior["a_subj"]
     subj_params = []
