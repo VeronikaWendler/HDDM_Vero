@@ -28,6 +28,9 @@ from joblib import Parallel, delayed
 import time
 import arviz as az
 from joblib import Parallel, delayed
+import cloudpickle, dill
+cloudpickle.dump = dill.dump
+
 
 # -------------------------------------------------------------------------
 # patch: make a dummy _gdbm module so “import _gdbm” never fails
