@@ -850,7 +850,7 @@ def drift_diffusion_hddmRL(data,
     if run:
         if parallel:
             start_time = time.time()
-            results = Parallel(n_jobs=n_jobs, backend='threading')(
+            results = Parallel(n_jobs=n_jobs)(
                 delayed(run_model)(
                     trace_id=trace_id,
                     data=data,

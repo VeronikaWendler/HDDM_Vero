@@ -1134,7 +1134,167 @@ def run_version_14():
         os.path.join(MODELS_DIR, "garcia_replication_ES_14_0.pkl"),
         ]
 
-   
+    models_OV = []
+    for path in model_paths_OV:
+        with open(path, "rb") as f:
+            models_OV.append(pickle.load(f))
+            
+    combinedModels_OV = kabuki.utils.concat_models(models_OV)
+    
+    # summary stats for relevant nodes:
+    stats_summary_OV = combinedModels_OV.gen_stats()
+    print(stats_summary_OV[stats_summary_OV.index.isin([
+        'a',
+        't',
+        'v_Intercept',
+        'v_AttentionW',
+        'v_InattentionW:C(OVcate)[low]',
+        'v_InattentionW:C(OVcate)[medium]',
+        'v_InattentionW:C(OVcate)[high]',
+        'z(0)',
+        'z(1)',
+    ])])
+    print("DIC (OV):", combinedModels_OV.dic)            # some diagnostics
+    print("BPIC (OV):", combinedModels_OV.mc.BPIC)
+    
+    # nodes for OV:
+    a_OV     = combinedModels_OV.nodes_db.node['a']
+    t_OV     = combinedModels_OV.nodes_db.node['t']
+    inter_OV = combinedModels_OV.nodes_db.node['v_Intercept']
+    vA_OV    = combinedModels_OV.nodes_db.node['v_AttentionW']
+    vIA_low  = combinedModels_OV.nodes_db.node['v_InattentionW:C(OVcate)[low]']
+    vIA_med  = combinedModels_OV.nodes_db.node['v_InattentionW:C(OVcate)[medium]']
+    vIA_high = combinedModels_OV.nodes_db.node['v_InattentionW:C(OVcate)[high]']
+    z0_OV    = combinedModels_OV.nodes_db.node['z(0)']
+    z1_OV    = combinedModels_OV.nodes_db.node['z(1)']
+    
+    # Group-level Table for OV (theta = b2 / b1 per OV level)
+    theta_low  = vIA_low.trace() / vA_OV.trace()
+    theta_med  = vIA_med.trace() / vA_OV.trace()
+    theta_high = vIA_high.trace() / vA_OV.trace()
+
+    group_params_OV = {
+        "a": a_OV.trace(),
+        "t": t_OV.trace(),
+        "v_Intercept": inter_OV.trace(),
+        "v_AttentionW": vA_OV.trace(),
+        "v_InattentionW:C(OVcate)[low]": vIA_low.trace(),
+        "v_InattentionW:C(OVcate)[medium]": vIA_med.trace(),
+        "v_InattentionW:C(OVcate)[high]": vIA_high.trace(),
+        "theta(low)": theta_low,
+        "theta(medium)": theta_med,
+        "theta(high)": theta_high,
+        "z(0)": z0_OV.trace(),
+        "z(1)": z1_OV.trace(),
+    }
+
+    group_results_OV = {"Parameter": [], "MAP": [], "HDI_lower": [], "HDI_upper": []}
+    for name, trace in group_params_OV.items():
+        group_results_OV["Parameter"].append(name)
+        group_results_OV["MAP"].append(trace.mean())
+        group_results_OV["HDI_lower"].append(stats.mstats.mquantiles(trace, [0.025])[0])
+        group_results_OV["HDI_upper"].append(stats.mstats.mquantiles(trace, [0.975])[0])
+    
+    df_group_OV = pd.DataFrame(group_results_OV)
+    FIG_DIR = os.path.join(PROJECT_DIR, "figures_dir_garcia", "garcia_replication_ES_14")
+    os.makedirs(FIG_DIR, exist_ok=True)
+    
+    df_group_OV.to_csv(
+        os.path.join(FIG_DIR, "group_level_MAP_table_ES_garcia_m14.csv"),index=False)
+    print("group-level parameter estimates:")
+    print(df_group_OV)
+    
+    #Combined Parameter Comparison Table
+    def format_estimate(trace):
+        m = trace.mean()
+        l = stats.mstats.mquantiles(trace, [0.025])[0]
+        u = stats.mstats.mquantiles(trace, [0.975])[0]
+        return f"{m:.3f} [{l:.3f}, {u:.3f}]"
+    
+    def format_diff(diff_trace):
+        m = diff_trace.mean()
+        l = stats.mstats.mquantiles(diff_trace, [0.025])[0]
+        u = stats.mstats.mquantiles(diff_trace, [0.975])[0]
+        return f"{m:.3f} [{l:.3f}, {u:.3f}]"
+    
+    # get theta for each category: theta = v_InattentionW / v_AttentionW
+    theta_low  = vIA_low.trace() / vA_OV.trace()
+    theta_med  = vIA_med.trace() / vA_OV.trace()
+    theta_high = vIA_high.trace() / vA_OV.trace()
+    
+    rows_OV = []
+    # (group-level from t)  this obviously depends on which model you are running (4 = a varies by OV, 5 = t varies by OV - code below would need to be adjusted)
+    rows_OV.append({
+        "Parameter": "a",
+        "Group-level": format_estimate(a_OV.trace()),
+        "Med-Low": "",
+        "High-Low": "",
+        "High-Med": ""
+    })
+    # a differences across OVcate:
+    rows_OV.append({
+        "Parameter": "t",
+        "Group-level": format_estimate(t_OV.trace()),
+        "Med-Low": "",
+        "High-Low": "",
+        "High-Med": ""
+    })
+    # θ differences across OVcate:
+    rows_OV.append({
+        "Parameter": "θ",
+        "Group-level": "",
+        "Med-Low": format_diff(theta_med - theta_low),
+        "High-Low": format_diff(theta_high - theta_low),
+        "High-Med": format_diff(theta_high - theta_med)
+    })
+    # b0 and b1 (group-level):
+    rows_OV.append({
+        "Parameter": "b0",
+        "Group-level": format_estimate(inter_OV.trace()),
+        "Med-Low": "",
+        "High-Low": "",
+        "High-Med": ""
+    })
+    rows_OV.append({
+        "Parameter": "b1",
+        "Group-level": format_estimate(vA_OV.trace()),
+        "Med-Low": "",
+        "High-Low": "",
+        "High-Med": ""
+    })
+    # b2: differences in v_InattentionW across OVcate:
+    rows_OV.append({
+        "Parameter": "b2",
+        "Group-level": "",
+        "Med-Low": format_diff(vIA_med.trace() - vIA_low.trace()),
+        "High-Low": format_diff(vIA_high.trace() - vIA_low.trace()),
+        "High-Med": format_diff(vIA_high.trace() - vIA_med.trace())
+    })
+    
+    rows_OV.append({
+        "Parameter": "z",
+        "Group-level": "",
+        "Stim zS-zE": format_diff(z0_OV.trace() - z1_OV.trace()),
+    })
+    
+    df_combined_OV = pd.DataFrame(rows_OV, columns=["Parameter", "Group-level", "Med-Low", "High-Low", "High-Med", "Stim zS-zE"])
+    df_combined_OV.to_csv(os.path.join(FIG_DIR, "combined_parameter_comparison_table_ES_garcia_m5.csv"),index=False)
+    print("OV Combined Parameter Comparison Table:")
+    print(df_combined_OV)
+
+def run_version_35():
+    #---------------------------------------------------------------------------------------------------------------
+    # Version 1: OV-modulated models (high, medium, low)
+    # load and combine OV model files (set which model)
+    MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_garcia")
+    model_paths_OV = [
+        os.path.join(MODELS_DIR, "garcia_replication_ES_35_2.pkl"),
+        os.path.join(MODELS_DIR, "garcia_replication_ES_35_1.pkl"),
+        os.path.join(MODELS_DIR, "garcia_replication_ES_35_0.pkl"),
+        ]
+        elif version == 34:
+            v_reg = {'model': 'v ~ 1 + z_AttentionW:C(OVcate) + z_IAW_chart + z_IAW_image', 'link_func': lambda x: x}
+            a_reg = {'model': 'a ~ 1 + OVcate', 'link_func': lambda x: x}
 
     models_OV = []
     for path in model_paths_OV:
@@ -1283,7 +1443,7 @@ def run_version_14():
     df_combined_OV.to_csv(os.path.join(FIG_DIR, "combined_parameter_comparison_table_ES_garcia_m5.csv"),index=False)
     print("OV Combined Parameter Comparison Table:")
     print(df_combined_OV)
-    
+      
 ################################### for LEESEE phase differences ##############################################################################
 ################################### for LEESEE phase differences ##############################################################################
 
@@ -1518,4 +1678,6 @@ if __name__ == "__main__":
         run_version_2_b()
     elif version == 23:
         run_version_14()
+    elif version == 35:
+        run_version_35()
     
