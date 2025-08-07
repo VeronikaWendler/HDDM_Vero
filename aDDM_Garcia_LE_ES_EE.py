@@ -2897,8 +2897,8 @@ def analyze_rl(infdatas, fig_dir, version):
     summary.to_csv(diag_dir / "results.csv")
 
     # 6) Posterior‐trace + KDE plots (one PDF each)
-    var_names = ["a", "t", "v", "alpha"]
-    titles = ["a", "t", "v", "alpha"]
+    var_names = ["alpha"]
+    titles = ["alpha"]
     # Trace
     az.plot_trace(idata, var_names=var_names)
     plt.tight_layout()
