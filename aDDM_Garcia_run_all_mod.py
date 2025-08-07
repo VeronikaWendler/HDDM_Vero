@@ -1934,19 +1934,19 @@ if __name__ == "__main__":
             fig_dir = FIG_DIR_ROOT / full_model_name
             ensure_dir(fig_dir / "diagnostics")
 
-            # run hddm function ------------------------------------------
-            drift_diffusion_hddm(
-                data=data,
-                samples=nr_samples,
-                n_jobs=nr_models,
-                run=RUN_ALL_MODELS,
-                parallel=parallel,
-                model_name=full_model_name,
-                model_dir=BASE_MODEL_DIR,        
-                version=version,
-                phase=phase,
-                accuracy_coding=True
-            )
+            # # run hddm function ------------------------------------------
+            # drift_diffusion_hddm(
+            #     data=data,
+            #     samples=nr_samples,
+            #     n_jobs=nr_models,
+            #     run=RUN_ALL_MODELS,
+            #     parallel=parallel,
+            #     model_name=full_model_name,
+            #     model_dir=BASE_MODEL_DIR,        
+            #     version=version,
+            #     phase=phase,
+            #     accuracy_coding=True
+            # )
             drift_diffusion_hddmRL(
                 data=data,
                 samples=nr_samples,
