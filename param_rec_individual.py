@@ -156,19 +156,19 @@ def refit_and_get_means(sim_df, seed):
     means = {p: mdl.nodes_db.loc[p, 'node'].trace().mean() for p in PARAM_LIST}
     return means
 
+
 def extract_individual_means(mdl):
-    """Posterior mean for subject-specific intercepts only."""
+    """Posterior mean for all subject-specific parameters estimated by HDDM."""
     out = {}
     for node in mdl.nodes_db.index:
         if "_subj." not in node:
             continue
         param, subj_str = node.split("_subj.")
-        # keep *only* intercepts (and t)
-        if param not in ("v_Intercept", "a_Intercept", "t"):
-            continue
-        subj = int(subj_str)
-        out[(subj, param)] = mdl.nodes_db.loc[node, 'node'].trace().mean()
+        # keep only params we simulated (defensive)
+        if param in PARAM_LIST:
+            out[(int(subj_str), param)] = mdl.nodes_db.loc[node, 'node'].trace().mean()
     return out
+
 # -----------------------------------------------------------------------
 
 # load empirical fit & predictors
