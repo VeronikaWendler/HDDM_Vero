@@ -12,7 +12,6 @@ import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm.auto import trange
-export MPLCONFIGDIR=/tmp/mplcache
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
