@@ -28,8 +28,8 @@ EMPIRICAL_POST_PATHS = [
 ]
 
 N_REPS    = 5        # as in the paper
-N_SAMPLES = 2000
-BURN      = 200
+N_SAMPLES = 700
+BURN      = 100
 
 # group-level parameters (means)
 PARAM_LIST = [
