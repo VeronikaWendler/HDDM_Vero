@@ -8,10 +8,18 @@
 
 # I still don't understand the theta values for InattWImage (0.8) and InattWCHart (1.2), ok so, when image has a lower EV, gaze is still indictive of choice, people are not so svayed by the image having a lower EV, 
 # but crazy things happen  when the chart has a lower EV  - then, theta is t ca 1.2 (even higher) 
-# so that probably means people don't just then automatically look at the image longer and chose it, 
+# so that probably means people don't just automatically look at the image longer and chose it, 
 # rather, according to the addm 2 things are possible, either they look extra long at the image and chose chart (aligend with empirical pattern)
 #  
 
 ## memory - less gaze 
 ## chart - extensive gaze 
+
+
+
+# v = balanced gaze when E is chosen + imbalanced gaze when S is chosen 
+# v = E is chosen in fast trials + S chosen in slow trials 
+# check whether fast = aligned with AttentionW vs slow aligned with InattW (also in OV study)
+# first fixation always on E (70 %) 
+# check code again - does hddm exclude trials with only 1 fix or nah (keep 1 fix trials)
 

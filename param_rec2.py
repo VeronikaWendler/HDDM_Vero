@@ -12,6 +12,7 @@ import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm.auto import trange
+export MPLCONFIGDIR=/tmp/mplcache
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -157,15 +158,18 @@ def refit_and_get_means(sim_df, seed):
     return means
 
 def extract_individual_means(mdl):
-    """Grab each subj's posterior mean for 'v','a','t' (intercepts)."""
+    """Posterior mean for subject-specific intercepts only."""
     out = {}
     for node in mdl.nodes_db.index:
-        if "_subj." in node:
-            param, rest = node.split("_subj.")
-            subj = int(rest)
-            out[(subj, param)] = mdl.nodes_db.loc[node, 'node'].trace().mean()
+        if "_subj." not in node:
+            continue
+        param, subj_str = node.split("_subj.")
+        # keep *only* intercepts (and t)
+        if param not in ("v_Intercept", "a_Intercept", "t"):
+            continue
+        subj = int(subj_str)
+        out[(subj, param)] = mdl.nodes_db.loc[node, 'node'].trace().mean()
     return out
-
 # -----------------------------------------------------------------------
 
 # load empirical fit & predictors
@@ -184,48 +188,38 @@ GROUP_PARTIAL_CSV = FIG_DIR / "partial_group.csv"
 INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual.csv"
 TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws.csv"  ### NEW
 
-# main loop
 for rep in trange(N_REPS, desc="parameter-recovery", unit="rep"):
-    mu = extract_group_sample(empirical, seed=rep)
-    sd = extract_group_sd(empirical, seed=rep+999)
+    try:
+        mu = extract_group_sample(empirical, seed=rep)
+        sd = extract_group_sd(empirical, seed=rep+999)
 
-    # draw per-subject parameters
-    true_individuals = sample_true_subjects(mu, sd, subjects, seed=42+rep)
+        true_individuals = sample_true_subjects(mu, sd, subjects, seed=42+rep)
+        true_draw_records.extend(flatten_true_subjects(true_individuals, rep))
+        atomic_to_csv(pd.DataFrame(true_draw_records), TRUE_PARTIAL_CSV)  # save ASAP
 
-    # log the true per-subject draws for this rep (so you can always reconstruct)
-    true_draw_records.extend(flatten_true_subjects(true_individuals, rep))  ### NEW
+        sim_df = simulate_dataset(true_individuals, raw_df)
 
-    # simulate with per-subject parameters
-    sim_df = simulate_dataset(true_individuals, raw_df)
+        θ_hat_group = refit_and_get_means(sim_df, seed=10_000 + rep)
+        for p in PARAM_LIST:
+            group_records.append(dict(rep=rep, parameter=p, true=mu[p], recovered=θ_hat_group[p]))
 
-    # --- group-level recovery (as before)
-    θ_hat_group = refit_and_get_means(sim_df, seed=10_000 + rep)
-    for p in PARAM_LIST:
-        group_records.append(dict(rep=rep, parameter=p, true=mu[p], recovered=θ_hat_group[p]))
+        np.random.seed(20_000 + rep)
+        mdl = hddm.HDDMRegressor(sim_df, reg_descr, include=["a","t","v"],
+                                 p_outlier=0.05, keep_regressor_trace=True,
+                                 group_only_regressors=False)
+        mdl.find_starting_values()
+        mdl.sample(N_SAMPLES, burn=BURN, db='ram', dbname=f'indiv_{rep}')
 
-    # --- individual-level recovery (means only)
-    np.random.seed(20_000 + rep)
-    mdl = hddm.HDDMRegressor(
-        sim_df, reg_descr,
-        include=["a","t","v"],
-        p_outlier=0.05,
-        keep_regressor_trace=True,
-        group_only_regressors=False,
-    )
-    mdl.find_starting_values()
-    mdl.sample(N_SAMPLES, burn=BURN, db='ram', dbname=f'indiv_{rep}')
+        indiv_means = extract_individual_means(mdl)
+        for (subj, param), rec_val in indiv_means.items():
+            true_val = true_individuals[subj][param]
+            indiv_records.append(dict(rep=rep, subj=subj, parameter=param,
+                                      true=true_val, recovered=rec_val))
+    finally:
+        # always write what we have so far
+        atomic_to_csv(pd.DataFrame(group_records), GROUP_PARTIAL_CSV)
+        atomic_to_csv(pd.DataFrame(indiv_records), INDIV_PARTIAL_CSV)
 
-    indiv_means = extract_individual_means(mdl)
-    TRUE_KEY = {"v": "v_Intercept", "a": "a_Intercept", "t": "t"}
-    for (subj, param), rec_val in indiv_means.items():
-        true_val = true_individuals[subj][TRUE_KEY[param]]
-        indiv_records.append(dict(rep=rep, subj=subj, parameter=param,
-                                  true=true_val, recovered=rec_val))
-
-    # ---------- NEW: partial saves after every rep ----------
-    atomic_to_csv(pd.DataFrame(group_records), GROUP_PARTIAL_CSV)
-    atomic_to_csv(pd.DataFrame(indiv_records), INDIV_PARTIAL_CSV)
-    atomic_to_csv(pd.DataFrame(true_draw_records), TRUE_PARTIAL_CSV)
 
 # final CSVs
 pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group.csv", index=False)
