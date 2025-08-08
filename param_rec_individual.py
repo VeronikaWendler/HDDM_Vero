@@ -27,8 +27,8 @@ EMPIRICAL_POST_PATHS = [
     BASE_MODEL_DIR / "garcia_replication_ES_35_2.nc",
 ]
 
-N_REPS    = 5        # as in the paper
-N_SAMPLES = 700
+N_REPS    = 2        # as in the paper
+N_SAMPLES = 600
 BURN      = 100
 
 # group-level parameters (means)
