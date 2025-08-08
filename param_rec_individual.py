@@ -183,9 +183,9 @@ indiv_records = []
 true_draw_records = []  ### NEW: keep a running log of per-subject "true" draws
 
 # paths for partial saves
-GROUP_PARTIAL_CSV = FIG_DIR / "partial_group.csv"
-INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual.csv"
-TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws.csv"  ### NEW
+GROUP_PARTIAL_CSV = FIG_DIR / "partial_group2.csv"
+INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual2.csv"
+TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws2.csv"  ### NEW
 
 for rep in trange(N_REPS, desc="parameter-recovery", unit="rep"):
     try:
@@ -221,9 +221,9 @@ for rep in trange(N_REPS, desc="parameter-recovery", unit="rep"):
 
 
 # final CSVs
-pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group.csv", index=False)
-pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual.csv", index=False)
-pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all.csv", index=False)  ### NEW
+pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group2.csv", index=False)
+pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual2.csv", index=False)
+pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all2.csv", index=False)  ### NEW
 
 # ---------- plotting ----------
 sns.set_style("white")
@@ -239,7 +239,7 @@ for ax in g.axes.ravel():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
 g.set_axis_labels("true value", "posterior mean (recovered)")
 g.tight_layout()
-g.savefig(FIG_DIR/"scatter_group.png", dpi=300)
+g.savefig(FIG_DIR/"scatter_group2.png", dpi=300)
 
 # individual plot (means only, all reps & subs)
 ind = pd.DataFrame(indiv_records)
@@ -252,6 +252,6 @@ for ax in h.axes.ravel():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
 h.set_axis_labels("true value", "posterior mean (recovered)")
 h.tight_layout()
-h.savefig(FIG_DIR/"scatter_individual.png", dpi=300)
+h.savefig(FIG_DIR/"scatter_individual.png2", dpi=300)
 
 print("Done.")
