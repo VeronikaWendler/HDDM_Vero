@@ -7,7 +7,6 @@ import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats as st
-warnings.filterwarnings("ignore", category=FutureWarning)
 
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 FIG_DIR     = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_35/recovery_m35"
