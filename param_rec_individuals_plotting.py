@@ -82,6 +82,7 @@ def facet_scatter(data, **k):
 
 g = sns.FacetGrid(df, col="parameter", col_order=params, col_wrap=col_wrap,
                   sharex=False, sharey=False, height=3.1, despine=True)
+g.set_titles("{col_name}")
 g.map_dataframe(facet_scatter)
 g.figure.subplots_adjust(top=0.92)
 g.figure.suptitle("Individual-level parameter recovery (R², p, RMSE)")
