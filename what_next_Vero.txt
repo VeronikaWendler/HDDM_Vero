@@ -18,8 +18,13 @@
 
 
 # v = balanced gaze when E is chosen + imbalanced gaze when S is chosen 
+#the problemm is that the addm is a sequential model which means that I need soemthing that evloves during the trial (choice shouldn't have been made yet)
+# sucks - but the idea (once again) could go in the direction of a dual dirft rate model - I split v into trials that 
+
 # v = E is chosen in fast trials + S chosen in slow trials 
 # check whether fast = aligned with AttentionW vs slow aligned with InattW (also in OV study)
 # first fixation always on E (70 %) 
 # check code again - does hddm exclude trials with only 1 fix or nah (keep 1 fix trials)
 
+# check R again - in trials where E was chosen how was gaze distributed & same in trials where S was chosen
+# attentional weight - earaly trials - inattentional weight late trials 

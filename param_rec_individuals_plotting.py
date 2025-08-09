@@ -12,9 +12,9 @@ from scipy import stats as st
 # ---------- paths ----------
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 FIG_DIR     = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_35/recovery_m35"
-IN_CSV      = FIG_DIR / "true_vs_recovered_individual.csv"
-OUT_PNG     = FIG_DIR / "scatter_individual_ALL_params.png"
-OUT_STATS   = FIG_DIR / "scatter_individual_ALL_params_stats.csv"
+IN_CSV      = FIG_DIR / "partial_individual2.csv"
+OUT_PNG     = FIG_DIR / "scatter_individual_ALL_params_6REP.png"
+OUT_STATS   = FIG_DIR / "scatter_individual_ALL_params_stats_6REP.csv"
 
 # ---------- load ----------
 df = pd.read_csv(IN_CSV).replace([np.inf, -np.inf], np.nan)
