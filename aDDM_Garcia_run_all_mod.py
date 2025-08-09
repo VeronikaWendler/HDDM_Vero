@@ -754,10 +754,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=100
     
     elif phase == 'LE_RL':
         if version == 0:
-            m = hddm.models.HDDMrl(data)
+            m = hddm.models.HDDMrl(data, include=['a', 't', 'v', 'alpha'])
             m.find_starting_values()
             infdata = m.sample(samples,
-                               burn=100,
+                               burn=300,
                                dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                                db='pickle',
                                return_infdata=True, loglike=True, ppc=False)
@@ -867,7 +867,7 @@ from joblib import Parallel, delayed
 
 def drift_diffusion_hddmRL(
     data,
-    samples=600,
+    samples=2000,
     n_jobs=3,
     run=True,
     parallel=True,

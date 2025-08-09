@@ -25,5 +25,5 @@ export MPLBACKEND=Agg
 singularity exec \
     --bind ${PROJECT}:/workspace \
     ${IMAGE} \
-    python /workspace/param_rec_individuals_plotting.py
+    python /workspace/aDDM_Garcia_run_all_mod.py
 
