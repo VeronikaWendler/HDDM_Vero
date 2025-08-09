@@ -60,6 +60,8 @@ def _extract_all_subject_params(df, central="mean"):
 def inv_logit(x):
     return np.exp(x) / (1 + np.exp(x))
 
+
+
 def plot_alpha_correlations(
     rl_results_csv,
     model35_results_csv,
@@ -118,22 +120,36 @@ def plot_alpha_correlations(
             r2 = r**2
 
             # Simple OLS line for plotting
+            n = len(common)
             b1, b0 = np.polyfit(x, y, 1)
             x_line = np.linspace(x.min(), x.max(), 100)
             y_line = b1 * x_line + b0
-
-            # Plot
+            
+            # Calculate 95% CI for regression line
+            y_pred = b1 * x + b0
+            resid = y - y_pred
+            s_err = np.sqrt(np.sum(resid**2) / (n - 2))
+            t_val = stats.t.ppf(0.975, df=n - 2)
+            
+            ci = t_val * s_err * np.sqrt(
+                1/n + (x_line - np.mean(x))**2 / np.sum((x - np.mean(x))**2)
+            )
+            y_line_lower = y_line - ci
+            y_line_upper = y_line + ci
+            
+            # --- Plot ---
             fig, ax = plt.subplots(figsize=(5, 4))
             ax.scatter(x, y)
-            ax.plot(x_line, y_line)
+            ax.plot(x_line, y_line, color="blue")
+            ax.fill_between(x_line, y_line_lower, y_line_upper, color="blue", alpha=0.2)  # CI shading
             ax.set_xlabel("α (learning rate)")
             ax.set_ylabel(base_name)
             ax.set_title(base_name)
-            ax.text(0.02, 0.98, f"R² = {r2:.3f}\np = {p:.3g}\nN = {len(common)}",
+            ax.text(0.02, 0.98, f"R² = {r2:.3f}\np = {p:.3g}\nN = {n}",
                     transform=ax.transAxes, va="top", ha="left")
             pdf.savefig(fig, bbox_inches="tight")
             plt.close(fig)
-
+            
             rows.append({
                 "parameter": base_name,
                 "n": len(common),
