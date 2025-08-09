@@ -149,10 +149,10 @@ def plot_alpha_correlations(
     print(f"Saved: {out_csv}")
 
 # Files
-rl_results_csv = (RL1_DIAG / "results.csv").as_posix()
+rl_results_csv = (RL1_DIAG / "results_alpha_transformed.csv").as_posix()
 model35_results_csv = (M35_DIAG / "results.csv").as_posix()
-out_pdf = (OUT_DIR / "alpha_param_correlations.pdf").as_posix()
-out_csv = (OUT_DIR / "alpha_param_correlations_summary.csv").as_posix()
+out_pdf = (OUT_DIR / "alpha_param_correlations_trans.pdf").as_posix()
+out_csv = (OUT_DIR / "alpha_param_correlations_summary_trans.csv").as_posix()
 
 # Run the correlation plotting
 plot_alpha_correlations(
