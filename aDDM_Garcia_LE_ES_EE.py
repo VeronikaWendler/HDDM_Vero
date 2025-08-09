@@ -265,6 +265,23 @@ def _sanitize_filename(fname):
     safe = re.sub(r'_+', '_', safe)
     return safe
 
+def _inv_logit(x):
+    return 1.0 / (1.0 + np.exp(-x))
+
+def _summ_from_samples(arr_1d):
+    arr = np.asarray(arr_1d).ravel()
+    qs = np.percentile(arr, [2.5, 25, 50, 75, 97.5])
+    return {
+        "mean": float(np.mean(arr)),
+        "std":  float(np.std(arr, ddof=1)),
+        "2.5q": qs[0],
+        "25q":  qs[1],
+        "50q":  qs[2],
+        "75q":  qs[3],
+        "97.5q":qs[4],
+    }
+
+
 
 fig_dir = FIG_DIR_ROOT / f"{model_base_name}{model_name}"
 ensure_dir(fig_dir / "diagnostics")
@@ -2910,6 +2927,74 @@ def analyze_rl(infdatas, fig_dir, version):
     # 5) Summary stats table
     summary = az.summary(idata)
     summary.to_csv(diag_dir / "results.csv")
+
+    # Collect posterior arrays
+    if "alpha" not in idata.posterior.data_vars:
+        print("[alpha-transform] No 'alpha' in posterior; skipping transformed CSV.")
+        return
+
+    # 1) Transform group-level alpha
+    alpha_draws = idata.posterior["alpha"].values.reshape(-1)  # (chains*draws,)
+    alpha_prob  = _inv_logit(alpha_draws)
+    alpha_summ  = _summ_from_samples(alpha_prob)
+
+    # 2) Transform subject-level alphas (if present)
+    subj_vars = [v for v in idata.posterior.data_vars if v.startswith("alpha_subj.")]
+    subj_summ_rows = {}
+    subj_prob_matrix = []  # will become shape (n_draws, n_subj) for SD on prob-scale
+
+    if subj_vars:
+        # build matrix: columns = subjects, rows = draws (all chains collapsed)
+        for v in sorted(subj_vars, key=lambda x: int(x.split("alpha_subj.")[-1])):
+            arr = idata.posterior[v].values.reshape(-1)
+            arr_prob = _inv_logit(arr)
+            subj_prob_matrix.append(arr_prob)
+            subj_summ_rows[v] = _summ_from_samples(arr_prob)
+
+        subj_prob_matrix = np.vstack(subj_prob_matrix).T  # (draws, subj)
+        # group SD on probability scale, computed correctly across subjects per draw
+        sd_draws = np.std(subj_prob_matrix, axis=1, ddof=1)
+        alpha_std_summ = _summ_from_samples(sd_draws)
+    else:
+        alpha_std_summ = None
+
+    # 3) Make a transformed copy of the ArviZ summary and replace alpha rows
+    summary_t = summary.copy()
+
+    # Replace group alpha row (if present)
+    if "alpha" in summary_t.index:
+        for k, v in alpha_summ.items():
+            summary_t.loc["alpha", k] = v
+
+    # Replace alpha_std row (if present & we could compute it)
+    if ("alpha_std" in summary_t.index) and (alpha_std_summ is not None):
+        for k, v in alpha_std_summ.items():
+            summary_t.loc["alpha_std", k] = v
+
+    # Replace subject rows
+    for v, stats in subj_summ_rows.items():
+        if v in summary_t.index:
+            for k, val in stats.items():
+                summary_t.loc[v, k] = val
+
+    # 4) Save the transformed results next to the original
+    out_csv = diag_dir / "results_alpha_transformed.csv"
+    summary_t.to_csv(out_csv)
+
+    # 5) Also write per-subject means (prob. scale) for convenience
+    if subj_vars:
+        means = []
+        for v in sorted(subj_vars, key=lambda x: int(x.split("alpha_subj.")[-1])):
+            arr = idata.posterior[v].values.reshape(-1)
+            arr_prob = _inv_logit(arr)
+            means.append({"param": v, "mean_prob": float(np.mean(arr_prob))})
+        pd.DataFrame(means).to_csv(diag_dir / "params_of_interest_s_alpha_transformed.csv", index=False)
+
+    print(f"[alpha-transform] Wrote:\n  - {out_csv}")
+    if subj_vars:
+        print(f"  - {diag_dir / 'params_of_interest_s_alpha_transformed.csv'}")
+
+
 
     # 6) Posterior‐trace + KDE plots (one PDF each)
     var_names = ["alpha"]
