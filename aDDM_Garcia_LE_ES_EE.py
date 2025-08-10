@@ -139,7 +139,7 @@ model_name = model_versions[phase][version]
 #data_path1 = os.path.join(current_directory, 'data_sets/data_sets_Garcia', 'GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv')
 #data = pd.read_csv(data_path1, sep=',')
 
-data = pd.read_csv((PROJECT_DIR / "data_sets"  / "combined_Garcia_OV.csv").as_posix(), sep=",")
+data = pd.read_csv((PROJECT_DIR / "data_sets"  / "data_sets_Garcia/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix(), sep=",")
 
 source_phase = PHASE_TO_SOURCE.get(phase, phase)   #assignes ES_ZBIAS
 
@@ -2145,7 +2145,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'a_Intercept',
                 'a_OV low',
                 'a_OV medium']  
-        elif phase == 42:
+        elif version == 42:
             params_of_interest = [
                 't',
                 'v_Intercept',
