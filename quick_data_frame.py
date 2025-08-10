@@ -105,6 +105,7 @@ data['gaze_quad']= data['DwellPropAdvantage'] ** 2             # (Prop_S – Pro
 data["gaze_bal"]   = 1 - data["DwellPropAdvantage"]**2     # penalty (1 at centre, 0 at extremes)
 data["val_bal_int"] = data["val_diff"] * data["gaze_bal"]  # interaction that drives drift
 
+# new predictors (let's not compute quadratic - easier)
 
 
 # -----------------------------------------------------------------
@@ -131,6 +132,37 @@ data['IAW_chart'] = data['IAW_chart'].round(3)
 data['IAW_image'] = data['IAW_image'].round(3)
 
 
+# #---------- Early vs Late --------------------------------------------
+# data["early"] = reaction time lower than mean  as type int
+# data["late"] = rection time higher than mean  as tpye int
+
+# data["AttentionW_early"] = data["AttentionW"] * data["early"]
+# data["AttentionW_late"] = data["AttentionW"] * data["late"]
+# data["InattentionW_early"] = data["InattentionW"] * data["early"]
+# data["InattentionW_late"] = data["InattentionW"] * data["late"]
+
+# # R rule: threshold_rt <- mean(rtime)/2
+# threshold_rt = data["rtime"].mean(skipna=True) / 2.0
+
+# # dummies as requested (ints)
+# data['early'] = (data["rtime"] <= threshold_rt).astype(int)
+# data['late']  = (data["rtime"] >  threshold_rt).astype(int)
+
+# # handy label for plotting/checks
+# data['RT_group'] = np.where(data['early'] == 1, 'early', 'late')
+
+# # --- build the four interaction-coded drift predictors for HDDM
+# # assumes you already created AttentionW and InattentionW above
+# data['AttentionW_early']   = data['AttentionW']   * data['early']
+# data['AttentionW_late']    = data['AttentionW']   * data['late']
+# data['InattentionW_early'] = data['InattentionW'] * data['early']
+# data['InattentionW_late']  = data['InattentionW'] * data['late']
+
+
+
+# in hddm v = b0 + b1*AttentionW_early + b2*InattentionW_early + AttentionW_late* InattentionW_late
+
+
 
 #regressors
 data['val_diff_corr'] = data['V_corr'] - data['V_sub']
@@ -140,6 +172,14 @@ data['val_diff_corr'] = data['V_corr'] - data['V_sub']
 data['w'] = 1 - data['DwellPropAdvantageCorrect']**2  
 data['w_dv'] = data['w'] * data['val_diff_corr']   # --> in a second model this could also interact with OV
 data['absDPAC']= np.abs(data['DwellPropAdvantageCorrect'])
+
+
+
+data["abs_DwellPropAdvCorr"] = data["DwellPropAdvantageCorrect"].abs()   # is large when the difference between correct and incorrect is large
+data["balance"] = 1 - data["abs_DwellPropAdvCorr"]  # is close to 1 when gaze is balanced (linear)
+
+# v = b0 + b1*abs_DwellPropAdvCorr + b2*balance:C(OVcate)
+# a = 
 
 # ---------- choose which columns to standardise --------------
 to_z = ['AttentionW',            # symmetric, continuous
@@ -152,7 +192,10 @@ to_z = ['AttentionW',            # symmetric, continuous
         'val_diff_corr',
         'w_dv',
         'w',
-        'absDPAC']              # etc. add more if needed
+        'absDPAC',
+        'abs_DwellPropAdvCorr',
+        'balance', 'DwellPropAdvantageCorrect',
+        ]              # etc. add more if needed
 
 # ---------------------------------------------
 # z-score, then round to 3 decimals (example)

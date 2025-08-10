@@ -28,3 +28,11 @@
 
 # check R again - in trials where E was chosen how was gaze distributed & same in trials where S was chosen
 # attentional weight - earaly trials - inattentional weight late trials 
+
+# vremmembered & vforgotten
+# vearly (choice more aligned with gaze)  & vlate (choice less aligned with gaze)
+# the u shape is primarily driven by one-sided fixations
+
+
+# yeah nah, none of this works - final idea: split by poor vs good learners and do early/late + low/high EV splits that could help
+
