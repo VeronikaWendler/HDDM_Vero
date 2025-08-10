@@ -36,3 +36,7 @@
 
 # yeah nah, none of this works - final idea: split by poor vs good learners and do early/late + low/high EV splits that could help
 
+# no all shit
+
+# next (and final idea) 
+# split based on whether first fix was E or not   .....same analysis plots
