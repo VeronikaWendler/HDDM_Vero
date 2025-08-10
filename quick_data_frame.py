@@ -181,6 +181,17 @@ data["balance"] = 1 - data["abs_DwellPropAdvCorr"]  # is close to 1 when gaze is
 # v = b0 + b1*abs_DwellPropAdvCorr + b2*balance:C(OVcate)
 # a = 
 
+# v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2 ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ϵ
+
+
+
+# “gated aDDM”: scale evidence by gaze balance
+
+data['AW_bal']  = data['AttentionW']   * data['balance']
+data['IAW_bal'] = data['InattentionW'] * data['balance']
+
+
+
 # ---------- choose which columns to standardise --------------
 to_z = ['AttentionW',            # symmetric, continuous
         'InattentionW',          # symmetric, continuous
@@ -195,6 +206,7 @@ to_z = ['AttentionW',            # symmetric, continuous
         'absDPAC',
         'abs_DwellPropAdvCorr',
         'balance', 'DwellPropAdvantageCorrect',
+        "AW_bal","IAW_bal"
         ]              # etc. add more if needed
 
 # ---------------------------------------------

@@ -122,7 +122,7 @@ def make_z_link(full_stimulus_vector):
 ##
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
-nr_samples      = 1500       # samples per chain - do 11000 but for now for a quick one we do 600
+nr_samples      = 800       # samples per chain - do 11000 but for now for a quick one we do 600
 parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
@@ -131,7 +131,7 @@ model_versions  = {
                 "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", 
                 "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", 
                 "ES_27", "ES_28", "ES_29", "ES_30", "ES_31", "ES_32",
-                "ES_33","ES_34","ES_35","ES_36","ES_37","ES_38","ES_39","ES_40","ES_41", "ES_42", 'ES_43'],
+                "ES_33","ES_34","ES_35","ES_36","ES_37","ES_38","ES_39","ES_40","ES_41", "ES_42", 'ES_43', 'ES_44'],
     
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
@@ -156,7 +156,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 42
+start_version = 43
 started = False
 
 # dir
@@ -219,7 +219,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=1500, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=800, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -458,6 +458,12 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=150
             v_reg = {'model': 'v ~ 1 + z_DwellPropAdvantageCorrect + z_balance:C(OVcate)','link_func': lambda x: x }  
             a_reg = {'model': 'a ~ 1 + z_balance:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg, a_reg]
+        elif version == 43:
+            v_reg = {'model': 'v ~ 1 + z_AW_bal:C(OVcate) + z_IAW_bal', 'link_func': lambda x: x}
+            a_reg = {'model': 'a ~ 1 + z_balance:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg, a_reg]
+
+
         else:
             raise ValueError(f"check version {version} ??")   
         
@@ -484,7 +490,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=150
         
         m.find_starting_values()
         infdata = m.sample(samples,
-                   burn=200,
+                   burn=100,
                    dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                    db='pickle',
                    return_infdata=True, loglike=True, ppc=True)
@@ -803,7 +809,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=150
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=1500,
+                         samples=800,
                          n_jobs=3,
                          run=True,
                          parallel=True,
@@ -1925,6 +1931,8 @@ if __name__ == "__main__":
             # convert dwell columns to numeric (if they aren't already)
             data["DwellLeft"]  = pd.to_numeric(data["DwellLeft"],  errors="coerce")
             data["DwellRight"] = pd.to_numeric(data["DwellRight"], errors="coerce")
+            data["z_AW_bal"] = pd.to_numeric(data["z_AW_bal"], errors="coerce")
+            data["z_IAW_bal"] = pd.to_numeric(data["z_IAW_bal"], errors="coerce")
 
             # keep only trials with strictly positive dwell time on both sides
             data = data[(data["DwellLeft"] > 0) & (data["DwellRight"] > 0)]
@@ -1961,7 +1969,8 @@ if __name__ == "__main__":
                                        'z_w_dv',
                                        'z_absDPAC',
                                        'z_DwellPropAdvantageCorrect',
-                                       'z_balance'])   
+                                       'z_balance',
+                                       "z_AW_bal","z_IAW_bal"])   
             
             # put this near the top of the file, right after you finish preparing `data_full`
 
