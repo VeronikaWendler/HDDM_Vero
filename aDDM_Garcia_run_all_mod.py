@@ -122,7 +122,7 @@ def make_z_link(full_stimulus_vector):
 ##
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
-nr_samples      = 800       # samples per chain - do 11000 but for now for a quick one we do 600
+nr_samples      = 1200       # samples per chain - do 11000 but for now for a quick one we do 600
 parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
@@ -131,7 +131,7 @@ model_versions  = {
                 "ES_11", "ES_12", "ES_13", "ES_14", "ES_15", "ES_16", "ES_17", "ES_18", 
                 "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", 
                 "ES_27", "ES_28", "ES_29", "ES_30", "ES_31", "ES_32",
-                "ES_33","ES_34","ES_35","ES_36","ES_37","ES_38","ES_39","ES_40","ES_41", "ES_42", 'ES_43', 'ES_44'],
+                "ES_33","ES_34","ES_35","ES_36","ES_37","ES_38","ES_39","ES_40","ES_41", "ES_42", 'ES_43', 'ES_44', "ES_45", 'ES_46', 'ES_47'],
     
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
@@ -156,7 +156,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 43
+start_version = 44
 started = False
 
 # dir
@@ -219,7 +219,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=800, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=1200, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -462,8 +462,18 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=800
             v_reg = {'model': 'v ~ 1 + z_AW_bal:C(OVcate) + z_IAW_bal', 'link_func': lambda x: x}
             a_reg = {'model': 'a ~ 1 + z_balance:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg, a_reg]
-
-
+        elif version == 44:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'}  
+        elif version == 45:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E:C(OVcate) + AttentionW_S:C(OVcate) + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
+            a_reg = {'model': 'a ~ 1 + OVcate', 'link_func': lambda x: x}
+            reg_descr = [v_reg, a_reg]
+        elif version == 46:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E:C(OVcate) + InattentionW_S:C(OVcate)', 'link_func': lambda x: x}
+            a_reg = {'model': 'a ~ 1 + OVcate', 'link_func': lambda x: x}
+            reg_descr = [v_reg, a_reg]
         else:
             raise ValueError(f"check version {version} ??")   
         
@@ -473,7 +483,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=800
             for reg in reg_descr
         )
 
-#
         # …or if z is in the depends_on dict #
         if has_z_reg or 'z' in depends_on:
             include_list.append('z')
@@ -490,16 +499,13 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=800
         
         m.find_starting_values()
         infdata = m.sample(samples,
-                   burn=100,
+                   burn=200,
                    dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                    db='pickle',
                    return_infdata=True, loglike=True, ppc=True)
 
         return m, infdata
-    
-
      
-        # # INCLUDE SP IF YouOU WNAT THIA IF NOT EXCLUDE 
         # #  Fix z at 0.55 #
         # from copy import deepcopy
         # cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
@@ -809,7 +815,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=800
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=800,
+                         samples=1200,
                          n_jobs=3,
                          run=True,
                          parallel=True,
@@ -1933,9 +1939,14 @@ if __name__ == "__main__":
             data["DwellRight"] = pd.to_numeric(data["DwellRight"], errors="coerce")
             data["z_AW_bal"] = pd.to_numeric(data["z_AW_bal"], errors="coerce")
             data["z_IAW_bal"] = pd.to_numeric(data["z_IAW_bal"], errors="coerce")
-
+            
+            data["AttentionW_E"]  = pd.to_numeric(data["AttentionW_E"],  errors="coerce")
+            data["AttentionW_S"] = pd.to_numeric(data["AttentionW_S"], errors="coerce")
+            data["InattentionW_E"] = pd.to_numeric(data["InattentionW_E"], errors="coerce")
+            data["InattentionW_S"] = pd.to_numeric(data["InattentionW_S"], errors="coerce")
+            
             # keep only trials with strictly positive dwell time on both sides
-            data = data[(data["DwellLeft"] > 0) & (data["DwellRight"] > 0)]
+            #data = data[(data["DwellLeft"] > -1) & (data["DwellRight"] > -1)]
             data["z_DwellPropAdvantageCorrect"] = pd.to_numeric(data["z_DwellPropAdvantageCorrect"], errors="coerce")
             data["z_balance"] = pd.to_numeric(data["z_balance"], errors="coerce")
             data = data[~data["subj_idx"].isin({1,4,5,6,14,99})]
@@ -1970,7 +1981,12 @@ if __name__ == "__main__":
                                        'z_absDPAC',
                                        'z_DwellPropAdvantageCorrect',
                                        'z_balance',
-                                       "z_AW_bal","z_IAW_bal"])   
+                                       "z_AW_bal",
+                                       "z_IAW_bal",
+                                       "AttentionW_E",
+                                       "AttentionW_S",
+                                       "InattentionW_E",
+                                       "InattentionW_S"])   
             
             # put this near the top of the file, right after you finish preparing `data_full`
 

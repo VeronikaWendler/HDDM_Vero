@@ -192,6 +192,62 @@ data['IAW_bal'] = data['InattentionW'] * data['balance']
 
 
 
+
+
+
+
+########################################################################################################################
+# original drift rate formula:
+# v = β0 + β1 * (PropDwell_opt​ * V_opt​ − PropDwell_sub * V_sub) + β2 * (PropDwell_sub * V_opt​ − PropDwell_opt​ * V_sub)+ϵ
+
+
+# dirft rate with two separate thetas for S and E :
+# v = β0 + β1 * AttentionW_E + β2 * AttentionW_S + β3 * InattentionW_E + β4 * InattentionW_S  +ϵ
+
+# where:
+# AttentionW_E = Value_E_opt * DwellProp_E - Value_S_sub * DwellProp_S
+# AttentionW_S = Value_S_opt * DwellProp_S - Value_E_sub * DwellProp_E
+# InattentionW_E = Value_E_opt * DwellProp_S - Value_S_sub * DwellProp_E
+# InattentionW_S = Value_S_opt * DwellProp_E - Value_E_sub * DwellProp_S
+
+#where:
+
+# Value_E_opt = value of E-option when E option > S option on that trial
+# Value_E_sub = value of E-option when E option < S option on that trial
+# Value_S_sub = value of S-option when S option < E option on that trial
+# Value_S_opt = value of S-option when S option > E option on that trial
+# DwellProp_E = proportion of dwell time on E option
+# DwellProp_S = proportion of dwell time on S option
+
+
+value_left  = data['p1']   # or data['ev1']
+value_right = data['p2']   # or data['ev2']
+
+# Dwell proportions for the identities (E on left, S on right)
+data['DwellProp_E'] = data['DwellLeft']  / data['DwellTotal']
+data['DwellProp_S'] = data['DwellRight'] / data['DwellTotal']
+data.loc[data['DwellTotal'] == 0, ['DwellProp_E', 'DwellProp_S']] = np.nan
+
+# which option is optimal on each trial
+E_is_opt = value_left  > value_right
+S_is_opt = value_right > value_left
+is_tie   = value_left  == value_right   # let's exclude
+
+data['Value_E_opt'] = np.where(E_is_opt & ~is_tie, data['p1'], 0.0)
+data['Value_E_sub'] = np.where(S_is_opt & ~is_tie, data['p1'], 0.0)
+data['Value_S_opt'] = np.where(S_is_opt & ~is_tie, data['p2'], 0.0)
+data['Value_S_sub'] = np.where(E_is_opt & ~is_tie, data['p2'], 0.0)
+
+# For ties all masked values set to 0 
+data.loc[is_tie, ['Value_E_opt','Value_E_sub','Value_S_opt','Value_S_sub']] = np.nan
+# regressors
+data['AttentionW_E']   = data['Value_E_opt'] * data['DwellProp_E'] - data['Value_S_sub'] * data['DwellProp_S']
+data['AttentionW_S']   = data['Value_S_opt'] * data['DwellProp_S'] - data['Value_E_sub'] * data['DwellProp_E']
+data['InattentionW_E'] = data['Value_E_opt'] * data['DwellProp_S'] - data['Value_S_sub'] * data['DwellProp_E']
+data['InattentionW_S'] = data['Value_S_opt'] * data['DwellProp_E'] - data['Value_E_sub'] * data['DwellProp_S']
+
+
+
 # ---------- choose which columns to standardise --------------
 to_z = ['AttentionW',            # symmetric, continuous
         'InattentionW',          # symmetric, continuous
