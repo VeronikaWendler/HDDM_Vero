@@ -2206,9 +2206,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_AttentionW_S',
                 'v_InattentionW_E',
                 'v_InattentionW_S',
-                'a(low)',
-                'a(medium)',
-                'a(high)',
             ]
             params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
             titles = [                
@@ -2218,9 +2215,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_AttentionW_S',
                 'v_InattentionW_E',
                 'v_InattentionW_S',
-                'a(low)',
-                'a(medium)',
-                'a(high)',
             ]
         elif version == 45:
             params_of_interest = [
