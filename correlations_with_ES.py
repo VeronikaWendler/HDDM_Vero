@@ -1,18 +1,32 @@
 from pathlib import Path
-import os, re, math
+import os
+import re
+import math
 import numpy as np
 import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
 
-# ---------- base paths ----------
+
+# ---------------- paths ----------------
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
+
 M35_DIAG = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "diagnostics"
 OUT_DIR  = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "correlation"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# ---------- helpers already used in your pipeline ----------
+# inputs
+M35_RESULTS_CSV = (M35_DIAG / "results.csv").as_posix()
+ES_ACC_CSV      = (OUT_DIR / "results_ES_accuracy.csv").as_posix()
+
+# outputs
+OUT_PDF = (OUT_DIR / "es_accuracy_vs_addm_params_with_theta.pdf").as_posix()
+OUT_SUM = (OUT_DIR / "es_accuracy_vs_addm_params_with_theta_summary.csv").as_posix()
+M35_PLUS = (M35_DIAG / "results_plus_theta.csv").as_posix()
+
+# --------------- utilities ---------------
 def _read_results(path):
+    """Read HDDM/Kabuki results; ensure a 'param' column is present."""
     df = pd.read_csv(path)
     first = df.columns[0]
     if first.lower() in {"", "unnamed: 0"} or not np.issubdtype(df[first].dtype, np.number):
@@ -22,6 +36,7 @@ def _read_results(path):
     return df
 
 def _extract_all_subject_params(df, central="mean"):
+    """Return {base_param: {sid: value}} for rows like 'base_subj.<id>'."""
     by_param = {}
     pat = re.compile(r"^(?P<base>.+)_subj\.(?P<sid>\d+)$")
     for _, row in df.iterrows():
@@ -34,178 +49,151 @@ def _extract_all_subject_params(df, central="mean"):
         by_param.setdefault(base, {})[sid] = val
     return by_param
 
+def add_theta_params_to_results(m35_in_csv, m35_out_csv, use_median=False):
+    """
+    Add six θ parameters (chart/image over OVcate low/medium/high) at subject level.
+    Saves augmented CSV and returns its path.
+    """
+    df = _read_results(m35_in_csv)
+    central = "50q" if use_median else "mean"
+    subj_maps = _extract_all_subject_params(df, central=central)
+
+    need = {
+        "num_chart":  "v_z_IAW_chart",
+        "num_image":  "v_z_IAW_image",
+        "den_low":    "v_z_AttentionW:C(OVcate)[low]",
+        "den_medium": "v_z_AttentionW:C(OVcate)[medium]",
+        "den_high":   "v_z_AttentionW:C(OVcate)[high]",
+    }
+    for p in need.values():
+        if p not in subj_maps:
+            raise ValueError(f"Missing subject-level parameter in results: '{p}_subj.<id>'")
+
+    combos = [
+        ("theta_chart_low",    subj_maps[need["num_chart"]], subj_maps[need["den_low"]]),
+        ("theta_chart_medium", subj_maps[need["num_chart"]], subj_maps[need["den_medium"]]),
+        ("theta_chart_high",   subj_maps[need["num_chart"]], subj_maps[need["den_high"]]),
+        ("theta_image_low",    subj_maps[need["num_image"]], subj_maps[need["den_low"]]),
+        ("theta_image_medium", subj_maps[need["num_image"]], subj_maps[need["den_medium"]]),
+        ("theta_image_high",   subj_maps[need["num_image"]], subj_maps[need["den_high"]]),
+    ]
+
+    cols = list(df.columns)
+    if "param" not in cols:
+        cols = ["param"] + [c for c in cols if c != "param"]
+
+    new_rows = []
+    for base, num_map, den_map in combos:
+        common = sorted(set(num_map).intersection(den_map))
+        for sid in common:
+            den = den_map[sid]
+            if den is None or np.isclose(den, 0.0):
+                continue
+            mean_val = num_map[sid] / den
+            row = {c: np.nan for c in cols}
+            row["param"] = f"{base}_subj.{sid}"
+            row["mean"]  = mean_val
+            if "50q" in cols:
+                row["50q"] = mean_val
+            new_rows.append(row)
+
+    if not new_rows:
+        raise ValueError("No θ rows created—check denominators are present and non-zero.")
+
+    df_out = pd.concat([df, pd.DataFrame(new_rows, columns=cols)], ignore_index=True)
+    df_out.to_csv(m35_out_csv, index=False)
+    print(f"Saved augmented results with θ params -> {m35_out_csv}")
+    return m35_out_csv
+
 def _p_text(p):
     if not np.isfinite(p):
         return "p=NA"
     return "p<.001" if p < 1e-3 else f"p={p:.3f}"
 
-# ---------- new: ES accuracy from the big CSV ----------
-def _find_first(df, candidates):
-    cols = {c.lower(): c for c in df.columns}
-    for cand in candidates:
-        if cand.lower() in cols:
-            return cols[cand.lower()]
-    return None
+def _load_es_accuracy(acc_csv):
+    """
+    Read ES accuracy CSV with columns like: sub_id, mean_accuracy, std
+    sub_id can be 'subj.1' or '1'. Returns {sid:int -> mean_accuracy:float}.
+    """
+    acc = pd.read_csv(acc_csv)
+    if "sub_id" not in acc.columns or "mean_accuracy" not in acc.columns:
+        raise ValueError("ES accuracy file must have columns 'sub_id' and 'mean_accuracy'.")
 
-def _auto_phase_col(df):
-    # Try likely names first
-    candidates = ["phase", "task_phase", "experiment_phase", "stage", "block", "block_type"]
-    col = _find_first(df, candidates)
-    if col is not None:
-        return col
-    # Fallback: any string-like column that contains "ES" values
-    for c in df.columns:
-        s = df[c].astype(str).str.upper()
-        if s.isna().all():
-            continue
-        if s.str.contains("ES").any():
-            return c
-    raise ValueError("Couldn't find a column that marks ES trials. Please set phase_col explicitly.")
+    def _to_sid(x):
+        s = str(x)
+        m = re.search(r"(\d+)$", s)  # grabs trailing number (handles 'subj.1')
+        if not m:
+            raise ValueError(f"Could not parse subject id from '{s}'")
+        return int(m.group(1))
 
-# 1) include 'sub_id' in the auto-detector
-def compute_es_accuracy(behav_csv, subj_col=None, phase_col=None, corr_col="corr"):
-    beh = pd.read_csv(behav_csv)
+    acc["sid"] = acc["sub_id"].apply(_to_sid)
+    return dict(zip(acc["sid"].astype(int), acc["mean_accuracy"].astype(float)))
 
-    # --- subject column ---
-    if subj_col is None:
-        subj_col = _find_first(
-            beh,
-            ["sub_id","subj_idx","subj","subject","participant","id","ppid","participant_id"]
-        )
-    if subj_col is None:
-        raise ValueError("Couldn't find a subject ID column. Pass subj_col=...")
-
-    # --- phase column ---
-    if phase_col is None:
-        phase_col = _auto_phase_col(beh)
-
-    # --- correctness column ---
-    corr_match = _find_first(beh, [corr_col]) or _find_first(beh, ["corr","correct","accuracy","acc"])
-    if corr_match is None:
-        raise ValueError("Couldn't find correctness column (e.g., 'corr').")
-
-    # --- ES subset ---
-    es_mask = beh[phase_col].astype(str).str.upper().str.contains("ES")
-    df_es = beh.loc[es_mask, [subj_col, corr_match]].copy()
-    df_es[corr_match] = pd.to_numeric(df_es[corr_match], errors="coerce")
-
-    # --- NEW: normalize subject IDs by extracting digits -> int ---
-    sid_raw = df_es[subj_col].astype(str)
-    sid_digits = sid_raw.str.extract(r"(\d+)")[0]
-    sid_norm = pd.to_numeric(sid_digits, errors="coerce")  # NaN if no digits
-    df_es = df_es.assign(_sid=sid_norm).dropna(subset=["_sid"])
-    df_es["_sid"] = df_es["_sid"].astype(int)
-
-    # accuracy & trial count per normalized subject id
-    acc = df_es.groupby("_sid")[corr_match].mean()
-    ntr = df_es.groupby("_sid")[corr_match].count()
-    return acc.to_dict(), ntr.to_dict()
-
-
-# ---------- new: plot ES accuracy vs aDDM params ----------
-def plot_es_accuracy_vs_addm(
-    behav_csv,
+# --------------- main plotting ---------------
+def plot_esacc_vs_addm_params(
+    es_acc_csv,
     model35_results_csv,
-    out_pdf="accuracy_vs_addm_params.pdf",
-    out_csv="accuracy_vs_addm_params_summary.csv",
-    subj_col=None,
-    phase_col=None,
+    out_pdf,
+    out_csv,
     use_median=False
 ):
-    # ES accuracy
-    acc_by_sid, n_by_sid = compute_es_accuracy(behav_csv, subj_col=subj_col, phase_col=phase_col)
+    # load ES accuracy
+    acc_map = _load_es_accuracy(es_acc_csv)
 
-    # aDDM subject-level params
+    # load HDDM params (with θ already added) and extract all subj-level params
     m35 = _read_results(model35_results_csv)
-    params_by_name = _extract_all_subject_params(m35, central=("50q" if use_median else "mean"))
+    central = "50q" if use_median else "mean"
+    params_by_name = _extract_all_subject_params(m35, central=central)
     if not params_by_name:
         raise ValueError("No '*_subj.<id>' parameters found in model35_results_csv.")
 
-    rows = []
-    panels = []
+    # build panels + summary rows
+    panels, rows = [], []
     for base_name, subj_map in sorted(params_by_name.items()):
-        common = sorted(set(acc_by_sid).intersection(subj_map))
-        # keep only subjects that actually have ES trials
-        common = [s for s in common if n_by_sid.get(s, 0) > 0]
+        common = sorted(set(acc_map).intersection(subj_map))
         if len(common) < 5:
             continue
 
-        x = np.array([acc_by_sid[s] for s in common])  # ES accuracy
-        y = np.array([subj_map[s]   for s in common])
+        x = np.array([acc_map[s] for s in common])       # ES accuracy
+        y = np.array([subj_map[s] for s in common])      # aDDM param
 
         r, p = stats.pearsonr(x, y)
-        r2 = float(r**2)
+        r2   = float(r**2)
+        n    = len(common)
 
-        # OLS + CI
-        n = len(common)
+        # OLS line + 95% CI band
         b1, b0 = np.polyfit(x, y, 1)
         x_line = np.linspace(x.min(), x.max(), 100)
-        y_line = b1*x_line + b0
-        y_pred = b1*x + b0
+        y_line = b1 * x_line + b0
+        y_pred = b1 * x + b0
         resid  = y - y_pred
         s_err  = np.sqrt(np.sum(resid**2) / max(n - 2, 1))
         t_val  = stats.t.ppf(0.975, df=max(n - 2, 1))
         ci     = t_val * s_err * np.sqrt(1/n + (x_line - np.mean(x))**2 / np.sum((x - np.mean(x))**2))
-        y_lo, y_hi = y_line - ci, y_line + ci
+        y_lo   = y_line - ci
+        y_hi   = y_line + ci
 
-        panels.append(dict(name=base_name, x=x, y=y, x_line=x_line, y_line=y_line,
-                           y_lo=y_lo, y_hi=y_hi, r2=r2, p=p))
-        rows.append({"parameter": base_name, "n": n, "pearson_r": float(r), "r2": r2, "p_value": float(p)})
+        panels.append(dict(
+            name=base_name, x=x, y=y, x_line=x_line, y_line=y_line, y_lo=y_lo, y_hi=y_hi,
+            r2=r2, p=p
+        ))
+
+        rows.append({
+            "parameter": base_name,
+            "n": n,
+            "pearson_r": float(r),
+            "r2": r2,
+            "p_value": float(p),
+        })
 
     if not panels:
-        raise ValueError("No parameters had >=5 overlapping subjects with ES accuracy.")
+        raise ValueError("Nothing to plot (no parameters with >= 5 overlapping subjects).")
 
-    # grid figure (one page)
+    # grid size
     k = len(panels)
     ncols = 3 if k <= 9 else 4 if k <= 16 else 5
     nrows = math.ceil(k / ncols)
     fig, axes = plt.subplots(nrows, ncols, figsize=(4.2*ncols, 3.6*nrows))
     axes = np.atleast_1d(axes).ravel()
 
-    ACCENT = "darksalmon"
-    for ax, p in zip(axes, panels):
-        ax.scatter(p["x"], p["y"], s=30, color=ACCENT, alpha=0.85, edgecolors="none")
-        ax.plot(p["x_line"], p["y_line"], color=ACCENT, lw=1.8)
-        ax.fill_between(p["x_line"], p["y_lo"], p["y_hi"], color=ACCENT, alpha=0.25, linewidth=0)
-
-        ax.set_xlabel("Accuracy (ES phase)")
-        ax.set_ylabel(p["name"])
-        ax.set_title(p["name"])
-        ax.text(0.02, 0.98, f"R² = {p['r2']:.3f}\n{_p_text(p['p'])}",
-                transform=ax.transAxes, va="top", ha="left",
-                bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none", alpha=0.9), fontsize=9)
-
-    for j in range(len(panels), len(axes)):
-        axes[j].axis("off")
-
-    fig.suptitle("Correlations: ES accuracy vs subject-level aDDM parameters", y=0.995)
-    fig.tight_layout(rect=(0, 0, 1, 0.98))
-    fig.savefig(out_pdf, dpi=300, bbox_inches="tight")
-    plt.close(fig)
-
-    pd.DataFrame(rows).sort_values("r2", ascending=False).to_csv(out_csv, index=False)
-    print(f"Saved: {out_pdf}")
-    print(f"Saved: {out_csv}")
-
-# ---------- run ----------
-# Your raw behavioral CSV (Windows path; change if needed on your system)
-
-
-BEHAV_CSV = (PROJECT_DIR / "data_sets" / "data_sets_Garcia" /
-             "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix()
-
-
-MODEL35_RESULTS = (M35_DIAG / "results_plus_theta.csv")  # or M35_DIAG / "results.csv"
-
-out_pdf = (OUT_DIR / "accuracy_vs_addm_params.pdf").as_posix()
-out_csv = (OUT_DIR / "accuracy_vs_addm_params_summary.csv").as_posix()
-
-
-plot_es_accuracy_vs_addm(
-    behav_csv=BEHAV_CSV,
-    model35_results_csv=MODEL35_RESULTS,
-    out_pdf=out_pdf, out_csv=out_csv,
-    subj_col="sub_id",   
-    phase_col=None,
-    use_median=False
-)
+    ACCENT
