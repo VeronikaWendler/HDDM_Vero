@@ -201,5 +201,7 @@ plot_es_accuracy_vs_addm(
     behav_csv=BEHAV_CSV,
     model35_results_csv=MODEL35_RESULTS,
     out_pdf=out_pdf, out_csv=out_csv,
-    subj_col=None, phase_col=None, use_median=False
+    subj_col="sub_id",          
+    phase_col=None,            
+    use_median=False
 )
