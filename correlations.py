@@ -6,6 +6,7 @@ import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
+import math
 
 # Paths
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
@@ -114,6 +115,12 @@ def add_theta_params_to_results(m35_in_csv, m35_out_csv, use_median=False):
     print(f"Saved augmented results with θ params -> {m35_out_csv}")
     return m35_out_csv
 
+
+def _p_text(p):
+    if not np.isfinite(p):
+        return "p=NA"
+    return "p<.001" if p < 1e-3 else f"p={p:.3f}"
+
 def plot_alpha_correlations(
     rl_results_csv,
     model35_results_csv,
@@ -137,83 +144,99 @@ def plot_alpha_correlations(
             alpha_subj[sid] = val
     if not alpha_subj:
         raise ValueError("No alpha_subj.* rows found in the RL results.")
-
     if transform_alpha_if_needed:
         alpha_subj = {sid: inv_logit(val) for sid, val in alpha_subj.items()}
 
-    # all subj-level params from m35
+    # subj-level params from the HDDM model
     params_by_name = _extract_all_subject_params(m35, central=central)
     if not params_by_name:
         raise ValueError("No '*_subj.<id>' parameters found in model35_results_csv.")
 
+    # Prepare data for panels + CSV
     rows = []
-    with PdfPages(out_pdf) as pdf:
-        for base_name, subj_map in sorted(params_by_name.items()):
-            common = sorted(set(alpha_subj).intersection(subj_map))
-            if len(common) < 5:
-                continue
+    panels = []  # list of dicts with x, y, name, fit, etc.
 
-            x = np.array([alpha_subj[s] for s in common])
-            y = np.array([subj_map[s]   for s in common])
+    for base_name, subj_map in sorted(params_by_name.items()):
+        common = sorted(set(alpha_subj).intersection(subj_map))
+        if len(common) < 5:
+            continue
 
-            r, p = stats.pearsonr(x, y)
-            r2 = r**2
+        x = np.array([alpha_subj[s] for s in common])
+        y = np.array([subj_map[s]   for s in common])
 
-            # OLS + 95% CI for regression line
-            n = len(common)
-            b1, b0 = np.polyfit(x, y, 1)
-            x_line = np.linspace(x.min(), x.max(), 100)
-            y_line = b1 * x_line + b0
+        r, p = stats.pearsonr(x, y)
+        r2 = float(r**2)
 
-            y_pred = b1 * x + b0
-            resid  = y - y_pred
-            s_err  = np.sqrt(np.sum(resid**2) / (n - 2))
-            t_val  = stats.t.ppf(0.975, df=n - 2)
-            ci = t_val * s_err * np.sqrt(1/n + (x_line - np.mean(x))**2 / np.sum((x - np.mean(x))**2))
-            y_lo = y_line - ci
-            y_hi = y_line + ci
+        # OLS line + 95% CI
+        n = len(common)
+        b1, b0 = np.polyfit(x, y, 1)
+        x_line = np.linspace(x.min(), x.max(), 100)
+        y_line = b1 * x_line + b0
+        y_pred = b1 * x + b0
+        resid  = y - y_pred
+        s_err  = np.sqrt(np.sum(resid**2) / (n - 2))
+        t_val  = stats.t.ppf(0.975, df=n - 2)
+        ci = t_val * s_err * np.sqrt(1/n + (x_line - np.mean(x))**2 / np.sum((x - np.mean(x))**2))
+        y_lo = y_line - ci
+        y_hi = y_line + ci
 
-            # fig, ax = plt.subplots(figsize=(5, 4))
-            # ax.scatter(x, y)
-            # ax.plot(x_line, y_line)
-            # ax.fill_between(x_line, y_lo, y_hi, alpha=0.2)
-            # ax.set_xlabel("α (learning rate)")
-            # ax.set_ylabel(base_name)
-            # ax.set_title(base_name)
-            # ax.text(0.02, 0.98, f"R² = {r2:.3f}\np = {p:.3g}\nN = {n}",
-            #         transform=ax.transAxes, va="top", ha="left")
-            # pdf.savefig(fig, bbox_inches="tight")
-            # plt.close(fig)
-            
-            TAB_BLUE = "tab:blue"
-            
-            fig, ax = plt.subplots(figsize=(5, 4))
-            # points
-            ax.scatter(x, y, s=30, color=TAB_BLUE, alpha=0.85, edgecolors="none")
-            # regression line
-            ax.plot(x_line, y_line, color=TAB_BLUE, lw=1.8)
-            # 95% CI band
-            ax.fill_between(x_line, y_lo, y_hi, color=TAB_BLUE, alpha=0.18, linewidth=0)
-            
-            ax.set_xlabel("α (learning rate)")
-            ax.set_ylabel(base_name)
-            ax.set_title(base_name)
-            ax.text(0.02, 0.98, f"R² = {r2:.3f}\np = {p:.3g}\nN = {n}",
-                    transform=ax.transAxes, va="top", ha="left")
-            pdf.savefig(fig, bbox_inches="tight")
-            plt.close(fig)
+        panels.append(dict(
+            name=base_name, x=x, y=y, x_line=x_line, y_line=y_line, y_lo=y_lo, y_hi=y_hi,
+            r2=r2, p=p, n=n
+        ))
 
-            rows.append({
-                "parameter": base_name,
-                "n": n,
-                "pearson_r": r,
-                "r2": r2,
-                "p_value": p
-            })
+        rows.append({
+            "parameter": base_name,
+            "n": n,
+            "pearson_r": r,
+            "r2": r2,
+            "p_value": float(p),
+        })
 
+    # ---- One-page PDF with a grid of subplots ----
+    k = len(panels)
+    if k == 0:
+        raise ValueError("Nothing to plot (no parameters with >=5 overlapping subjects).")
+
+    ncols = 3 if k <= 9 else 4 if k <= 16 else 5
+    nrows = math.ceil(k / ncols)
+    fig, axes = plt.subplots(nrows, ncols, figsize=(4.2*ncols, 3.6*nrows))
+    axes = np.atleast_1d(axes).ravel()
+    
+    ACCENT = "darksalmon"  # one place to change the theme color
+    for ax, panel in zip(axes, panels):
+        x = panel["x"]; y = panel["y"]
+        # points
+        ax.scatter(x, y, s=30, color=ACCENT, alpha=0.85, edgecolors="none")
+        # regression line
+        ax.plot(panel["x_line"], panel["y_line"], color=ACCENT, lw=1.8)
+        # 95% CI band
+        ax.fill_between(panel["x_line"], panel["y_lo"], panel["y_hi"],
+                        color=ACCENT, alpha=0.25, linewidth=0)
+
+        ax.set_xlabel("α (learning rate)")
+        ax.set_ylabel(panel["name"])
+        ax.set_title(panel["name"])
+
+        # Stats box (top-left), NO "N = ..." in the text
+        txt = f"R² = {panel['r2']:.3f}\n{_p_text(panel['p'])}"
+        ax.text(0.02, 0.98, txt, transform=ax.transAxes, va="top", ha="left",
+                bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none", alpha=0.9), fontsize=9)
+
+    # Hide any unused axes
+    for j in range(len(panels), len(axes)):
+        axes[j].axis("off")
+
+    fig.suptitle("Correlations: α vs subject-level parameters", y=0.995)
+    fig.tight_layout(rect=(0, 0, 1, 0.98))
+    fig.savefig(out_pdf, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+    # CSV unchanged
     pd.DataFrame(rows).sort_values("r2", ascending=False).to_csv(out_csv, index=False)
-    print(f"Saved: {out_pdf}")
+    print(f"Saved (single-page): {out_pdf}")
     print(f"Saved: {out_csv}")
+
 
 # ---------- run ----------
 rl_results_csv = (RL1_DIAG / "results_alpha_transformed.csv").as_posix()
