@@ -86,32 +86,6 @@ pd.DataFrame(rows, columns=["parameter","R2","p","RMSE"]).to_csv(OUT_STATS, inde
 sns.set_style("white")
 col_wrap = 3 if len(params) <= 9 else 4
 
-def facet_scatter(data, **k):
-    ax = plt.gca()
-    x = data["true"].to_numpy()
-    y = data["recovered"].to_numpy()
-
-    ax.scatter(x, y, s=18, alpha=0.7)
-    lo = np.nanmin([x.min(), y.min()])
-    hi = np.nanmax([x.max(), y.max()])
-    ax.plot([lo, hi], [lo, hi], "--", lw=1, color="k")  # 45° reference line only
-
-    s = regress_stats(x, y)
-    if s["ok"]:
-        txt = (f"R²={s['R2']:.2f}\n"
-               f"p={s['p']:.3g}\n"
-               f"RMSE={s['RMSE']:.3f}")
-    else:
-        txt = f"N={s['N']}"
-
-    ax.text(0.03, 0.97, txt, transform=ax.transAxes, ha="left", va="top", fontsize=9,
-            bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="0.7"))
-
-    # square-ish axes
-    x0, x1 = ax.get_xlim(); y0, y1 = ax.get_ylim()
-    lo2, hi2 = min(x0, y0), max(x1, y1)
-    ax.set_xlim(lo2, hi2); ax.set_ylim(lo2, hi2)
-    ax.set_xlabel("true value"); ax.set_ylabel("posterior mean (recovered)")
 
 g = sns.FacetGrid(df, col="parameter", col_order=params, col_wrap=col_wrap,
                   sharex=False, sharey=False, height=3.1, despine=True)
