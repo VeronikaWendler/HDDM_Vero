@@ -185,19 +185,21 @@ def plot_es_accuracy_vs_addm(
 
 # ---------- run ----------
 # Your raw behavioral CSV (Windows path; change if needed on your system)
-BEHAV_CSV = pd.read_csv((PROJECT_DIR / "data_sets" / "data_sets_Garcia" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix(), sep=",")       
+
+
+BEHAV_CSV = (PROJECT_DIR / "data_sets" / "data_sets_Garcia" /
+             "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix()
+
 
 MODEL35_RESULTS = (M35_DIAG / "results_plus_theta.csv")  # or M35_DIAG / "results.csv"
 
 out_pdf = (OUT_DIR / "accuracy_vs_addm_params.pdf").as_posix()
 out_csv = (OUT_DIR / "accuracy_vs_addm_params_summary.csv").as_posix()
 
+
 plot_es_accuracy_vs_addm(
     behav_csv=BEHAV_CSV,
     model35_results_csv=MODEL35_RESULTS,
-    out_pdf=out_pdf,
-    out_csv=out_csv,
-    subj_col=None,       # set to e.g. "subj_idx" if auto-detect fails
-    phase_col=None,      # set to the exact ES phase column if auto-detect fails
-    use_median=False
+    out_pdf=out_pdf, out_csv=out_csv,
+    subj_col=None, phase_col=None, use_median=False
 )
