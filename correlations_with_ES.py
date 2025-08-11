@@ -62,41 +62,45 @@ def _auto_phase_col(df):
             return c
     raise ValueError("Couldn't find a column that marks ES trials. Please set phase_col explicitly.")
 
+# 1) include 'sub_id' in the auto-detector
 def compute_es_accuracy(behav_csv, subj_col=None, phase_col=None, corr_col="corr"):
     beh = pd.read_csv(behav_csv)
-    # subject column
-    if subj_col is None:
-        subj_col = _find_first(beh, ["subj_idx","subj","subject","participant","id","ppid","participant_id"])
-    if subj_col is None:
-        raise ValueError("Couldn't find a subject ID column (e.g., subj_idx/subject). Pass subj_col=...")
 
-    # phase column
+    # --- subject column ---
+    if subj_col is None:
+        subj_col = _find_first(
+            beh,
+            ["sub_id","subj_idx","subj","subject","participant","id","ppid","participant_id"]
+        )
+    if subj_col is None:
+        raise ValueError("Couldn't find a subject ID column. Pass subj_col=...")
+
+    # --- phase column ---
     if phase_col is None:
         phase_col = _auto_phase_col(beh)
 
-    # corr column (0/1)
-    corr_match = _find_first(beh, [corr_col]) or _find_first(beh, ["corr","correct"])
+    # --- correctness column ---
+    corr_match = _find_first(beh, [corr_col]) or _find_first(beh, ["corr","correct","accuracy","acc"])
     if corr_match is None:
-        raise ValueError("Couldn't find correctness column ('corr').")
+        raise ValueError("Couldn't find correctness column (e.g., 'corr').")
 
-    # ES mask (accept anything with 'ES' in the value)
+    # --- ES subset ---
     es_mask = beh[phase_col].astype(str).str.upper().str.contains("ES")
-
     df_es = beh.loc[es_mask, [subj_col, corr_match]].copy()
     df_es[corr_match] = pd.to_numeric(df_es[corr_match], errors="coerce")
 
-    acc = df_es.groupby(subj_col)[corr_match].mean()        # mean accuracy
-    ntr = df_es.groupby(subj_col)[corr_match].count()       # ES trial count
+    # --- NEW: normalize subject IDs by extracting digits -> int ---
+    sid_raw = df_es[subj_col].astype(str)
+    sid_digits = sid_raw.str.extract(r"(\d+)")[0]
+    sid_norm = pd.to_numeric(sid_digits, errors="coerce")  # NaN if no digits
+    df_es = df_es.assign(_sid=sid_norm).dropna(subset=["_sid"])
+    df_es["_sid"] = df_es["_sid"].astype(int)
 
-    # cast subject IDs to int where possible (to match results.csv)
-    def _maybe_int(x):
-        try: return int(x)
-        except: return np.nan
-    idx_int = acc.index.to_series().map(_maybe_int)
-    keep = idx_int.notna()
-    acc  = pd.Series(acc.values[keep.values], index=idx_int[keep].astype(int))
-    ntr  = pd.Series(ntr.values[keep.values], index=idx_int[keep].astype(int))
+    # accuracy & trial count per normalized subject id
+    acc = df_es.groupby("_sid")[corr_match].mean()
+    ntr = df_es.groupby("_sid")[corr_match].count()
     return acc.to_dict(), ntr.to_dict()
+
 
 # ---------- new: plot ES accuracy vs aDDM params ----------
 def plot_es_accuracy_vs_addm(
@@ -201,7 +205,7 @@ plot_es_accuracy_vs_addm(
     behav_csv=BEHAV_CSV,
     model35_results_csv=MODEL35_RESULTS,
     out_pdf=out_pdf, out_csv=out_csv,
-    subj_col="sub_id",          
-    phase_col=None,            
+    subj_col="sub_id",   
+    phase_col=None,
     use_median=False
 )
