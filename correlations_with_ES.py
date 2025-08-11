@@ -185,7 +185,7 @@ def plot_es_accuracy_vs_addm(
 
 # ---------- run ----------
 # Your raw behavioral CSV (Windows path; change if needed on your system)
-BEHAV_CSV = pd.read_csv((PROJECT_DIR / "data_sets" / "data_sets_Garcia" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv")).as_posix()        
+BEHAV_CSV = pd.read_csv((PROJECT_DIR / "data_sets" / "data_sets_Garcia" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix(), sep=",")       
 
 MODEL35_RESULTS = (M35_DIAG / "results_plus_theta.csv")  # or M35_DIAG / "results.csv"
 
