@@ -173,10 +173,28 @@ def plot_alpha_correlations(
             y_lo = y_line - ci
             y_hi = y_line + ci
 
+            # fig, ax = plt.subplots(figsize=(5, 4))
+            # ax.scatter(x, y)
+            # ax.plot(x_line, y_line)
+            # ax.fill_between(x_line, y_lo, y_hi, alpha=0.2)
+            # ax.set_xlabel("α (learning rate)")
+            # ax.set_ylabel(base_name)
+            # ax.set_title(base_name)
+            # ax.text(0.02, 0.98, f"R² = {r2:.3f}\np = {p:.3g}\nN = {n}",
+            #         transform=ax.transAxes, va="top", ha="left")
+            # pdf.savefig(fig, bbox_inches="tight")
+            # plt.close(fig)
+            
+            TAB_BLUE = "tab:blue"
+            
             fig, ax = plt.subplots(figsize=(5, 4))
-            ax.scatter(x, y)
-            ax.plot(x_line, y_line)
-            ax.fill_between(x_line, y_lo, y_hi, alpha=0.2)
+            # points
+            ax.scatter(x, y, s=30, color=TAB_BLUE, alpha=0.85, edgecolors="none")
+            # regression line
+            ax.plot(x_line, y_line, color=TAB_BLUE, lw=1.8)
+            # 95% CI band
+            ax.fill_between(x_line, y_lo, y_hi, color=TAB_BLUE, alpha=0.18, linewidth=0)
+            
             ax.set_xlabel("α (learning rate)")
             ax.set_ylabel(base_name)
             ax.set_title(base_name)
