@@ -7,7 +7,6 @@ import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
 
-
 # ---------------- paths ----------------
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 
@@ -196,4 +195,45 @@ def plot_esacc_vs_addm_params(
     fig, axes = plt.subplots(nrows, ncols, figsize=(4.2*ncols, 3.6*nrows))
     axes = np.atleast_1d(axes).ravel()
 
-    ACCENT
+    ACCENT = "darksalmon"
+    for ax, panel in zip(axes, panels):
+        x, y = panel["x"], panel["y"]
+        ax.scatter(x, y, s=30, color=ACCENT, alpha=0.85, edgecolors="none")
+        ax.plot(panel["x_line"], panel["y_line"], color=ACCENT, lw=1.8)
+        ax.fill_between(panel["x_line"], panel["y_lo"], panel["y_hi"], color=ACCENT, alpha=0.25, linewidth=0)
+
+        ax.set_xlabel("ES accuracy")
+        ax.set_xlim(0, 1)  # accuracy is a proportion
+        ax.set_ylabel(panel["name"])
+        ax.set_title(panel["name"])
+
+        # Stats box (top-left), no N
+        txt = f"R² = {panel['r2']:.3f}\n{_p_text(panel['p'])}"
+        ax.text(0.02, 0.98, txt, transform=ax.transAxes, va="top", ha="left",
+                bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none", alpha=0.9), fontsize=9)
+
+    # hide unused axes
+    for j in range(len(panels), len(axes)):
+        axes[j].axis("off")
+
+    fig.suptitle("Correlations: ES accuracy vs subject-level aDDM parameters", y=0.995)
+    fig.tight_layout(rect=(0, 0, 1, 0.98))
+    fig.savefig(out_pdf, dpi=300, bbox_inches="tight")
+    plt.close(fig)
+
+    pd.DataFrame(rows).sort_values("r2", ascending=False).to_csv(out_csv, index=False)
+    print(f"Saved PDF: {out_pdf}")
+    print(f"Saved CSV: {out_csv}")
+
+# --------------- run ---------------
+# 1) augment HDDM results with θ parameters (once)
+m35_aug = add_theta_params_to_results(M35_RESULTS_CSV, M35_PLUS, use_median=False)
+
+# 2) make ES-accuracy correlations against aDDM params
+plot_esacc_vs_addm_params(
+    es_acc_csv=ES_ACC_CSV,
+    model35_results_csv=m35_aug,
+    out_pdf=OUT_PDF,
+    out_csv=OUT_SUM,
+    use_median=False
+)
