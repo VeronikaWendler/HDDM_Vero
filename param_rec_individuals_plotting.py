@@ -46,26 +46,41 @@ def _p_text(p):
         return "p=NA"
     return "p<.0001" if p < 1e-4 else f"p={p:.3f}"
 
+# put this near the top
+AX_LIMS = {"t": (0.0, 1.0), "v_Intercept": (0.0, 2.5)}
+
+def _p_text(p):
+    if not np.isfinite(p):
+        return "p=NA"
+    return "p<.0001" if p < 1e-4 else f"p={p:.3f}"
+
 def facet_scatter(data, **k):
     ax = plt.gca()
     x = data["true"].to_numpy()
     y = data["recovered"].to_numpy()
     pname = str(data["parameter"].iloc[0])
 
-    # scatter
+    # scatter all points (out-of-range ones will be clipped by axis limits)
     ax.scatter(x, y, s=18, alpha=0.7)
 
-    # apply requested x limits for t and v_Intercept
-    if pname in ("t", "v_Intercept"):
-        ax.set_xlim(0, 2)
+    # enforce axes for t and v_Intercept; leave others alone
+    if pname in AX_LIMS:
+        lo, hi = AX_LIMS[pname]
+        ax.set_xlim(lo, hi)
+        ax.set_ylim(lo, hi)
+        # stats on in-frame points only
+        mask = (x >= lo) & (x <= hi) & (y >= lo) & (y <= hi)
+        x_s, y_s = x[mask], y[mask]
+    else:
+        x_s, y_s = x, y
 
-    # 45° reference line spanning current axes
+    # 45° reference line using the final limits
     x0, x1 = ax.get_xlim(); y0, y1 = ax.get_ylim()
-    lo = min(x0, y0); hi = max(x1, y1)
-    ax.plot([lo, hi], [lo, hi], "--", lw=1, color="k")
+    lo_line, hi_line = min(x0, y0), max(x1, y1)
+    ax.plot([lo_line, hi_line], [lo_line, hi_line], "--", lw=1, color="k")
 
     # stats box
-    s = regress_stats(x, y)
+    s = regress_stats(x_s, y_s)
     txt = (f"R²={s['R2']:.2f}\n{_p_text(s['p'])}\nRMSE={s['RMSE']:.3f}") if s["ok"] else f"N={s['N']}"
     ax.text(0.03, 0.97, txt, transform=ax.transAxes, ha="left", va="top", fontsize=9,
             bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="0.7"))
