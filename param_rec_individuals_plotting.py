@@ -41,6 +41,39 @@ def regress_stats(x, y):
     r2   = float(res.rvalue**2)
     return dict(ok=True, N=n, R2=r2, p=float(res.pvalue), RMSE=rmse)
 
+def _p_text(p):
+    if not np.isfinite(p):
+        return "p=NA"
+    return "p<.0001" if p < 1e-4 else f"p={p:.3f}"
+
+def facet_scatter(data, **k):
+    ax = plt.gca()
+    x = data["true"].to_numpy()
+    y = data["recovered"].to_numpy()
+    pname = str(data["parameter"].iloc[0])
+
+    # scatter
+    ax.scatter(x, y, s=18, alpha=0.7)
+
+    # apply requested x limits for t and v_Intercept
+    if pname in ("t", "v_Intercept"):
+        ax.set_xlim(0, 2)
+
+    # 45° reference line spanning current axes
+    x0, x1 = ax.get_xlim(); y0, y1 = ax.get_ylim()
+    lo = min(x0, y0); hi = max(x1, y1)
+    ax.plot([lo, hi], [lo, hi], "--", lw=1, color="k")
+
+    # stats box
+    s = regress_stats(x, y)
+    txt = (f"R²={s['R2']:.2f}\n{_p_text(s['p'])}\nRMSE={s['RMSE']:.3f}") if s["ok"] else f"N={s['N']}"
+    ax.text(0.03, 0.97, txt, transform=ax.transAxes, ha="left", va="top", fontsize=9,
+            bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="0.7"))
+
+    ax.set_xlabel("true value")
+    ax.set_ylabel("posterior mean (recovered)")
+
+
 # ---------- save per-parameter stats ----------
 rows = []
 for p in params:
