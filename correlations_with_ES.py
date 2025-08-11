@@ -12,12 +12,26 @@ M35_DIAG = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "di
 OUT_DIR  = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "correlation"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# primary name; fallback to common misspelling if needed
-ACC_CSV = OUT_DIR / "results_ES_accuracy.csv"
-if not ACC_CSV.exists():
-    alt = OUT_DIR / "reuslts_ES_accuracy.csv"
-    if alt.exists():
-        ACC_CSV = alt
+# Pick the ES-accuracy CSV robustly
+CANDIDATES = [
+    PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "correlation" / "results_ES_accuracy.csv",
+    PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "correlation" / "reuslts_ES_accuracy.csv",
+    PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garcia_replication_ES_35" / "correlation" / "results_ES_accuracy.csv",
+    PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garcia_replication_ES_35" / "correlation" / "reuslts_ES_accuracy.csv",
+]
+
+# optional override: export ES_ACC_CSV=/full/path/to/your/file.csv
+override = os.getenv("ES_ACC_CSV")
+if override:
+    CANDIDATES.insert(0, Path(override))
+
+ACC_CSV = next((p for p in CANDIDATES if p and Path(p).exists()), None)
+if ACC_CSV is None:
+    raise FileNotFoundError(
+        "Couldn't find ES accuracy CSV. Checked:\n  " + "\n  ".join(str(p) for p in CANDIDATES)
+    )
+print(f"Using ES accuracy file: {ACC_CSV}")
+
 
 # ---------------- helpers ----------------
 def _read_results(path: Path) -> pd.DataFrame:
