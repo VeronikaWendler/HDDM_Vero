@@ -41,10 +41,6 @@ def regress_stats(x, y):
     r2   = float(res.rvalue**2)
     return dict(ok=True, N=n, R2=r2, p=float(res.pvalue), RMSE=rmse)
 
-def _p_text(p):
-    if not np.isfinite(p):
-        return "p=NA"
-    return "p<.0001" if p < 1e-4 else f"p={p:.3f}"
 
 # put this near the top
 AX_LIMS = {"t": (0.0, 1.0), "v_Intercept": (0.0, 2.5)}
@@ -52,7 +48,8 @@ AX_LIMS = {"t": (0.0, 1.0), "v_Intercept": (0.0, 2.5)}
 def _p_text(p):
     if not np.isfinite(p):
         return "p=NA"
-    return "p<.0001" if p < 1e-4 else f"p={p:.3f}"
+    return "p<.001" if p < 1e-3 else f"p={p:.3f}"
+
 
 def facet_scatter(data, **k):
     ax = plt.gca()
@@ -82,9 +79,14 @@ def facet_scatter(data, **k):
     # stats box
     s = regress_stats(x_s, y_s)
     txt = (f"R²={s['R2']:.2f}\n{_p_text(s['p'])}\nRMSE={s['RMSE']:.3f}") if s["ok"] else f"N={s['N']}"
-    ax.text(0.03, 0.97, txt, transform=ax.transAxes, ha="left", va="top", fontsize=9,
-            bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="0.7"))
-
+    # stats box (bottom-right, no outline)
+    ax.text(
+        0.97, 0.03, txt,
+        transform=ax.transAxes,
+        ha="right", va="bottom", fontsize=9,
+        bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none", alpha=0.9)
+    )
+    
     ax.set_xlabel("true value")
     ax.set_ylabel("posterior mean (recovered)")
 
