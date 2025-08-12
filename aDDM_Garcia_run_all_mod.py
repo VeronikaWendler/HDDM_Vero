@@ -704,11 +704,9 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 5:
             v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            depends_on = {'a': 'OVcate'}       
         elif version == 6:
             v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E:C(OVcate) + InattentionW_S:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            depends_on = {'a': 'OVcate'}       
         
         #  Fix z at 0.55 
         # from copy import deepcopy
@@ -725,7 +723,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         m = hddm.models.HDDMRegressor(
             data,
             reg_descr,
-            depends_on=depends_on,
             p_outlier=.05,
             include=['a', 't', 'v', 'z'],     #  z is not in include becuase not a free param
             group_only_regressors=False,
