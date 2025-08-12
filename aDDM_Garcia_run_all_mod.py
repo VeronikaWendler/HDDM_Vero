@@ -137,7 +137,7 @@ model_versions  = {
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
-    "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5"],
+    "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5", "ES_ZBIAS_6","ES_ZBIAS_7"],
     "ES_quad": ["ES_quad_1","ES_quad_2"],
     "LE_RL": ["LE_RL_1","LE_RL_2"],
    
@@ -151,13 +151,13 @@ PHASE_TO_SOURCE = {
 }
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["ES"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
+PHASE_RUN_ORDER = ["ES_ZBIAS"]                                         # order
+SKIP_PHASES     = {"LE","ES","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "ES"
-start_version = 48
+start_phase = "ES_ZBIAS"
+start_version = 5
 started = False
 
 # dir
@@ -700,18 +700,26 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 4: 
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            depends_on={'t': 'OVcate'}      
-            
-        #  Fix z at 0.55 
-        from copy import deepcopy
-        cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
-        idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
-        cfg['params_default'][idx_z] = 0.55     # slight bias towards E
+            depends_on={'t': 'OVcate'} 
+        elif version == 5:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'}       
+        elif version == 6:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E:C(OVcate) + InattentionW_S:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'}       
         
-        # SANITY‐CHECK 
-        assert cfg['params'][idx_z] == 'z'
-        assert cfg['params_default'][idx_z] == 0.55, \
-            f"z default not 0.55 but {cfg['params_default'][idx_z]}"
+        #  Fix z at 0.55 
+        # from copy import deepcopy
+        # cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
+        # idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
+        # cfg['params_default'][idx_z] = 0.55     # slight bias towards E
+        
+        # # SANITY‐CHECK 
+        # assert cfg['params'][idx_z] == 'z'
+        # assert cfg['params_default'][idx_z] == 0.55, \
+        #     f"z default not 0.55 but {cfg['params_default'][idx_z]}"
 
         # build the model
         m = hddm.models.HDDMRegressor(
@@ -719,16 +727,15 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             reg_descr,
             depends_on=depends_on,
             p_outlier=.05,
-            include=['a', 't', 'v'],     #  z is not in include becuase not a free param
+            include=['a', 't', 'v', 'z'],     #  z is not in include becuase not a free param
             group_only_regressors=False,
             keep_regressor_trace=True,
-            model_config=cfg
         )
 
-        print("\n[ZBIAS DEBUG] model_config['params']       =", m.model_config['params'])
-        print("[ZBIAS DEBUG] model_config['params_default'] =", m.model_config['params_default'])
-        zi = m.model_config['params'].index('z')
-        print(f"[ZBIAS DEBUG] default for 'z' = {m.model_config['params_default'][zi]}\n")  
+        # print("\n[ZBIAS DEBUG] model_config['params']       =", m.model_config['params'])
+        # print("[ZBIAS DEBUG] model_config['params_default'] =", m.model_config['params_default'])
+        # zi = m.model_config['params'].index('z')
+        # print(f"[ZBIAS DEBUG] default for 'z' = {m.model_config['params_default'][zi]}\n")  
         
         print("[ZBIAS DEBUG] sampling nodes in m.nodes_db:\n",
               [n for n in m.nodes_db.index if n.split('_')[0] in ['a','t','v','z']])
@@ -737,7 +744,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         m.find_starting_values()
         infdata = m.sample(
             samples,
-            burn=100,
+            burn=200,
             dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'),
             db='pickle',
             return_infdata=True,
