@@ -113,7 +113,7 @@ model_versions = {
            'ES_11','ES_12', 'ES_13', 'ES_14', 'ES_15', 'ES_16', 'ES_17', 'ES_18', 'ES_19','ES_20',
            'ES_21', "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27","ES_28", "ES_29", "ES_30",
            "ES_31", "ES_32", "ES_33", "ES_34", "ES_35", "ES_36",  "ES_37", "ES_38", "ES_39", "ES_40", "ES_41", "ES_42", "ES_43", "ES_44",
-           "ES_45", "ES_46", "ES_47"],  
+           "ES_45", "ES_46", "ES_47", "ES_48"],  
 
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
@@ -2280,7 +2280,30 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'a_OVcate[T.low]',
                 'a_OVcate[T.medium]',
             ]           
-            
+        elif  version == 47:
+            params_of_interest = [
+                't',
+                'v_z_Intercept',
+                'v_z_AttentionW_E',
+                'v_z_AttentionW_S',
+                'v_z_InattentionW_E',
+                'v_z_InattentionW_S',
+                'a(high)',
+                'a(low)',
+                'a(medium)',
+            ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [                
+                't',
+                'v_z_Intercept',
+                'v_z_AttentionW_E',
+                'v_z_AttentionW_S',
+                'v_z_InattentionW_E',
+                'v_z_InattentionW_S',
+                'a(high)',
+                'a(low)',
+                'a(medium)',
+            ]
     elif phase == 'EE':
         if version == 0:
             params_of_interest = [
