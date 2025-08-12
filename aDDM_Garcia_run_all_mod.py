@@ -475,7 +475,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             a_reg = {'model': 'a ~ 1 + OVcate', 'link_func': lambda x: x}
             reg_descr = [v_reg, a_reg]
         elif version == 47:
-            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 1 + z_AttentionW_E + z_AttentionW_S + z_InattentionW_E + z_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on = {'a': 'OVcate'}  
         else:

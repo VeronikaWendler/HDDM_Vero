@@ -262,7 +262,7 @@ to_z = ['AttentionW',            # symmetric, continuous
         'absDPAC',
         'abs_DwellPropAdvCorr',
         'balance', 'DwellPropAdvantageCorrect',
-        "AW_bal","IAW_bal"
+        "AW_bal","IAW_bal","AttentionW_E", "AttentionW_S", "InattentionW_E", "InattentionW_S",
         ]              # etc. add more if needed
 
 # ---------------------------------------------
