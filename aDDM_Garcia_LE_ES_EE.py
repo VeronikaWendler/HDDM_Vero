@@ -2283,7 +2283,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         elif  version == 47:
             params_of_interest = [
                 't',
-                'v_z_Intercept',
+                'v_Intercept',
                 'v_z_AttentionW_E',
                 'v_z_AttentionW_S',
                 'v_z_InattentionW_E',
@@ -2295,7 +2295,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
             titles = [                
                 't',
-                'v_z_Intercept',
+                'v_Intercept',
                 'v_z_AttentionW_E',
                 'v_z_AttentionW_S',
                 'v_z_InattentionW_E',
