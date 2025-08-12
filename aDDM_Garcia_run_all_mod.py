@@ -707,7 +707,9 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 6:
             v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E:C(OVcate) + InattentionW_S:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-        
+        elif version == 7:
+            v_reg = {'model': 'v ~ 1 + z_AttentionW_E + z_AttentionW_S + z_InattentionW_E + z_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
         #  Fix z at 0.55 
         # from copy import deepcopy
         # cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
