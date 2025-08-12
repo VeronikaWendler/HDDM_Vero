@@ -77,10 +77,10 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 5    # defining version
+version = 47    # defining version
 run = False        # if True, the the models run, if False the models load
 
-phase = ['ES_ZBIAS']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
+phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
 
 # Determines whether to use a single phase or the combined ESEE model
 if set(phase) == {'ES', 'EE'}:
@@ -113,7 +113,7 @@ model_versions = {
            'ES_11','ES_12', 'ES_13', 'ES_14', 'ES_15', 'ES_16', 'ES_17', 'ES_18', 'ES_19','ES_20',
            'ES_21', "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", "ES_27","ES_28", "ES_29", "ES_30",
            "ES_31", "ES_32", "ES_33", "ES_34", "ES_35", "ES_36",  "ES_37", "ES_38", "ES_39", "ES_40", "ES_41", "ES_42", "ES_43", "ES_44",
-           "ES_45", "ES_46", "ES_47", "ES_48"],  
+           "ES_45", "ES_46", "ES_47", "ES_48", "ES_49"],  
 
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],

@@ -734,8 +734,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         # zi = m.model_config['params'].index('z')
         # print(f"[ZBIAS DEBUG] default for 'z' = {m.model_config['params_default'][zi]}\n")  
         
-        print("[ZBIAS DEBUG] sampling nodes in m.nodes_db:\n",
-              [n for n in m.nodes_db.index if n.split('_')[0] in ['a','t','v','z']])
 
 
         m.find_starting_values()
@@ -749,10 +747,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             ppc=True
         )
 
-        # final check that z never got sampled
-        assert "z" not in infdata.posterior.data_vars, \
-            "ERROR: 'z' appeared in the posterior!"
-        print("[DEBUG] z absent from posterior - confirmed fixed.")
 
         return m, infdata
     
