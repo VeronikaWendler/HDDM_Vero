@@ -484,8 +484,9 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             reg_descr = [v_reg]
             depends_on = {'t': 'OVcate'}  
         elif version == 49:
-            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S + FirstFix_Left ', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate', 't': 'OVcate'}
         else:
             raise ValueError(f"check version {version} ??")   
         
@@ -504,7 +505,8 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             data,
             reg_descr,
             p_outlier=.05,
-            include=include_list,   
+            include=include_list,  
+            depends_on=depends_on, 
             group_only_regressors=False,
             keep_regressor_trace=True
         )
