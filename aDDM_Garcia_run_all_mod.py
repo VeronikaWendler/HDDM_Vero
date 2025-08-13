@@ -132,7 +132,7 @@ model_versions  = {
                 "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", 
                 "ES_27", "ES_28", "ES_29", "ES_30", "ES_31", "ES_32",
                 "ES_33","ES_34","ES_35","ES_36","ES_37","ES_38","ES_39","ES_40","ES_41", "ES_42", 'ES_43', 'ES_44', "ES_45", 'ES_46', 'ES_47',"ES_48",
-                "ES_49"],
+                "ES_49", "ES_50"],
     
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
@@ -156,8 +156,8 @@ SKIP_PHASES     = {"LE","ES","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}         
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "ES_ZBIAS"
-start_version = 5
+start_phase = "ES"
+start_version = 49
 started = False
 
 # dir
@@ -483,6 +483,9 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             v_reg = {'model': 'v ~ 1 + z_AttentionW_E + z_AttentionW_S + z_InattentionW_E + z_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on = {'t': 'OVcate'}  
+        elif version == 49:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S + FirstFix_Left ', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
         else:
             raise ValueError(f"check version {version} ??")   
         
@@ -502,7 +505,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             reg_descr,
             p_outlier=.05,
             include=include_list,   
-            depends_on=depends_on,      
             group_only_regressors=False,
             keep_regressor_trace=True
         )
