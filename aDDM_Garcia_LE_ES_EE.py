@@ -77,10 +77,10 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 47    # defining version
+version = 5    # defining version
 run = False        # if True, the the models run, if False the models load
 
-phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
+phase = ['ES_ZBIAS']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
 
 # Determines whether to use a single phase or the combined ESEE model
 if set(phase) == {'ES', 'EE'}:
@@ -2900,6 +2900,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_InattentionW_E',
                 'v_InattentionW_S'
             ]
+
     elif phase == 'ES_quad':
         if version == 0:          # v ~ 1 + DTA + DTA²
             params_of_interest = [
