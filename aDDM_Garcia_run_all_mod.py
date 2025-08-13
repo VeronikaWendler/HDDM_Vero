@@ -132,7 +132,7 @@ model_versions  = {
                 "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", 
                 "ES_27", "ES_28", "ES_29", "ES_30", "ES_31", "ES_32",
                 "ES_33","ES_34","ES_35","ES_36","ES_37","ES_38","ES_39","ES_40","ES_41", "ES_42", 'ES_43', 'ES_44', "ES_45", 'ES_46', 'ES_47',"ES_48",
-                "ES_49", "ES_50"],
+                "ES_49", "ES_50", "ES_51", "ES_52", "ES_53"],
     
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
@@ -157,7 +157,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 49
+start_version = 50
 started = False
 
 # dir
@@ -487,6 +487,18 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on = {'a': 'OVcate', 't': 'OVcate'}
+        # modle with the attnetional gaze penalty as in Cavanagh et al. (2011)
+        # gazeCI:C(OVcate)  gazeCI
+        elif version == 50:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S + gazeCI', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 51:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S + gazeCI:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        # model with the direct gaze penalty by me: balance
+        elif version == 52:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S + balance', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
         else:
             raise ValueError(f"check version {version} ??")   
         
@@ -506,7 +518,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             reg_descr,
             p_outlier=.05,
             include=include_list,  
-            depends_on=depends_on, 
             group_only_regressors=False,
             keep_regressor_trace=True
         )
