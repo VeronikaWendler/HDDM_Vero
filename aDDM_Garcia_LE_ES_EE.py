@@ -2336,9 +2336,9 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_AttentionW_S',
                 'v_InattentionW_E',
                 'v_InattentionW_S',
-                'v_gazeCI:C(low)',
-                'v_gazeCI:C(medium)',
-                'v_gazeCI:C(high)',
+                'v_gazeCI:C(OVcate)[low]',
+                'v_gazeCI:C(OVcate)[medium]',
+                'v_gazeCI:C(OVcate)[high]',
             ]
             params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
             titles = [
@@ -2349,9 +2349,9 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_AttentionW_S',
                 'v_InattentionW_E',
                 'v_InattentionW_S',
-                'v_gazeCI:C(low)',
-                'v_gazeCI:C(medium)',
-                'v_gazeCI:C(high)',
+                'v_gazeCI:C(OVcate)[low]',
+                'v_gazeCI:C(OVcate)[medium]',
+                'v_gazeCI:C(OVcate)[high]',
             ]
         elif version == 52:
             params_of_interest = [
