@@ -77,10 +77,10 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 9    # defining version
+version = 49    # defining version
 run = False        # if True, the the models run, if False the models load
 
-phase = ['ES_ZBIAS']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
+phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
 
 # Determines whether to use a single phase or the combined ESEE model
 if set(phase) == {'ES', 'EE'}:
@@ -2304,7 +2304,34 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'a(low)',
                 'a(medium)',
             ]
-        
+        elif  version == 49:
+            params_of_interest = [
+                'v_Intercept',
+                'v_z_AttentionW_E',
+                'v_z_AttentionW_S',
+                'v_z_InattentionW_E',
+                'v_z_InattentionW_S',
+                'a(high)',
+                'a(low)',
+                'a(medium)',
+                't(low)',
+                't(medium)',
+                't(high)',
+            ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [                
+                'v_Intercept',
+                'v_z_AttentionW_E',
+                'v_z_AttentionW_S',
+                'v_z_InattentionW_E',
+                'v_z_InattentionW_S',
+                'a(high)',
+                'a(low)',
+                'a(medium)',
+                't(low)',
+                't(medium)',
+                't(high)',
+            ]
         elif version == 50:
             params_of_interest = [
                 't',
