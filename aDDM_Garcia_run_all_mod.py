@@ -132,7 +132,7 @@ model_versions  = {
                 "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", 
                 "ES_27", "ES_28", "ES_29", "ES_30", "ES_31", "ES_32",
                 "ES_33","ES_34","ES_35","ES_36","ES_37","ES_38","ES_39","ES_40","ES_41", "ES_42", 'ES_43', 'ES_44', "ES_45", 'ES_46', 'ES_47',"ES_48",
-                "ES_49", "ES_50", "ES_51", "ES_52", "ES_53", "ES_54", "ES_55"],
+                "ES_49", "ES_50", "ES_51", "ES_52", "ES_53", "ES_54", "ES_55", "ES_56", "ES_57", "ES_58"],
     
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
@@ -157,7 +157,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 54
+start_version = 55
 started = False
 
 # dir
@@ -508,11 +508,49 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E:C(OVcate) + InattentionW_S:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on = {'t':'OVcate'}
-               
+        elif version == 55:
+            print("Check in R if also pie>0.5 has any effect when looking at ES_AttentionW etc...")
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 56:
+            print("Hey, my name is Vero; really glad to meet ya!!!!!")
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
         else:
-            raise ValueError(f"check version {version} ??")   
+            raise ValueError(f"uh, ahh is this illegal ?? It feels illegal...")   
         
+        
+        include_list = ['a', 't', 'v']
+        has_z_reg = any(
+            reg['model'].strip().split('~',1)[0].strip() == 'z'
+            for reg in reg_descr
+        )
 
+        # …or if z is in the depends_on dict #
+        if has_z_reg or 'z' in depends_on:
+            include_list.append('z')
+        print(f"[run_model] version={version}  include={include_list}")
+
+        m = hddm.models.HDDMRegressor(
+            data,
+            reg_descr,
+            p_outlier=.05,
+            include=include_list,  
+            group_only_regressors=False,
+            keep_regressor_trace=True
+        )
+        
+        m.find_starting_values()
+        infdata = m.sample(samples,
+                   burn=200,
+                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                   db='pickle',
+                   return_infdata=True, loglike=True, ppc=True)
+
+        return m, infdata
+    
+    
+    
         # #  Fix z at 0.55 #
         # from copy import deepcopy
         # cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
@@ -563,35 +601,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
 
         # return m, infdata
     
-        include_list = ['a', 't', 'v']
-        has_z_reg = any(
-            reg['model'].strip().split('~',1)[0].strip() == 'z'
-            for reg in reg_descr
-        )
 
-        # …or if z is in the depends_on dict #
-        if has_z_reg or 'z' in depends_on:
-            include_list.append('z')
-        print(f"[run_model] version={version}  include={include_list}")
-
-        m = hddm.models.HDDMRegressor(
-            data,
-            reg_descr,
-            p_outlier=.05,
-            include=include_list,  
-            depends_on = depends_on,
-            group_only_regressors=False,
-            keep_regressor_trace=True
-        )
-        
-        m.find_starting_values()
-        infdata = m.sample(samples,
-                   burn=200,
-                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
-                   db='pickle',
-                   return_infdata=True, loglike=True, ppc=True)
-
-        return m, infdata
      
         # #  Fix z at 0.55 #
         # from copy import deepcopy
