@@ -725,31 +725,36 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 7:
             v_reg = {'model': 'v ~ 1 + z_AttentionW_E + z_AttentionW_S + z_InattentionW_E + z_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+        elif version == 8:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            
+            
         #  Fix z at 0.55 
-        # from copy import deepcopy
-        # cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
-        # idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
-        # cfg['params_default'][idx_z] = 0.55     # slight bias towards E
+        from copy import deepcopy
+        cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
+        idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
+        cfg['params_default'][idx_z] = 0.55     # slight bias towards E
         
-        # # SANITY‐CHECK 
-        # assert cfg['params'][idx_z] == 'z'
-        # assert cfg['params_default'][idx_z] == 0.55, \
-        #     f"z default not 0.55 but {cfg['params_default'][idx_z]}"
+        # SANITY‐CHECK 
+        assert cfg['params'][idx_z] == 'z'
+        assert cfg['params_default'][idx_z] == 0.55, \
+            f"z default not 0.55 but {cfg['params_default'][idx_z]}"
 
         # build the model
         m = hddm.models.HDDMRegressor(
             data,
             reg_descr,
             p_outlier=.05,
-            include=['a', 't', 'v', 'z'],     #  z is not in include becuase not a free param
+            include=['a', 't', 'v'],     #  z is not in include becuase not a free param
             group_only_regressors=False,
             keep_regressor_trace=True,
         )
 
-        # print("\n[ZBIAS DEBUG] model_config['params']       =", m.model_config['params'])
-        # print("[ZBIAS DEBUG] model_config['params_default'] =", m.model_config['params_default'])
-        # zi = m.model_config['params'].index('z')
-        # print(f"[ZBIAS DEBUG] default for 'z' = {m.model_config['params_default'][zi]}\n")  
+        print("\n[ZBIAS DEBUG] model_config['params']       =", m.model_config['params'])
+        print("[ZBIAS DEBUG] model_config['params_default'] =", m.model_config['params_default'])
+        zi = m.model_config['params'].index('z')
+        print(f"[ZBIAS DEBUG] default for 'z' = {m.model_config['params_default'][zi]}\n")  
         
 
 
