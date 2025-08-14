@@ -736,7 +736,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             reg_descr = [v_reg]
                    
             
-        #  Fix z at 0.55 
+        #  Fix z at 0.55 #
         from copy import deepcopy
         cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
         idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
@@ -751,10 +751,12 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         m = hddm.models.HDDMRegressor(
             data,
             reg_descr,
+            depends_on=depends_on,
             p_outlier=.05,
             include=['a', 't', 'v'],     #  z is not in include becuase not a free param
             group_only_regressors=False,
             keep_regressor_trace=True,
+            model_config=cfg
         )
 
         print("\n[ZBIAS DEBUG] model_config['params']       =", m.model_config['params'])
@@ -762,6 +764,8 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         zi = m.model_config['params'].index('z')
         print(f"[ZBIAS DEBUG] default for 'z' = {m.model_config['params_default'][zi]}\n")  
         
+        print("[ZBIAS DEBUG] sampling nodes in m.nodes_db:\n",
+              [n for n in m.nodes_db.index if n.split('_')[0] in ['a','t','v','z']])
 
 
         m.find_starting_values()
@@ -775,8 +779,13 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             ppc=True
         )
 
+        # final check that z never got sampled
+        assert "z" not in infdata.posterior.data_vars, \
+            "ERROR: 'z' appeared in the posterior!"
+        print("[DEBUG] z absent from posterior - confirmed fixed.")
 
         return m, infdata
+    
     
     elif phase == 'ES_quad':
         if version == 0:
