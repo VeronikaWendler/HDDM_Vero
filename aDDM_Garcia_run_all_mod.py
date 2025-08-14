@@ -151,13 +151,13 @@ PHASE_TO_SOURCE = {
 }
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["ES"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
+PHASE_RUN_ORDER = ["ES_ZBIAS"]                                         # order
+SKIP_PHASES     = {"LE","ES","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "ES"
-start_version = 50
+start_phase = "ES_ZBIAS"
+start_version = 8
 started = False
 
 # dir
@@ -728,7 +728,13 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 8:
             v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            
+        elif version == 9:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S + gazeSE', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 10:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S + FirstFix_Left', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+                   
             
         #  Fix z at 0.55 
         from copy import deepcopy
@@ -791,7 +797,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
                                     )
         m.find_starting_values()
         infdata = m.sample(samples,
-                   burn=100,
+                   burn=200,
                    dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                    db='pickle',
                    return_infdata=True, loglike=True, ppc=True)
