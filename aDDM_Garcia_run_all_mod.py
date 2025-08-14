@@ -157,7 +157,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 53
+start_version = 54
 started = False
 
 # dir
@@ -505,91 +505,93 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             reg_descr = [v_reg]
             
         elif version == 54:
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E:C(OVcate) + InattentionW_S:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+            depends_on = {'t':'OVcate'}
                
         else:
             raise ValueError(f"check version {version} ??")   
         
 
-        #  Fix z at 0.55 #
-        from copy import deepcopy
-        cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
-        idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
-        cfg['params_default'][idx_z] = 0.55     # slight bias towards E
+        # #  Fix z at 0.55 #
+        # from copy import deepcopy
+        # cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
+        # idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
+        # cfg['params_default'][idx_z] = 0.55     # slight bias towards E
         
-        # SANITY‐CHECK 
-        assert cfg['params'][idx_z] == 'z'
-        assert cfg['params_default'][idx_z] == 0.55, \
-            f"z default not 0.55 but {cfg['params_default'][idx_z]}"
+        # # SANITY‐CHECK 
+        # assert cfg['params'][idx_z] == 'z'
+        # assert cfg['params_default'][idx_z] == 0.55, \
+        #     f"z default not 0.55 but {cfg['params_default'][idx_z]}"
 
-        # build the model
-        m = hddm.models.HDDMRegressor(
-            data,
-            reg_descr,
-            depends_on=depends_on,
-            p_outlier=.05,
-            include=['a', 't', 'v'],     #  z is not in include becuase not a free param
-            group_only_regressors=False,
-            keep_regressor_trace=True,
-            model_config=cfg
-        )
-
-        print("\n[ DEBUG] model_config['params']       =", m.model_config['params'])
-        print("[ DEBUG] model_config['params_default'] =", m.model_config['params_default'])
-        zi = m.model_config['params'].index('z')
-        print(f"[ DEBUG] default for 'z' = {m.model_config['params_default'][zi]}\n")  
-        
-        print("[DEBUG] sampling nodes in m.nodes_db:\n",
-              [n for n in m.nodes_db.index if n.split('_')[0] in ['a','t','v','z']])
-
-
-        m.find_starting_values()
-        infdata = m.sample(
-            samples,
-            burn=200,
-            dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'),
-            db='pickle',
-            return_infdata=True,
-            loglike=True,
-            ppc=True
-        )
-
-        # final check that z never got sampled
-        assert "z" not in infdata.posterior.data_vars, \
-            "ERROR: 'z' appeared in the posterior!"
-        print("[DEBUG] z absent from posterior - confirmed fixed.")
-
-        return m, infdata
-    
-        # include_list = ['a', 't', 'v']
-        # has_z_reg = any(
-        #     reg['model'].strip().split('~',1)[0].strip() == 'z'
-        #     for reg in reg_descr
-        # )
-
-        # # …or if z is in the depends_on dict #
-        # if has_z_reg or 'z' in depends_on:
-        #     include_list.append('z')
-        # print(f"[run_model] version={version}  include={include_list}")
-
+        # # build the model
         # m = hddm.models.HDDMRegressor(
         #     data,
         #     reg_descr,
+        #     depends_on=depends_on,
         #     p_outlier=.05,
-        #     include=include_list,  
+        #     include=['a', 't', 'v'],     #  z is not in include becuase not a free param
         #     group_only_regressors=False,
-        #     keep_regressor_trace=True
+        #     keep_regressor_trace=True,
+        #     model_config=cfg
         # )
+
+        # print("\n[ DEBUG] model_config['params']       =", m.model_config['params'])
+        # print("[ DEBUG] model_config['params_default'] =", m.model_config['params_default'])
+        # zi = m.model_config['params'].index('z')
+        # print(f"[ DEBUG] default for 'z' = {m.model_config['params_default'][zi]}\n")  
         
+        # print("[DEBUG] sampling nodes in m.nodes_db:\n",
+        #       [n for n in m.nodes_db.index if n.split('_')[0] in ['a','t','v','z']])
+
+
         # m.find_starting_values()
-        # infdata = m.sample(samples,
-        #            burn=200,
-        #            dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
-        #            db='pickle',
-        #            return_infdata=True, loglike=True, ppc=True)
+        # infdata = m.sample(
+        #     samples,
+        #     burn=200,
+        #     dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'),
+        #     db='pickle',
+        #     return_infdata=True,
+        #     loglike=True,
+        #     ppc=True
+        # )
+
+        # # final check that z never got sampled
+        # assert "z" not in infdata.posterior.data_vars, \
+        #     "ERROR: 'z' appeared in the posterior!"
+        # print("[DEBUG] z absent from posterior - confirmed fixed.")
 
         # return m, infdata
+    
+        include_list = ['a', 't', 'v']
+        has_z_reg = any(
+            reg['model'].strip().split('~',1)[0].strip() == 'z'
+            for reg in reg_descr
+        )
+
+        # …or if z is in the depends_on dict #
+        if has_z_reg or 'z' in depends_on:
+            include_list.append('z')
+        print(f"[run_model] version={version}  include={include_list}")
+
+        m = hddm.models.HDDMRegressor(
+            data,
+            reg_descr,
+            p_outlier=.05,
+            include=include_list,  
+            depends_on = depends_on,
+            group_only_regressors=False,
+            keep_regressor_trace=True
+        )
+        
+        m.find_starting_values()
+        infdata = m.sample(samples,
+                   burn=200,
+                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                   db='pickle',
+                   return_infdata=True, loglike=True, ppc=True)
+
+        return m, infdata
      
         # #  Fix z at 0.55 #
         # from copy import deepcopy
