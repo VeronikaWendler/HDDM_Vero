@@ -503,6 +503,11 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 53:
             v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+            
+        elif version == 54:
+            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+               
         else:
             raise ValueError(f"check version {version} ??")   
         
