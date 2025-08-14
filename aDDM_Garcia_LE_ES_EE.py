@@ -77,10 +77,10 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 52    # defining version
+version = 8    # defining version
 run = False        # if True, the the models run, if False the models load
 
-phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
+phase = ['ES_ZBIAS']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
 
 # Determines whether to use a single phase or the combined ESEE model
 if set(phase) == {'ES', 'EE'}:
@@ -118,7 +118,7 @@ model_versions = {
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
     'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5'],
-    "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5", 'ES_ZBIAS_6'],
+    "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5", 'ES_ZBIAS_6', "ES_ZBIAS_7", "ES_ZBIAS_8", 'ES_ZBIAS_9', "ES_ZBIAS_10", "ES_ZBIAS_11" ],
     "ES_quad": ["ES_quad_1","ES_quad_2"],
     "LE_RL": ["LE_RL_1", "LE_RL_2"]
 }
@@ -2971,6 +2971,74 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_InattentionW_E',
                 'v_InattentionW_S'
             ]
+        elif version == 8:
+            params_of_interest = [
+                't',
+                'a',
+                'z',
+                'v_Intercept',
+                'v_AttentionW_E',
+                'v_AttentionW_S',
+                'v_InattentionW_E',
+                'v_InattentionW_S'
+                ]   
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                't',
+                'a',
+                'z',
+                'v_Intercept',
+                'v_AttentionW_E',
+                'v_AttentionW_S',
+                'v_InattentionW_E',
+                'v_InattentionW_S'   ]
+        elif version == 9:
+            params_of_interest = [
+                't',
+                'a',
+                'z',
+                'v_Intercept',
+                'v_AttentionW_E',
+                'v_AttentionW_S',
+                'v_InattentionW_E',
+                'v_InattentionW_S',
+                'v_gazeSE',
+                ]   
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                't',
+                'a',
+                'z',
+                'v_Intercept',
+                'v_AttentionW_E',
+                'v_AttentionW_S',
+                'v_InattentionW_E',
+                'v_InattentionW_S',
+                'v_gazeSE']
+
+        elif version == 10:
+            params_of_interest = [
+                't',
+                'a',
+                'z',
+                'v_Intercept',
+                'v_AttentionW_E',
+                'v_AttentionW_S',
+                'v_InattentionW_E',
+                'v_InattentionW_S',
+                'v_FirstFix_Left',
+                ]   
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                't',
+                'a',
+                'z',
+                'v_Intercept',
+                'v_AttentionW_E',
+                'v_AttentionW_S',
+                'v_InattentionW_E',
+                'v_InattentionW_S',
+                'v_FirstFix_Left']
 
     elif phase == 'ES_quad':
         if version == 0:          # v ~ 1 + DTA + DTA²
