@@ -2975,7 +2975,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             params_of_interest = [
                 't',
                 'a',
-                'z',
                 'v_Intercept',
                 'v_AttentionW_E',
                 'v_AttentionW_S',
@@ -2986,7 +2985,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             titles = [
                 't',
                 'a',
-                'z',
                 'v_Intercept',
                 'v_AttentionW_E',
                 'v_AttentionW_S',
@@ -2996,7 +2994,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             params_of_interest = [
                 't',
                 'a',
-                'z',
                 'v_Intercept',
                 'v_AttentionW_E',
                 'v_AttentionW_S',
@@ -3008,7 +3005,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             titles = [
                 't',
                 'a',
-                'z',
                 'v_Intercept',
                 'v_AttentionW_E',
                 'v_AttentionW_S',
@@ -3020,7 +3016,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             params_of_interest = [
                 't',
                 'a',
-                'z',
                 'v_Intercept',
                 'v_AttentionW_E',
                 'v_AttentionW_S',
@@ -3032,7 +3027,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             titles = [
                 't',
                 'a',
-                'z',
                 'v_Intercept',
                 'v_AttentionW_E',
                 'v_AttentionW_S',
