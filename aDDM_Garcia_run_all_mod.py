@@ -513,11 +513,11 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         elif version == 56:
-            print("Hey, my name is Vero; really glad to meet ya!!!!!")
+            print("Check in R if also pie>0.5 has any effect when looking at ES_AttentionW etc...")
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         else:
-            raise ValueError(f"uh, ahh is this illegal ?? It feels illegal...")   
+            raise ValueError(f"Is this version illegal ?? It feels illegal...")   
         
         
         include_list = ['a', 't', 'v']
