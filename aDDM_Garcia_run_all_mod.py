@@ -157,7 +157,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES"
-start_version = 55
+start_version = 57
 started = False
 
 # dir
@@ -515,6 +515,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 56:
             print("Check in R if also pie>0.5 has any effect when looking at ES_AttentionW etc...")
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            
+        elif version == 57:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S:C(OVcate) + InattentionW_E:C(OVcate) + InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         else:
             raise ValueError(f"Is this version illegal ?? It feels illegal...")   
