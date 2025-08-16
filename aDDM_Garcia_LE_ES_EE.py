@@ -2488,8 +2488,12 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_Intercept',
                 'v_AttentionW_early',
                 'v_InattentionW_early',
-                'v_AttentionW_late:C(OVcate)',
-                'v_InattentionW_late:C(OVcate)',
+                'v_AttentionW_late:C(OVcate)[low]',
+                'v_AttentionW_late:C(OVcate)[medium]',
+                'v_AttentionW_late:C(OVcate)[high]',
+                'v_InattentionW_late:C(OVcate)[low]',
+                'v_InattentionW_late:C(OVcate)[medium]',
+                'v_InattentionW_late:C(OVcate)[high]',
             ]
             params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
             titles = [
@@ -2498,8 +2502,12 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_Intercept',
                 'v_AttentionW_early',
                 'v_InattentionW_early',
-                'v_AttentionW_late:C(OVcate)',
-                'v_InattentionW_late:C(OVcate)',
+                'v_AttentionW_late:C(OVcate)[low]',
+                'v_AttentionW_late:C(OVcate)[medium]',
+                'v_AttentionW_late:C(OVcate)[high]',
+                'v_InattentionW_late:C(OVcate)[low]',
+                'v_InattentionW_late:C(OVcate)[medium]',
+                'v_InattentionW_late:C(OVcate)[high]',
             ]
     elif phase == 'EE':
         if version == 0:
