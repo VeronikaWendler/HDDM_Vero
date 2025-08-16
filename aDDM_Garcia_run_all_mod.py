@@ -151,13 +151,13 @@ PHASE_TO_SOURCE = {
 }
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["ES_ZBIAS"]                                         # order
-SKIP_PHASES     = {"LE","ES","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
+PHASE_RUN_ORDER = ["ES"]                                         # order
+SKIP_PHASES     = {"LE","ES_ZBIAS","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "ES_ZBIAS"
-start_version = 11
+start_phase = "ES"
+start_version = 58
 started = False
 
 # dir
