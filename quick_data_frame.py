@@ -293,7 +293,8 @@ data['rt_median_subj'] = data.groupby('sub_id')['rtime'].transform('median')
 data['early'] = (data['rtime'] <= data['rt_median_subj']).astype(int)
 data['late']  = (data['rtime'] > data['rt_median_subj']).astype(int)
 data['RT_group'] = np.where(data['early'] == 1, 'early', 'late')
-
+data['trial_type'] = data['rtime'] <= data['rt_median_subj']
+data['trial_type'] = data['trial_type'].map({True: 'ET', False: 'LT'})
 base_cols = ['AttentionW', 'InattentionW',
              'ES_AttentionW', 'ES_InattentionW',
              'AttentionW_E', 'AttentionW_S', 'InattentionW_E', 'InattentionW_S']

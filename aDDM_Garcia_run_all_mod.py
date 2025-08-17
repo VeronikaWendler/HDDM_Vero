@@ -132,7 +132,7 @@ model_versions  = {
                 "ES_19", "ES_20", "ES_21", "ES_22", "ES_23", "ES_24", "ES_25", "ES_26", 
                 "ES_27", "ES_28", "ES_29", "ES_30", "ES_31", "ES_32",
                 "ES_33","ES_34","ES_35","ES_36","ES_37","ES_38","ES_39","ES_40","ES_41", "ES_42", 'ES_43', 'ES_44', "ES_45", 'ES_46', 'ES_47',"ES_48",
-                "ES_49", "ES_50", "ES_51", "ES_52", "ES_53", "ES_54", "ES_55", "ES_56", "ES_57", "ES_58", "ES_59", "ES_60", "ES_61"],
+                "ES_49", "ES_50", "ES_51", "ES_52", "ES_53", "ES_54", "ES_55", "ES_56", "ES_57", "ES_58", "ES_59", "ES_60", "ES_61", "ES_62", "ES_63", "ES_64"],
     
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
@@ -149,6 +149,8 @@ PHASE_TO_SOURCE = {
     "ES_quad": "ES",    
     "LE_RL": "LE",
 }
+
+
 
 # BATCH-RUN CONTROL
 PHASE_RUN_ORDER = ["ES"]                                         # order
@@ -530,6 +532,15 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 60:
             v_reg = {'model': 'v ~ 1 + AttentionW:C(OVcate) + IAW_chart + IAW_image', 'link_func': lambda x: x}
             reg_descr = [v_reg, t_reg]
+            depends_on = {'a': 'OVcate'}
+        elif version == 61:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        elif version == 62:
+            v_reg = {'model': 'v ~ 1 + AttentionW_early + InattentionW_early + AttentionW_late + InattentionW_late', 'link_func': lambda x: x}
+            reg_descr = [v_reg] 
+            depends_on = {'a': 'trial_type'}
         else:
             raise ValueError(f"Is this version illegal ?? It feels illegal...")   
         
@@ -550,6 +561,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             reg_descr,
             p_outlier=.05,
             include=include_list,  
+            depends_on = depends_on,
             group_only_regressors=False,
             keep_regressor_trace=True
         )
