@@ -137,7 +137,8 @@ model_versions  = {
     "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
-    "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5", "ES_ZBIAS_6","ES_ZBIAS_7","ES_ZBIAS_8", "ES_ZBIAS_9","ES_ZBIAS_10", "ES_ZBIAS_11","ES_ZBIAS_12", "ES_ZBIAS_13" ],
+    "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5", "ES_ZBIAS_6","ES_ZBIAS_7","ES_ZBIAS_8", "ES_ZBIAS_9","ES_ZBIAS_10", "ES_ZBIAS_11","ES_ZBIAS_12", "ES_ZBIAS_13",
+                "ES_ZBIAS_14", "ES_ZBIAS_15"],
     "ES_quad": ["ES_quad_1","ES_quad_2"],
     "LE_RL": ["LE_RL_1","LE_RL_2"],
    
@@ -153,13 +154,13 @@ PHASE_TO_SOURCE = {
 
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["ES"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
+PHASE_RUN_ORDER = ["ES_ZBIAS"]                                         # order
+SKIP_PHASES     = {"LE","ES","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "ES"
-start_version = 60
+start_phase = "ES_ZBIAS"
+start_version = 13
 started = False
 
 # dir
@@ -838,6 +839,17 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 12:
             v_reg = {'model': 'v ~ 1 + ES_AttentionW_early + ES_InattentionW_early + ES_AttentionW_late:C(OVcate) + ES_InattentionW_late:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+        elif version == 13:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW_early + ES_InattentionW_early + ES_AttentionW_late + ES_InattentionW_late', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'trial_type'}
+        elif version == 14:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW_early + ES_InattentionW_early + ES_AttentionW_late + ES_InattentionW_late', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'}
+       
+            
+        # we need this but with a:trial_type & a second model with an addtional fixed z at .55
             
         include_list = ['a', 't', 'v']
         has_z_reg = any(
@@ -855,6 +867,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             reg_descr,
             p_outlier=.05,
             include=include_list,  
+            depends_on = depends_on,
             group_only_regressors=False,
             keep_regressor_trace=True
         )
