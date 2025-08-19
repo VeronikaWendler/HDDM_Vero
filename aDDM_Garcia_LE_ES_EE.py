@@ -166,16 +166,14 @@ data["rt"] = pd.to_numeric(data['rtime'], errors='coerce')
 # Exclude RTs below 0.250 immediately
 data = data[data["rt"] > 0.250]
 
-# Debug: Check min and max RT values after filtering
 print("Min RT after filtering:", data['rt'].min())
 print("Max RT after filtering:", data['rt'].max())
 
-# to ensure that the proper types align with the modeling framework
 if phase == "ES_ZBIAS":
     data["response"] = pd.to_numeric(data["chose_left"], errors="coerce")
 else:
     data["response"] = pd.to_numeric(data["corr"], errors="coerce")
-data["OVcate"] = data['OVcate_2'].astype("category")                     # OVcate_2 = tertile binning instead of quantile binning
+data["OVcate"] = data['OVcate_2'].astype("category")                    
 data["Abscate"] = data['Abscate_2'].astype("category")
 data["cond"] = data["cond"].fillna(-1)
 data["cond"] = data["cond"].astype("int")
@@ -300,7 +298,7 @@ ensure_dir(fig_dir / "diagnostics")
 # fig_dir = FIG_DIR_ROOT / full_model_name
 # ensure_dir(fig_dir / "diagnostics")
 
-# subjects:
+## subjects
 subjects = np.unique(data.subj_idx)
 nr_subjects = subjects.shape[0]
 print(nr_subjects)

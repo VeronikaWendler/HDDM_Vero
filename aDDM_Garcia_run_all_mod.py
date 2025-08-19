@@ -579,7 +579,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
     
     
         # #  Fix z at 0.55 #
-        # from copy import deepcopy
         # cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
         # idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
         # cfg['params_default'][idx_z] = 0.55     # slight bias towards E
@@ -926,7 +925,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         # from copy import deepcopy
         # cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
         # idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
-        # cfg['params_default'][idx_z] = 0.55     # slight bias towards E  (e is lower bound) - no, chnging it again to E being upper (chose_left)
+        # cfg['params_default'][idx_z] = 0.55     #  - changing it again to E being upper (chose_left) - if S shoudl be upper, then set (chose_right)
         
         # # SANITY‐CHECK 
         # assert cfg['params'][idx_z] == 'z'
@@ -1132,7 +1131,6 @@ def drift_diffusion_hddmRL(
 
     start_time = time.time()
     if parallel:
-        # 1) Spin up threads to run_model, return (model, infdata) but do NOT save there.
         results = Parallel(n_jobs=n_jobs, backend="threading")(
             delayed(run_model)(
                 trace_id=i,
@@ -1145,10 +1143,8 @@ def drift_diffusion_hddmRL(
             )
             for i in range(n_jobs)
         )
-        # 2) Now, in the main thread, iterate the results and save.
         for i, (model, infdata) in enumerate(results):
             fname = f"{model_name}_{i}"
-            # this save now happens in the main thread
             # model.save(os.path.join(model_dir, fname + ".hddm"))
             # with open(os.path.join(model_dir, fname + ".pkl"), "wb") as f:
             #     pickle.dump(model, f)
@@ -2125,11 +2121,9 @@ if __name__ == "__main__":
                 print("[ZBIAS DEBUG] head of response mapping:")
                 print(data[["chose_left","corr","response"]].head(10).to_string(index=False))
                 print("counts:", data["response"].value_counts(dropna=False).to_dict())
-
-                # ----- sanity assert -----
-                # we expect response exactly equals chose_left for every row
+                # sanity checks ...are we actually filtering the right things
                 mismatches = (data["response"] != data["chose_left"]).sum()
-                assert mismatches == 0, f"{mismatches} rows where response ≠ chose_right!"
+                assert mismatches == 0, f"{mismatches} rows where response ≠ chose_left!"
             else:
                 data["response"] = pd.to_numeric(data["corr"], errors="coerce")
                 print(data[["chose_left","corr","response"]].head(5).to_string(index=False))
@@ -2167,7 +2161,6 @@ if __name__ == "__main__":
             data["z_IAW_chart"]= pd.to_numeric(data["z_IAW_chart"],errors="coerce")
             data["z_IAW_image"]= pd.to_numeric(data["z_IAW_image"],errors="coerce")
             
-            # convert dwell columns to numeric (if they aren't already)
             data["DwellLeft"]  = pd.to_numeric(data["DwellLeft"],  errors="coerce")
             data["DwellRight"] = pd.to_numeric(data["DwellRight"], errors="coerce")
             data["z_AW_bal"] = pd.to_numeric(data["z_AW_bal"], errors="coerce")
@@ -2183,7 +2176,7 @@ if __name__ == "__main__":
             data["z_InattentionW_E"] = pd.to_numeric(data["z_InattentionW_E"], errors="coerce")
             data["z_InattentionW_S"] = pd.to_numeric(data["z_InattentionW_S"], errors="coerce")
             
-            # keep only trials with strictly positive dwell time on both sides
+            # keep only trials with strictly positive dwell time on both sides, this can be changed; depends on the goal
             #data = data[(data["DwellLeft"] > -1) & (data["DwellRight"] > -1)]
             data["z_DwellPropAdvantageCorrect"] = pd.to_numeric(data["z_DwellPropAdvantageCorrect"], errors="coerce")
             data["z_balance"] = pd.to_numeric(data["z_balance"], errors="coerce")
@@ -2230,10 +2223,8 @@ if __name__ == "__main__":
                                        "z_InattentionW_E",
                                        "z_InattentionW_S",'AttentionW_early','InattentionW_early', 'AttentionW_late','InattentionW_late', 'ES_AttentionW_early','ES_InattentionW_early', 'ES_AttentionW_late','ES_InattentionW_late'])   
             
-            # put this near the top of the file, right after you finish preparing `data_full`
-
             # ------------------------------------------------------------
-            # gives you a quick report at the start
+            # quick report at the start
             quick_report(data, phase, version, model_name, phase_key)
 
             # fig_dir = os.path.join("figures_dir_garcia", full_model_name)
@@ -2242,7 +2233,7 @@ if __name__ == "__main__":
             fig_dir = FIG_DIR_ROOT / full_model_name
             ensure_dir(fig_dir / "diagnostics")
 
-            # # run hddm function ------------------------------------------
+            # # run hddm function 
             drift_diffusion_hddm(
                 data=data,
                 samples=nr_samples,
@@ -2255,6 +2246,7 @@ if __name__ == "__main__":
                 phase=phase,
                 accuracy_coding=True
             )
+            #only when running RL in the LE phase
             # drift_diffusion_hddmRL(
             #     data=data,
             #     samples=nr_samples,

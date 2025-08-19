@@ -85,7 +85,6 @@ def add_theta_params_to_results(m35_in_csv, m35_out_csv, use_median=False):
         ("theta_image_high",  num_image, den_high),
     ]
 
-    # Prepare rows with same columns as df; fill non-mean stats with NaN
     new_rows = []
     cols = list(df.columns)
     if "param" not in cols:
@@ -96,23 +95,19 @@ def add_theta_params_to_results(m35_in_csv, m35_out_csv, use_median=False):
         for sid in common:
             den = den_map[sid]
             if den is None or np.isclose(den, 0.0):
-                continue  # avoid div by zero
+                continue  
             mean_val = num_map[sid] / den
             row = {c: np.nan for c in cols}
             row["param"] = f"{base}_subj.{sid}"
             row["mean"]  = mean_val
-            # optionally mirror into 50q for convenience if present
             if "50q" in cols:
                 row["50q"] = mean_val
             new_rows.append(row)
 
-    if not new_rows:
-        raise ValueError("No theta rows were created — check that denominators exist and are not ~0.")
-
     df_theta = pd.DataFrame(new_rows, columns=cols)
     df_out = pd.concat([df, df_theta], ignore_index=True)
     df_out.to_csv(m35_out_csv, index=False)
-    print(f"Saved augmented results with θ params -> {m35_out_csv}")
+    print(f"Saved augmented results with theta params in {m35_out_csv}")
     return m35_out_csv
 
 
@@ -133,7 +128,7 @@ def plot_alpha_correlations(
     m35 = _read_results(model35_results_csv)
     central = "50q" if use_median else "mean"
 
-    # alpha_subj.<id>
+    # alpha_subj
     alpha_subj = {}
     pat_alpha = re.compile(r"^alpha_subj\.(\d+)$")
     for _, row in rl.iterrows():
@@ -149,12 +144,9 @@ def plot_alpha_correlations(
 
     # subj-level params from the HDDM model
     params_by_name = _extract_all_subject_params(m35, central=central)
-    if not params_by_name:
-        raise ValueError("No '*_subj.<id>' parameters found in model35_results_csv.")
-
-    # Prepare data for panels + CSV
+    
     rows = []
-    panels = []  # list of dicts with x, y, name, fit, etc.
+    panels = []  
 
     for base_name, subj_map in sorted(params_by_name.items()):
         common = sorted(set(alpha_subj).intersection(subj_map))
@@ -167,7 +159,7 @@ def plot_alpha_correlations(
         r, p = stats.pearsonr(x, y)
         r2 = float(r**2)
 
-        # OLS line + 95% CI
+        # 95% CI
         n = len(common)
         b1, b0 = np.polyfit(x, y, 1)
         x_line = np.linspace(x.min(), x.max(), 100)
@@ -193,7 +185,6 @@ def plot_alpha_correlations(
             "p_value": float(p),
         })
 
-    # ---- One-page PDF with a grid of subplots ----
     k = len(panels)
     if k == 0:
         raise ValueError("Nothing to plot (no parameters with >=5 overlapping subjects).")
@@ -203,14 +194,12 @@ def plot_alpha_correlations(
     fig, axes = plt.subplots(nrows, ncols, figsize=(4.2*ncols, 3.6*nrows))
     axes = np.atleast_1d(axes).ravel()
     
-    ACCENT = "darksalmon"  # one place to change the theme color
+    ACCENT = "darksalmon"  # change if different phase ..
     for ax, panel in zip(axes, panels):
         x = panel["x"]; y = panel["y"]
         # points
         ax.scatter(x, y, s=30, color=ACCENT, alpha=0.85, edgecolors="none")
-        # regression line
         ax.plot(panel["x_line"], panel["y_line"], color=ACCENT, lw=1.8)
-        # 95% CI band
         ax.fill_between(panel["x_line"], panel["y_lo"], panel["y_hi"],
                         color=ACCENT, alpha=0.25, linewidth=0)
 
@@ -218,12 +207,10 @@ def plot_alpha_correlations(
         ax.set_ylabel(panel["name"])
         ax.set_title(panel["name"])
 
-        # Stats box (top-left), NO "N = ..." in the text
         txt = f"R² = {panel['r2']:.3f}\n{_p_text(panel['p'])}"
         ax.text(0.02, 0.98, txt, transform=ax.transAxes, va="top", ha="left",
                 bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none", alpha=0.9), fontsize=9)
 
-    # Hide any unused axes
     for j in range(len(panels), len(axes)):
         axes[j].axis("off")
 
@@ -232,7 +219,6 @@ def plot_alpha_correlations(
     fig.savefig(out_pdf, dpi=300, bbox_inches="tight")
     plt.close(fig)
 
-    # CSV unchanged
     pd.DataFrame(rows).sort_values("r2", ascending=False).to_csv(out_csv, index=False)
     print(f"Saved (single-page): {out_pdf}")
     print(f"Saved: {out_csv}")
@@ -243,10 +229,8 @@ rl_results_csv = (RL1_DIAG / "results_alpha_transformed.csv").as_posix()
 m35_in_csv     = (M35_DIAG / "results.csv").as_posix()
 m35_plus_csv   = (M35_DIAG / "results_plus_theta.csv").as_posix()
 
-# 1) augment M35 with θ-parameters
 m35_aug = add_theta_params_to_results(m35_in_csv, m35_plus_csv, use_median=False)
 
-# 2) run correlations using augmented results
 out_pdf = (OUT_DIR / "alpha_param_correlations_with_theta.pdf").as_posix()
 out_csv = (OUT_DIR / "alpha_param_correlations_with_theta_summary.csv").as_posix()
 

@@ -5,14 +5,13 @@ import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
 
-# ---------------- paths ----------------
+#paths
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 
 M35_DIAG = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "diagnostics"
 OUT_DIR  = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "correlation"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Pick the ES-accuracy CSV robustly
 CANDIDATES = [
     PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "correlation" / "results_ES_accuracy.csv",
     PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "correlation" / "reuslts_ES_accuracy.csv",
@@ -20,7 +19,6 @@ CANDIDATES = [
     PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garcia_replication_ES_35" / "correlation" / "reuslts_ES_accuracy.csv",
 ]
 
-# optional override: export ES_ACC_CSV=/full/path/to/your/file.csv
 override = os.getenv("ES_ACC_CSV")
 if override:
     CANDIDATES.insert(0, Path(override))
@@ -28,7 +26,7 @@ if override:
 ACC_CSV = next((p for p in CANDIDATES if p and Path(p).exists()), None)
 if ACC_CSV is None:
     raise FileNotFoundError(
-        "Couldn't find ES accuracy CSV. Checked:\n  " + "\n  ".join(str(p) for p in CANDIDATES)
+        "Couldn't find ES accuracy CSV..."
     )
 print(f"Using ES accuracy file: {ACC_CSV}")
 
@@ -44,7 +42,6 @@ def _read_results(path: Path) -> pd.DataFrame:
     return df
 
 def _extract_all_subject_params(df: pd.DataFrame, central="mean"):
-    """Return {base_param: {sid: value, ...}, ...} for rows like '<base>_subj.<id>'."""
     by_param = {}
     pat = re.compile(r"^(?P<base>.+)_subj\.(?P<sid>\d+)$")
     for _, row in df.iterrows():
@@ -58,7 +55,6 @@ def _extract_all_subject_params(df: pd.DataFrame, central="mean"):
     return by_param
 
 def add_theta_params_to_results(m35_in_csv: Path, m35_out_csv: Path, use_median=False) -> Path:
-    """Augment Model 35 results with theta_* subject-level params; returns output path."""
     df = _read_results(m35_in_csv)
     central = "50q" if use_median else "mean"
     subj_maps = _extract_all_subject_params(df, central=central)
@@ -113,7 +109,7 @@ def _p_text(p: float) -> str:
         return "p=NA"
     return "p<.001" if p < 1e-3 else f"p={p:.3f}"
 
-# ---------------- new: accuracy vs aDDM params ----------------
+#  accuracy vs aDDM params
 def read_es_accuracy(path: Path) -> dict:
     """
     Reads ES-phase mean accuracy CSV with columns:
@@ -140,17 +136,17 @@ def plot_accuracy_correlations(
     out_csv: Path,
     use_median: bool = False
 ):
-    # 1) accuracy per subject
+    #accuracy per subject
     acc_map = read_es_accuracy(accuracy_csv)  # {sid: accuracy}
 
-    # 2) read all subject-level aDDM params (including theta if present)
+    # read all subject-level aDDM params (including theta if present)
     m35 = _read_results(model35_results_csv)
     central = "50q" if use_median else "mean"
     params_by_name = _extract_all_subject_params(m35, central=central)
     if not params_by_name:
         raise ValueError("No '*_subj.<id>' parameters found in model35_results_csv.")
 
-    # 3) assemble panels & CSV stats
+    # assemble panels & CSV stats
     panels, rows = [], []
     for base_name, subj_map in sorted(params_by_name.items()):
         common = sorted(set(acc_map).intersection(subj_map))
@@ -163,7 +159,7 @@ def plot_accuracy_correlations(
         r2   = float(r**2)
         n    = len(common)
 
-        # OLS line + 95% CI
+        # 95% CI
         b1, b0 = np.polyfit(x, y, 1)
         x_line = np.linspace(x.min(), x.max(), 100)
         y_line = b1 * x_line + b0
@@ -183,7 +179,7 @@ def plot_accuracy_correlations(
     if not panels:
         raise ValueError("Nothing to plot (no parameters with >=5 overlapping subjects).")
 
-    # 4) single-page grid PDF
+    # grid PDF
     k = len(panels)
     ncols = 3 if k <= 9 else 4 if k <= 16 else 5
     nrows = math.ceil(k / ncols)
@@ -200,12 +196,10 @@ def plot_accuracy_correlations(
         ax.set_ylabel(panel["name"])
         ax.set_title(panel["name"])
 
-        # stats box top-left, no "N="
         txt = f"R² = {panel['r2']:.3f}\n{_p_text(panel['p'])}"
         ax.text(0.02, 0.98, txt, transform=ax.transAxes, va="top", ha="left",
                 bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none", alpha=0.9), fontsize=9)
 
-        # Optional: keep a bit of padding
         ax.margins(0.05)
 
     for j in range(len(panels), len(axes)):
@@ -216,18 +210,15 @@ def plot_accuracy_correlations(
     fig.savefig(out_pdf, dpi=300, bbox_inches="tight")
     plt.close(fig)
 
-    # 5) CSV summary
+    # CSV summary
     pd.DataFrame(rows).sort_values("r2", ascending=False).to_csv(out_csv, index=False)
     print(f"Saved PDF: {out_pdf}")
     print(f"Saved CSV: {out_csv}")
 
-# ---------------- run ----------------
-# Augment Model 35 results with theta_* params (once)
+# run 
 m35_in      = M35_DIAG / "results.csv"
 m35_plus    = M35_DIAG / "results_plus_theta.csv"
 m35_aug_csv = add_theta_params_to_results(m35_in, m35_plus, use_median=False)
-
-# Plot accuracy vs all aDDM params
 out_pdf = OUT_DIR / "accuracy_vs_params_with_theta.pdf"
 out_csv = OUT_DIR / "accuracy_vs_params_with_theta_summary.csv"
 

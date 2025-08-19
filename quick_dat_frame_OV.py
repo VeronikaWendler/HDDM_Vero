@@ -7,7 +7,6 @@ data = pd.read_csv(
     "OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"
 )
 
-# choice side (assumes 0/1 or True/False) -------------------------
 data['sub_id'] = data['sub_id'].astype(int) + 100
 
 data['chose_right'] = data['chose_right'].astype(int)
@@ -73,8 +72,6 @@ data['ES_InattentionW'] = data['ES_InattentionW'].round(3)
 # the CCT drift rate regression 
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2 ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ϵ
 
-# --- save back to disk -----------------------------------------------
-# normalize DwellTimeAdvantage and create z_reg
 # normalize DwellTimeAdvantage and create z_reg
 max_abs = np.nanmax(np.abs(data['DwellTimeAdvantage']))
 data['dta_norm'] = data['DwellTimeAdvantage'] / max_abs
@@ -95,7 +92,7 @@ data['DwellPropAdvantage'] = data['PropDwell_Right'] - data['PropDwell_Left']
 data["abs_DwellPropAdv"]   = data['DwellPropAdvantage'].abs()
 data["gaze_quad"]  = data["DwellPropAdvantage"]**2
 
-# dwell_prop ranges roughly -1 … +1.  Centre it first.
+
 data["gaze_bal"]   = 1 - data["DwellPropAdvantage"]**2     # penalty (1 at centre, 0 at extremes)
 data["val_bal_int"] = data["val_diff"] * data["gaze_bal"]  # interaction that drives drift
 
@@ -135,9 +132,6 @@ to_z = ['AttentionW',            # symmetric, continuous
         'DwellPropAdvantage',
         'abs_DwellPropAdv']              # etc. add more if needed
 
-# ---------------------------------------------
-# z-score, then round to 3 decimals (example)
-# ---------------------------------------------
 for c in to_z:
     mu, sd = data[c].mean(), data[c].std()
     data[f'z_{c}'] = ((data[c] - mu) / sd).round(4)  

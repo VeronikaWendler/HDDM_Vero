@@ -8,7 +8,6 @@ data = pd.read_csv(
     "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"
 )
 
-# # choice side (assumes 0/1 or True/False) -------------------------
 # data['chose_right'] = data['chose_right'].astype(int)
 # data['chose_left']  = 1 - data['chose_right']          # 1 = left, 0 = right
 # data['gazeCI'] = data['DwellTime_opt'] - data['DwellTime_sub']
@@ -58,7 +57,7 @@ data = pd.read_csv(
 # data['ES_middle'] = (data['MiddleDominantLoc_Left'] & data['FinalFix_Right']).astype(int)
 # data['EE_middle'] = (data['MiddleDominantLoc_Left'] & data['FinalFix_Left']).astype(int)
 
-# # computing regressors for the stim coded addm according to Sebastian:
+# # computing regressors for the addm according to Sebastian:
 # #driftRate = driftConstant*((fix(t,f)==1)*(choiceSet(t,1)-theta*choiceSet(t,2))+...
 # #                                   (fix(t,f)==0)*(theta*choiceSet(t,1)-choiceSet(t,2)));
 # # the Sebastian drift rate regression - p1 is value on the left and p2 is value on the right ...this is how we get teh attntional and inattentional parameters..
@@ -72,9 +71,6 @@ data = pd.read_csv(
 # # the CCT drift rate regression 
 # # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2 ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ϵ
 
-# # --- save back to disk -----------------------------------------------
-# # normalize DwellTimeAdvantage and create z_reg
-# # normalize DwellTimeAdvantage and create z_reg
 # max_abs = np.nanmax(np.abs(data['DwellTimeAdvantage']))
 # data['dta_norm'] = data['DwellTimeAdvantage'] / max_abs
 # data['z_dynamic']   = (data['dta_norm'] + 1) / 2                            # dynamic z sscaled by gaze
@@ -98,10 +94,6 @@ data = pd.read_csv(
 
 # # v = β0  + β_deltaV * (V_S - V_E) + β_lin * (G_S - G_E) + β_quad * (G_S - G_E)**2
 
-
-
-
-# # dwell_prop ranges roughly -1 … +1.  Centre it first.
 # data["gaze_bal"]   = 1 - data["DwellPropAdvantage"]**2     # penalty (1 at centre, 0 at extremes)
 # data["val_bal_int"] = data["val_diff"] * data["gaze_bal"]  # interaction that drives drift
 
@@ -183,10 +175,6 @@ data = pd.read_csv(
 
 # # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2 ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ϵ
 
-
-
-# # “gated aDDM”: scale evidence by gaze balance
-
 # data['AW_bal']  = data['AttentionW']   * data['balance']
 # data['IAW_bal'] = data['InattentionW'] * data['balance']
 
@@ -248,7 +236,6 @@ data = pd.read_csv(
 
 
 
-# # ---------- choose which columns to standardise --------------
 # to_z = ['AttentionW',            # symmetric, continuous
 #         'InattentionW',          # symmetric, continuous
 #         'gaze_quad',             # if you use it
@@ -265,9 +252,6 @@ data = pd.read_csv(
 #         "AW_bal","IAW_bal","AttentionW_E", "AttentionW_S", "InattentionW_E", "InattentionW_S",
 #         ]              # etc. add more if needed
 
-# # ---------------------------------------------
-# # z-score, then round to 3 decimals (example)
-# # ---------------------------------------------
 # for c in to_z:
 #     mu, sd = data[c].mean(), data[c].std()
 #     data[f'z_{c}'] = ((data[c] - mu) / sd).round(4)  
@@ -305,7 +289,6 @@ for c in base_cols:
     data[f'{c}_late']  = data[c] * data['late']
 
 
-# quick sanity checks (optional)
 # print(data[['sub_id','rtime','rt_median_subj','RT_group']].head())
 # data[['early','late']].sum()  # should roughly split half/half per subject
 
