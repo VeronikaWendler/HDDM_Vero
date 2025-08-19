@@ -3597,15 +3597,15 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 params_of_interest = [
                     'a',
                     't',
-                    'v_Intercept'
+                    'v_Intercept',
                     'v_ES_AttentionW',
-                    'v_ES_InattentionW'
+                    'v_ES_InattentionW',
                 ]
                 params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
                 titles = [
                     'a',
                     't',
-                    'v_Intercept'
+                    'v_Intercept',
                     'v_ES_AttentionW',
                     'v_ES_InattentionW']
 
