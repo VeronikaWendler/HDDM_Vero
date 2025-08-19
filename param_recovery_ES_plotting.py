@@ -3,7 +3,6 @@ import os
 import types
 import sys
 
-# === Environment setup (must happen before importing matplotlib / arviz / numba-using libs) ===
 # Local writable cache for matplotlib
 cache_dir = os.path.abspath("./.matplotlib_cache")
 os.environ["MPLCONFIGDIR"] = cache_dir

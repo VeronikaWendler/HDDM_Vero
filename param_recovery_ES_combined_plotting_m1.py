@@ -1,21 +1,13 @@
 
-
-
-
 import os
 import types
 import sys
 
-# === Environment setup (must happen before importing matplotlib / arviz / numba-using libs) ===
-# Local writable cache for matplotlib
 cache_dir = os.path.abspath("./.matplotlib_cache")
 os.environ["MPLCONFIGDIR"] = cache_dir
 os.makedirs(cache_dir, exist_ok=True)
 
-# Disable numba JIT/caching to avoid the histogram locator error in ArviZ
 os.environ["NUMBA_DISABLE_JIT"] = "1"
-
-# Dummy modules to avoid import errors (keep if needed on this cluster)
 sys.modules.setdefault('winreg', types.ModuleType('winreg'))
 sys.modules.setdefault('_gdbm', types.ModuleType('_gdbm'))
 
@@ -117,7 +109,6 @@ def save_diagnostics(idata, label, outdir, var_names=None):
     summary.to_csv(summary_file)
     print(f"Saved summary for {label} to {summary_file}")
 
-    # Warn about potential convergence issues
     if 'r_hat' in summary.columns:
         high_rhat = summary['r_hat'] > 1.05
         if high_rhat.any():
@@ -127,7 +118,6 @@ def save_diagnostics(idata, label, outdir, var_names=None):
         if low_ess.any():
             print(f"Warning: {label} has low bulk ESS for: {list(summary.index[low_ess])}")
 
-    # Trace plots
     try:
         trace_fig = az.plot_trace(idata, var_names=var_names)
         trace_path = outdir / f"{label}_trace.png"
@@ -137,7 +127,6 @@ def save_diagnostics(idata, label, outdir, var_names=None):
     except Exception as e:
         print(f"Could not make trace plot for {label}: {e}")
 
-    # Optional: LOO (may fail if model isn't compatible)
     try:
         loo_res = az.loo(idata, scale="deviance")
         loo_df = pd.DataFrame({
@@ -153,14 +142,12 @@ def save_diagnostics(idata, label, outdir, var_names=None):
 
     return summary
 
-# Run diagnostics and persist
+# diagnostics and persist
 fitted_summary = save_diagnostics(es27_infdata, "fitted", FIG_DIR_ROOT, var_names=param_list)
 recovered_summary = save_diagnostics(m_recovery_infdata, "recovered", FIG_DIR_ROOT, var_names=param_list)
 
 #--------------------------------------------------------------------------------------------------------------------------------------------
-#REG PLOT FUNCTION
-# AZ SUMMARY
-# some functions for some plots
+# from tutorial -...
 import numpy as np
 import pandas as pd
 import statsmodels.api as sm
@@ -195,7 +182,6 @@ def deming_regression(x, y, lambda_ratio=1.0):
     S_xx = np.sum((x - x_bar) ** 2)
     S_yy = np.sum((y - y_bar) ** 2)
     S_xy = np.sum((x - x_bar) * (y - y_bar))
-    # Using formula from Linnet (1990)
     delta = S_yy - lambda_ratio * S_xx
     denom = 2 * S_xy
     if denom == 0:

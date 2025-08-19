@@ -71,7 +71,7 @@ chain2 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_34_2.nc")
 es27_infdata = az.concat([ chain0, chain1, chain2], dim="chain")
 
 #--------------------------------------------------------------------------------------------------------------------------------------------
-
+# copied from Pan et al., (2025)
 
 def az_summary(infdata=None, half_a=False, param_names_order=None, **kwargs):
 

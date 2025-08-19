@@ -40,7 +40,6 @@ from patsy import dmatrix
 from joblib import Parallel, delayed
 import time
 import arviz as az
-# patch: make a dummy _gdbm module so “import _gdbm” never fails
 import types, sys
 
 import dill as pickle
@@ -89,7 +88,6 @@ FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_31/diag
 
 
 #-------------------------------------------------------------------------------------------------------------------------------------------   
-# here also improatant, set which model to lead (concatenate the chains you ran)
 chain0 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_31_0.nc")
 chain1 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_31_1.nc")
 chain2 = az.from_netcdf(BASE_MODEL_DIR / "garcia_replication_ES_31_2.nc")
@@ -151,7 +149,6 @@ def save_diagnostics(idata, label, outdir, var_names=None):
     except Exception as e:
         print(f"Could not make trace plot for {label}: {e}")
 
-    # Optional: LOO (may fail if model isn't compatible)
     try:
         loo_res = az.loo(idata, scale="deviance")
         loo_df = pd.DataFrame({
@@ -172,7 +169,7 @@ fitted_summary = save_diagnostics(es27_infdata, "fitted", FIG_DIR_ROOT, var_name
 recovered_summary = save_diagnostics(m_recovery_infdata, "recovered", FIG_DIR_ROOT, var_names=param_list)
 
 #--------------------------------------------------------------------------------------------------------------------------------------------
-#REG PLOT FUNCTION
+#REG PLOT FUNCTION copied from Pan et al. (2025)
 # AZ SUMMARY
 # some functions for some plots
 def regplot_with_corr(

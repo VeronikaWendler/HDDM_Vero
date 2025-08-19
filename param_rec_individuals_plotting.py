@@ -42,7 +42,6 @@ def regress_stats(x, y):
     return dict(ok=True, N=n, R2=r2, p=float(res.pvalue), RMSE=rmse)
 
 
-# put this near the top
 AX_LIMS = {"t": (0.0, 1.0), "v_Intercept": (0.0, 2.5)}
 
 def _p_text(p):
@@ -71,15 +70,13 @@ def facet_scatter(data, **k):
     else:
         x_s, y_s = x, y
 
-    # 45° reference line using the final limits
+    # reference line using the final limits
     x0, x1 = ax.get_xlim(); y0, y1 = ax.get_ylim()
     lo_line, hi_line = min(x0, y0), max(x1, y1)
     ax.plot([lo_line, hi_line], [lo_line, hi_line], "--", lw=1, color="k")
 
-    # stats box
     s = regress_stats(x_s, y_s)
     txt = (f"R²={s['R2']:.2f}\n{_p_text(s['p'])}\nRMSE={s['RMSE']:.3f}") if s["ok"] else f"N={s['N']}"
-    # stats box (bottom-right, no outline)
     ax.text(
         0.97, 0.03, txt,
         transform=ax.transAxes,
@@ -91,7 +88,6 @@ def facet_scatter(data, **k):
     ax.set_ylabel("posterior mean (recovered)")
 
 
-# ---------- save per-parameter stats ----------
 rows = []
 for p in params:
     sub = df[df["parameter"] == p]
@@ -99,7 +95,6 @@ for p in params:
     rows.append({"parameter": p, "R2": s["R2"], "p": s["p"], "RMSE": s["RMSE"]})
 pd.DataFrame(rows, columns=["parameter","R2","p","RMSE"]).to_csv(OUT_STATS, index=False)
 
-# ---------- plotting ----------
 sns.set_style("white")
 col_wrap = 3 if len(params) <= 9 else 4
 
