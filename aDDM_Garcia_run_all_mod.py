@@ -138,7 +138,8 @@ model_versions  = {
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
     "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5", "ES_ZBIAS_6","ES_ZBIAS_7","ES_ZBIAS_8", "ES_ZBIAS_9","ES_ZBIAS_10", "ES_ZBIAS_11","ES_ZBIAS_12", "ES_ZBIAS_13",
-                "ES_ZBIAS_14", "ES_ZBIAS_15", "ES_ZBIAS_16", "ES_ZBIAS_17", "ES_ZBIAS_18", "ES_ZBIAS_19", "ES_ZBIAS_20", "ES_ZBIAS_21", "ES_ZBIAS_22", "ES_ZBIAS_23", "ES_ZBIAS_24", "ES_ZBIAS_25", "ES_ZBIAS_26"],
+                "ES_ZBIAS_14", "ES_ZBIAS_15", "ES_ZBIAS_16", "ES_ZBIAS_17", "ES_ZBIAS_18", "ES_ZBIAS_19", "ES_ZBIAS_20", "ES_ZBIAS_21", "ES_ZBIAS_22", "ES_ZBIAS_23", "ES_ZBIAS_24", "ES_ZBIAS_25", "ES_ZBIAS_26",
+                "ES_ZBIAS_27"],
     "ES_quad": ["ES_quad_1","ES_quad_2"],
     "LE_RL": ["LE_RL_1","LE_RL_2"],
    
@@ -160,7 +161,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES_ZBIAS"
-start_version = 25
+start_version = 26
 started = False
 
 # dir
@@ -888,9 +889,11 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 25:
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+        elif version == 26: # z is 0.5 and not a free parameter, not included in the include_list
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
             
-            
-        include_list = ['a', 't', 'v', 'z']
+        include_list = ['a', 't', 'v']
         has_z_reg = any(
             reg['model'].strip().split('~',1)[0].strip() == 'z'
             for reg in reg_descr
