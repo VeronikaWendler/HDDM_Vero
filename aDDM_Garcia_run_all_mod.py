@@ -138,7 +138,7 @@ model_versions  = {
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
     "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5", "ES_ZBIAS_6","ES_ZBIAS_7","ES_ZBIAS_8", "ES_ZBIAS_9","ES_ZBIAS_10", "ES_ZBIAS_11","ES_ZBIAS_12", "ES_ZBIAS_13",
-                "ES_ZBIAS_14", "ES_ZBIAS_15", "ES_ZBIAS_16", "ES_ZBIAS_17", "ES_ZBIAS_18", "ES_ZBIAS_19", "ES_ZBIAS_20", "ES_ZBIAS_21", "ES_ZBIAS_22", "ES_ZBIAS_23", "ES_ZBIAS_24"],
+                "ES_ZBIAS_14", "ES_ZBIAS_15", "ES_ZBIAS_16", "ES_ZBIAS_17", "ES_ZBIAS_18", "ES_ZBIAS_19", "ES_ZBIAS_20", "ES_ZBIAS_21", "ES_ZBIAS_22", "ES_ZBIAS_23", "ES_ZBIAS_24", "ES_ZBIAS_25"],
     "ES_quad": ["ES_quad_1","ES_quad_2"],
     "LE_RL": ["LE_RL_1","LE_RL_2"],
    
@@ -160,7 +160,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES_ZBIAS"
-start_version = 16
+start_version = 24
 started = False
 
 # dir
@@ -850,8 +850,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 15:
             v_reg = {'model': 'v ~ 1 + ES_AttentionW_early + ES_InattentionW_early + ES_AttentionW_late + ES_InattentionW_late', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            
-            
+
         elif version == 16:
             v_reg = {'model': 'v ~ 1 + ES_AttentionW_early + ES_InattentionW_early + ES_AttentionW_late + ES_InattentionW_late', 'link_func': lambda x: x}
             reg_descr = [v_reg]
@@ -872,7 +871,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             v_reg = {'model': 'v ~ 1 + ES_AttentionW_early + ES_InattentionW_early:C(OVcate) + ES_AttentionW_late + ES_InattentionW_late:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on = {'a': 'trial_type'}
-            
         elif version == 21:
             v_reg = {'model': 'v ~ 1 + ES_AttentionW_early:C(OVcate) + ES_InattentionW_early:C(OVcate) + ES_AttentionW_late + ES_InattentionW_late', 'link_func': lambda x: x}
             reg_descr = [v_reg]
@@ -885,92 +883,94 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             v_reg = {'model': 'v ~ 1 + ES_AttentionW_early + ES_InattentionW_early:C(OVcate) + ES_AttentionW_late + ES_InattentionW_late:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on = {'a': 'trial_type', 't': 'trial_type'}
-       
-       
+        elif version == 24:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+
             
         # # we need this but with a:trial_type & a second model with an addtional fixed z at .55
             
-        include_list = ['a', 't', 'v']
-        has_z_reg = any(
-            reg['model'].strip().split('~',1)[0].strip() == 'z'
-            for reg in reg_descr
-        )
+        # include_list = ['a', 't', 'v']
+        # has_z_reg = any(
+        #     reg['model'].strip().split('~',1)[0].strip() == 'z'
+        #     for reg in reg_descr
+        # )
 
-        # …or if z is in the depends_on dict #
-        if has_z_reg or 'z' in depends_on:
-            include_list.append('z')
-        print(f"[run_model] version={version}  include={include_list}")
+        # # …or if z is in the depends_on dict #
+        # if has_z_reg or 'z' in depends_on:
+        #     include_list.append('z')
+        # print(f"[run_model] version={version}  include={include_list}")
 
-        m = hddm.models.HDDMRegressor(
-            data,
-            reg_descr,
-            p_outlier=.05,
-            include=include_list,  
-            depends_on = depends_on,
-            group_only_regressors=False,
-            keep_regressor_trace=True
-        )
-        
-        m.find_starting_values()
-        infdata = m.sample(samples,
-                   burn=200,
-                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
-                   db='pickle',
-                   return_infdata=True, loglike=True, ppc=True)
-
-        return m, infdata
-    
-               
-            
-        # #  Fix z
-        # from copy import deepcopy
-        # cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
-        # idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
-        # cfg['params_default'][idx_z] = 0.47     # slight bias towards E  (e is lower bound)
-        
-        # # SANITY‐CHECK 
-        # assert cfg['params'][idx_z] == 'z'
-        # assert cfg['params_default'][idx_z] == 0.47, \
-        #     f"z default not 0.47 but {cfg['params_default'][idx_z]}"
-
-        # # build the model
         # m = hddm.models.HDDMRegressor(
         #     data,
         #     reg_descr,
-        #     depends_on=depends_on,
         #     p_outlier=.05,
-        #     include=['a', 't', 'v'],     #  z is not in include becuase not a free param
+        #     include=include_list,  
+        #     depends_on = depends_on,
         #     group_only_regressors=False,
-        #     keep_regressor_trace=True,
-        #     model_config=cfg
+        #     keep_regressor_trace=True
         # )
-
-        # print("\n[ZBIAS DEBUG] model_config['params']       =", m.model_config['params'])
-        # print("[ZBIAS DEBUG] model_config['params_default'] =", m.model_config['params_default'])
-        # zi = m.model_config['params'].index('z')
-        # print(f"[ZBIAS DEBUG] default for 'z' = {m.model_config['params_default'][zi]}\n")  
         
-        # print("[ZBIAS DEBUG] sampling nodes in m.nodes_db:\n",
-        #       [n for n in m.nodes_db.index if n.split('_')[0] in ['a','t','v','z']])
-
-
         # m.find_starting_values()
-        # infdata = m.sample(
-        #     samples,
-        #     burn=200,
-        #     dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'),
-        #     db='pickle',
-        #     return_infdata=True,
-        #     loglike=True,
-        #     ppc=True
-        # )
-
-        # # final check that z never got sampled
-        # assert "z" not in infdata.posterior.data_vars, \
-        #     "ERROR: 'z' appeared in the posterior!"
-        # print("[DEBUG] z absent from posterior - confirmed fixed.")
+        # infdata = m.sample(samples,
+        #            burn=200,
+        #            dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+        #            db='pickle',
+        #            return_infdata=True, loglike=True, ppc=True)
 
         # return m, infdata
+    
+               
+            
+        #  Fix z
+        from copy import deepcopy
+        cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
+        idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
+        cfg['params_default'][idx_z] = 0.55     # slight bias towards E  (e is lower bound) - no, chnging it again to E being upper (chose_left)
+        
+        # SANITY‐CHECK 
+        assert cfg['params'][idx_z] == 'z'
+        assert cfg['params_default'][idx_z] == 0.55, \
+            f"z default not 0.55 but {cfg['params_default'][idx_z]}"
+
+        # build the model
+        m = hddm.models.HDDMRegressor(
+            data,
+            reg_descr,
+            depends_on=depends_on,
+            p_outlier=.05,
+            include=['a', 't', 'v'],     #  z is not in include as not a free param
+            group_only_regressors=False,
+            keep_regressor_trace=True,
+            model_config=cfg
+        )
+
+        print("\n[ZBIAS DEBUG] model_config['params']       =", m.model_config['params'])
+        print("[ZBIAS DEBUG] model_config['params_default'] =", m.model_config['params_default'])
+        zi = m.model_config['params'].index('z')
+        print(f"[ZBIAS DEBUG] default for 'z' = {m.model_config['params_default'][zi]}\n")  
+        
+        print("[ZBIAS DEBUG] sampling nodes in m.nodes_db:\n",
+              [n for n in m.nodes_db.index if n.split('_')[0] in ['a','t','v','z']])
+
+
+        m.find_starting_values()
+        infdata = m.sample(
+            samples,
+            burn=200,
+            dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'),
+            db='pickle',
+            return_infdata=True,
+            loglike=True,
+            ppc=True
+        )
+
+        # final check that z never got sampled
+        assert "z" not in infdata.posterior.data_vars, \
+            "ERROR: 'z' appeared in the posterior!"
+        print("[DEBUG] z absent from posterior - confirmed fixed.")
+
+        return m, infdata
     
     
     elif phase == 'ES_quad':
@@ -2114,23 +2114,25 @@ if __name__ == "__main__":
             data["phase"]       = data["phase"].astype("category")
             data["rt"]          = pd.to_numeric(data["rtime"], errors="coerce")
             data["chose_right"] = pd.to_numeric(data["chose_right"], errors="coerce")
+            data["chose_left"] = pd.to_numeric(data["chose_left"], errors="coerce")
+
             #data                = data[data["rt"] > 0.250]
             # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
             # ------------------------------------------------------------------
             if phase in ("ES_ZBIAS", "ES_quad"):
 
-                data["response"] = pd.to_numeric(data["chose_right"], errors="coerce")
+                data["response"] = pd.to_numeric(data["chose_left"], errors="coerce")
                 print("[ZBIAS DEBUG] head of response mapping:")
-                print(data[["chose_right","corr","response"]].head(5).to_string(index=False))
+                print(data[["chose_left","corr","response"]].head(10).to_string(index=False))
                 print("counts:", data["response"].value_counts(dropna=False).to_dict())
 
                 # ----- sanity assert -----
                 # we expect response exactly equals chose_left for every row
-                mismatches = (data["response"] != data["chose_right"]).sum()
+                mismatches = (data["response"] != data["chose_left"]).sum()
                 assert mismatches == 0, f"{mismatches} rows where response ≠ chose_right!"
             else:
                 data["response"] = pd.to_numeric(data["corr"], errors="coerce")
-                print(data[["chose_right","corr","response"]].head(5).to_string(index=False))
+                print(data[["chose_left","corr","response"]].head(5).to_string(index=False))
 
             
             print(f"[DEBUG] phase={phase}  response counts:\n",
