@@ -77,7 +77,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 15    # defining version
+version = 16    # defining version
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES_ZBIAS']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -3353,6 +3353,244 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_AttentionW_late',
                 'v_ES_InattentionW_late',
             ]   
+        
+        elif version == 16:
+            params_of_interest = [
+                'a(ET)',
+                'a(LT)',
+                't(ET)',
+                't(LT)',
+                'v_Intercept',
+                'v_ES_AttentionW_early',
+                'v_ES_InattentionW_early',
+                'v_ES_AttentionW_late',
+                'v_ES_InattentionW_late',
+            ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'a(ET)',
+                'a(LT)',
+                't(ET)',
+                't(LT)',                 
+                'v_Intercept',
+                'v_ES_AttentionW_early',
+                'v_ES_InattentionW_early',
+                'v_ES_AttentionW_late',
+                'v_ES_InattentionW_late',
+            ]   
+        elif version == 17:
+            params_of_interest = [
+                't(ET)',
+                't(LT)',
+                'a',
+                'v_Intercept',
+                'v_ES_AttentionW_early',
+                'v_ES_InattentionW_early',
+                'v_ES_AttentionW_late',
+                'v_ES_InattentionW_late',
+            ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                't(ET)',
+                't(LT)',   
+                'a',              
+                'v_Intercept',
+                'v_ES_AttentionW_early',
+                'v_ES_InattentionW_early',
+                'v_ES_AttentionW_late',
+                'v_ES_InattentionW_late',
+            ] 
+        elif version == 18:
+            params_of_interest = [
+                'a(ET)',
+                'a(LT)',
+                't',
+                'v_Intercept',
+                'v_ES_AttentionW_early:C(OVcate)[low]',
+                'v_ES_AttentionW_early:C(OVcate)[medium]',
+                'v_ES_AttentionW_early:C(OVcate)[high]',
+                'v_ES_InattentionW_early:C(OVcate)[low]',
+                'v_ES_InattentionW_early:C(OVcate)[medium]',
+                'v_ES_InattentionW_early:C(OVcate)[high]',
+                'v_ES_AttentionW_late',
+                'v_ES_InattentionW_late',
+                ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'a(ET)',
+                'a(LT)',
+                't',
+                'v_Intercept',
+                'v_ES_AttentionW_early:C(OVcate)[low]',
+                'v_ES_AttentionW_early:C(OVcate)[medium]',
+                'v_ES_AttentionW_early:C(OVcate)[high]',
+                'v_ES_InattentionW_early:C(OVcate)[low]',
+                'v_ES_InattentionW_early:C(OVcate)[medium]',
+                'v_ES_InattentionW_early:C(OVcate)[high]',
+                'v_ES_AttentionW_late',
+                'v_ES_InattentionW_late']
+        
+        elif version == 19:
+            params_of_interest = [
+                'a(ET)',
+                'a(LT)',
+                't',
+                'v_Intercept',
+                'v_ES_AttentionW_early:C(OVcate)[low]',
+                'v_ES_AttentionW_early:C(OVcate)[medium]',
+                'v_ES_AttentionW_early:C(OVcate)[high]',
+                'v_ES_InattentionW_early',
+                'v_ES_InattentionW_early',
+                'v_ES_InattentionW_early',
+                'v_ES_AttentionW_late:C(OVcate)[low]',
+                'v_ES_AttentionW_late:C(OVcate)[medium]',
+                'v_ES_AttentionW_late:C(OVcate)[high]',
+                'v_ES_InattentionW_late',
+                ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'a(ET)',
+                'a(LT)',
+                't',
+                'v_Intercept',
+                'v_ES_AttentionW_early:C(OVcate)[low]',
+                'v_ES_AttentionW_early:C(OVcate)[medium]',
+                'v_ES_AttentionW_early:C(OVcate)[high]',
+                'v_ES_InattentionW_early',
+                'v_ES_InattentionW_early',
+                'v_ES_InattentionW_early',
+                'v_ES_AttentionW_late:C(OVcate)[low]',
+                'v_ES_AttentionW_late:C(OVcate)[medium]',
+                'v_ES_AttentionW_late:C(OVcate)[high]',
+                'v_ES_InattentionW_late',]
+
+        elif version == 20:
+            params_of_interest = [
+                'a(ET)',
+                'a(LT)',
+                't',
+                'v_Intercept',
+                'v_ES_AttentionW_early',
+                'v_ES_InattentionW_early:C(OVcate)[low]',
+                'v_ES_InattentionW_early:C(OVcate)[medium]',
+                'v_ES_InattentionW_early:C(OVcate)[high]',
+                'v_ES_AttentionW_late',
+                'v_ES_InattentionW_late:C(OVcate)[low]',
+                'v_ES_InattentionW_late:C(OVcate)[medium]',
+                'v_ES_InattentionW_late:C(OVcate)[high]',
+                ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'a(ET)',
+                'a(LT)',
+                't',
+                'v_Intercept',
+                'v_ES_AttentionW_early',
+                'v_ES_InattentionW_early:C(OVcate)[low]',
+                'v_ES_InattentionW_early:C(OVcate)[medium]',
+                'v_ES_InattentionW_early:C(OVcate)[high]',
+                'v_ES_AttentionW_late',
+                'v_ES_InattentionW_late:C(OVcate)[low]',
+                'v_ES_InattentionW_late:C(OVcate)[medium]',
+                'v_ES_InattentionW_late:C(OVcate)[high]',]
+        elif version == 21:
+            params_of_interest = [
+                'a(ET)',
+                'a(LT)',
+                't(ET)',
+                't(LT)',
+                'v_Intercept',
+                'v_ES_AttentionW_early:C(OVcate)[low]',
+                'v_ES_AttentionW_early:C(OVcate)[medium]',
+                'v_ES_AttentionW_early:C(OVcate)[high]',
+                'v_ES_InattentionW_early:C(OVcate)[low]',
+                'v_ES_InattentionW_early:C(OVcate)[medium]',
+                'v_ES_InattentionW_early:C(OVcate)[high]',
+                'v_ES_AttentionW_late',
+                'v_ES_InattentionW_late',
+                ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'a(ET)',
+                'a(LT)',
+                't(ET)',
+                't(LT)',               
+                'v_Intercept',
+                'v_ES_AttentionW_early:C(OVcate)[low]',
+                'v_ES_AttentionW_early:C(OVcate)[medium]',
+                'v_ES_AttentionW_early:C(OVcate)[high]',
+                'v_ES_InattentionW_early:C(OVcate)[low]',
+                'v_ES_InattentionW_early:C(OVcate)[medium]',
+                'v_ES_InattentionW_early:C(OVcate)[high]',
+                'v_ES_AttentionW_late',
+                'v_ES_InattentionW_late']
+        
+        elif version == 22:
+            params_of_interest = [
+                'a(ET)',
+                'a(LT)',
+                't(ET)',
+                't(LT)',              
+                'v_Intercept',
+                'v_ES_AttentionW_early:C(OVcate)[low]',
+                'v_ES_AttentionW_early:C(OVcate)[medium]',
+                'v_ES_AttentionW_early:C(OVcate)[high]',
+                'v_ES_InattentionW_early',
+                'v_ES_InattentionW_early',
+                'v_ES_InattentionW_early',
+                'v_ES_AttentionW_late:C(OVcate)[low]',
+                'v_ES_AttentionW_late:C(OVcate)[medium]',
+                'v_ES_AttentionW_late:C(OVcate)[high]',
+                'v_ES_InattentionW_late',
+                ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'a(ET)',
+                'a(LT)',
+                't(ET)',
+                't(LT)',                   
+                'v_Intercept',
+                'v_ES_AttentionW_early:C(OVcate)[low]',
+                'v_ES_AttentionW_early:C(OVcate)[medium]',
+                'v_ES_AttentionW_early:C(OVcate)[high]',
+                'v_ES_InattentionW_early',
+                'v_ES_InattentionW_early',
+                'v_ES_InattentionW_early',
+                'v_ES_AttentionW_late:C(OVcate)[low]',
+                'v_ES_AttentionW_late:C(OVcate)[medium]',
+                'v_ES_AttentionW_late:C(OVcate)[high]',
+                'v_ES_InattentionW_late',]
+        elif version == 23:
+            params_of_interest = [
+                'a(ET)',
+                'a(LT)',
+                't(ET)',
+                't(LT)',
+                'v_Intercept',
+                'v_ES_AttentionW_early',
+                'v_ES_InattentionW_early:C(OVcate)[low]',
+                'v_ES_InattentionW_early:C(OVcate)[medium]',
+                'v_ES_InattentionW_early:C(OVcate)[high]',
+                'v_ES_AttentionW_late',
+                'v_ES_InattentionW_late:C(OVcate)[low]',
+                'v_ES_InattentionW_late:C(OVcate)[medium]',
+                'v_ES_InattentionW_late:C(OVcate)[high]',
+                ]
+            params_of_interest_s = [f'{p}_subj' for p in params_of_interest]
+            titles = [
+                'a(ET)',
+                'a(LT)',
+                't(ET)',
+                't(LT)',
+                'v_Intercept',
+                'v_ES_AttentionW_early',
+                'v_ES_InattentionW_early:C(OVcate)[low]',
+                'v_ES_InattentionW_early:C(OVcate)[medium]',
+                'v_ES_InattentionW_early:C(OVcate)[high]',
+                'v_ES_AttentionW_late',
+                'v_ES_InattentionW_late:C(OVcate)[low]',
+                'v_ES_InattentionW_late:C(OVcate)[medium]',
+                'v_ES_InattentionW_late:C(OVcate)[high]',]
 
     elif phase == 'ES_quad':
         if version == 0:          # v ~ 1 + DTA + DTA²
