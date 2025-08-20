@@ -546,6 +546,31 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=600, accur
 
         return m, infdata
     
+    elif phase == "ES_VAL":
+        if version == 0:   
+            v_reg = {'model': 'v ~ Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 1:  
+            v_reg = {'model': 'v ~ 1 + V_E + V_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            
+        
+        m = hddm.models.HDDMRegressor(data, 
+                                    reg_descr,
+                                    p_outlier=.05, 
+                                    include=['a', 't', 'v', 'z'],
+                                    group_only_regressors=False,
+                                    keep_regressor_trace=True
+                                    )
+        m.find_starting_values()
+        infdata = m.sample(samples,
+                   burn=200,
+                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                   db='pickle',
+                   return_infdata=True, loglike=True, ppc=True)
+
+        return m, infdata
+    
     elif phase == 'LE_RL':
         if version == 0:
             m = hddm.models.HDDMrl(data)
@@ -3695,20 +3720,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "Starting point (stimulus=0)",
                 "Starting point (stimulus=1)",
             ]
-    elif phase == "LE_RL":
-        if version == 0:
-            params_of_interest = [
-                "a",
-                "t",
-                "v",
-                "alpha"
-            ]
-            params_of_interest_s = [p + "_subj" for p in params_of_interest]
-            titles = [
-                "a",
-                "t",
-                "v",
-                "alpha",]
     elif phase == "ES_VAL":
         if version == 0:
             params_of_interest = [
@@ -3744,6 +3755,21 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_V_S'
                 ]
                 
+    elif phase == "LE_RL":
+        if version == 0:
+            params_of_interest = [
+                "a",
+                "t",
+                "v",
+                "alpha"
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                "a",
+                "t",
+                "v",
+                "alpha",]
+    
     # diagnistics
     diag_dir = Path(fig_dir) / "diagnostics"
     ensure_dir(diag_dir)
