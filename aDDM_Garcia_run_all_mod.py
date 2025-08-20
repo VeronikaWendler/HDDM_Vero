@@ -163,7 +163,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES_VAL"
-start_version = 0
+start_version = 1
 started = False
 
 # dir
