@@ -3591,7 +3591,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_InattentionW_late:C(OVcate)[low]',
                 'v_ES_InattentionW_late:C(OVcate)[medium]',
                 'v_ES_InattentionW_late:C(OVcate)[high]',]
-        elif version == 24:
+        elif version == 24:   # z = 0.55
                 params_of_interest = [
                     'a',
                     't',
@@ -3606,10 +3606,11 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                     'v_Intercept',
                     'v_ES_AttentionW',
                     'v_ES_InattentionW']
-        elif version == 25:
+        elif version == 25:   # z is included in the list
                 params_of_interest = [
                     'a',
                     't',
+                    'z',
                     'v_Intercept',
                     'v_ES_AttentionW',
                     'v_ES_InattentionW',
@@ -3618,10 +3619,11 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 titles = [
                     'a',
                     't',
+                    'z',
                     'v_Intercept',
                     'v_ES_AttentionW',
                     'v_ES_InattentionW']
-        elif version == 26:
+        elif version == 26:  
                 params_of_interest = [
                     'a',
                     't',
@@ -3812,11 +3814,9 @@ def analyze_rl(infdatas, fig_dir, version):
     diag_dir = fig_dir / "diagnostics"
     diag_dir.mkdir(parents=True, exist_ok=True)
 
-    # 1) concatenate chains
+    # concatenate chains
     idata = az.concat(infdatas, dim="chain")
-    # 1) concatenate chains
     print(idata)
-
     print(idata.posterior)
     print("Data variables in posterior:", list(idata.posterior.data_vars))
 
@@ -3827,6 +3827,7 @@ def analyze_rl(infdatas, fig_dir, version):
             val = float(rhat[var].values)  # extract scalar
             f.write(f"{var}: {val:.3f}\n")
 
+    # optional other scores
     # waic_res = az.waic(idata)
     # dic_df = pd.DataFrame({
     #     "metric": ["DIC", "DIC_se"],
@@ -3834,13 +3835,12 @@ def analyze_rl(infdatas, fig_dir, version):
     # })
     # dic_df.to_csv(diag_dir/"dic.csv", index=False)
 
-    # 4) Posterior predictive check
-    #    if you have an RL PPC simulator you can plug it in here; otherwise skip
+    # Posterior predictive check
     # az.plot_ppc(idata)  
     # plt.savefig(diag_dir / "posterior_predictive.pdf")
     # plt.close()
 
-    # 5) Summary stats table
+    #Summary stats table
     summary = az.summary(idata)
     summary.to_csv(diag_dir / "results.csv")
 
@@ -3849,12 +3849,12 @@ def analyze_rl(infdatas, fig_dir, version):
         print("[alpha-transform] No 'alpha' in posterior; skipping transformed CSV.")
         return
 
-    # 1) Transform group-level alpha
+    # Transform group-level alpha
     alpha_draws = idata.posterior["alpha"].values.reshape(-1)  # (chains*draws,)
     alpha_prob  = _inv_logit(alpha_draws)
     alpha_summ  = _summ_from_samples(alpha_prob)
 
-    # 2) Transform subject-level alphas (if present)
+    # Transform subject-level alphas (if present)
     subj_vars = [v for v in idata.posterior.data_vars if v.startswith("alpha_subj.")]
     subj_summ_rows = {}
     subj_prob_matrix = []  # will become shape (n_draws, n_subj) for SD on prob-scale
@@ -3874,7 +3874,7 @@ def analyze_rl(infdatas, fig_dir, version):
     else:
         alpha_std_summ = None
 
-    # 3) Make a transformed copy of the ArviZ summary and replace alpha rows
+    # Make a transformed copy of the ArviZ summary and replace alpha rows
     summary_t = summary.copy()
 
     # Replace group alpha row (if present)
@@ -3893,11 +3893,11 @@ def analyze_rl(infdatas, fig_dir, version):
             for k, val in stats.items():
                 summary_t.loc[v, k] = val
 
-    # 4) Save the transformed results next to the original
+    # Save the transformed results next to the original
     out_csv = diag_dir / "results_alpha_transformed.csv"
     summary_t.to_csv(out_csv)
 
-    # 5) Also write per-subject means (prob. scale) for convenience
+    # Also write per-subject means (prob. scale) for convenience
     if subj_vars:
         means = []
         for v in sorted(subj_vars, key=lambda x: int(x.split("alpha_subj.")[-1])):
@@ -3912,7 +3912,7 @@ def analyze_rl(infdatas, fig_dir, version):
 
 
 
-    # 6) Posterior‐trace + KDE plots (one PDF each)
+    #Posterior‐trace + KDE plots (one PDF each)
     var_names = ["alpha"]
     titles = ["alpha"]
     # Trace
@@ -3945,9 +3945,8 @@ def analyze_rl(infdatas, fig_dir, version):
     plt.tight_layout()
     plt.savefig(diag_dir / "posteriors.pdf", bbox_inches="tight")
     plt.close(fig)
-        # 7) Per-subject parameter CSV
-        #    we assume your RL model stored subj-indexed draws under e.g. idata.posterior["a_subj"]
-        # 7) Per-subject parameter CSV
+        # Per-subject parameter CSV
+        # Per-subject parameter CSV
     subj_vars = [v for v in idata.posterior.data_vars if v.startswith("alpha_subj.")]
     if subj_vars:
         subj_means = {}
@@ -3962,8 +3961,7 @@ def analyze_rl(infdatas, fig_dir, version):
         df.reset_index(inplace=True)
         df.to_csv(diag_dir/"params_of_interest_s.csv", index=False)
     else:
-        print("No subject-level 'alpha_subj.*' variables found; skipping CSV.")
-        
+        print("ERROR")
     
     
     
@@ -4092,11 +4090,11 @@ if run:
             model_name=model_base_name + model_name,
             model_dir=model_dir,
             version=version,
-            phase=phase,  # Use updated phase key
+            phase=phase, 
             accuracy_coding=True
         )
     
-    elif phase == 'ESEE':  # Ensure this condition runs only for the combined model
+    elif phase == 'ESEE': 
         print(f'Running Combined Model (ES+EE)... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,
