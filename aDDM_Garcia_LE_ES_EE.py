@@ -4141,7 +4141,7 @@ ensure_dir(model_dir)
 #ingle model running version - use for manual
 # this calls our ddm functions depending on whether we run or load models
 if run:
-    if phase == 'EE' or phase == 'ES':
+    if phase == 'EE' or phase == 'ES' or phase == 'ES_VAL':
         print(f'Running DDM... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,
@@ -4212,7 +4212,7 @@ if run:
             phase=phase,  
         )
 else:
-    if phase == 'EE' or phase == 'ES':
+    if phase == 'EE' or phase == 'ES' or phase == 'ES_VAL':
         print(f'loading DDM... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,
