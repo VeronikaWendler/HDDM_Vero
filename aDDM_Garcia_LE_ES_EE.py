@@ -82,7 +82,7 @@ numba.config.CACHE_ENABLE = False
 version = 0    # defining version #
 run = False        # if True, the the models run, if False the models load
 
-phase = ['ES']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
+phase = ['ES_VAL']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
 
 # Determines whether to use a single phase or the combined ESEE model
 if set(phase) == {'ES', 'EE'}:
@@ -124,7 +124,8 @@ model_versions = {
     "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5", 'ES_ZBIAS_6', "ES_ZBIAS_7", "ES_ZBIAS_8", 'ES_ZBIAS_9', "ES_ZBIAS_10", "ES_ZBIAS_11", "ES_ZBIAS_12", "ES_ZBIAS_13",
                 "ES_ZBIAS_14", "ES_ZBIAS_15", "ES_ZBIAS_16", "ES_ZBIAS_17", "ES_ZBIAS_18", "ES_ZBIAS_19", "ES_ZBIAS_20", "ES_ZBIAS_21", "ES_ZBIAS_22", "ES_ZBIAS_23", "ES_ZBIAS_24", "ES_ZBIAS_25", "ES_ZBIAS_26"],
     "ES_quad": ["ES_quad_1","ES_quad_2"],
-    "LE_RL": ["LE_RL_1", "LE_RL_2"]
+    "LE_RL": ["LE_RL_1", "LE_RL_2"],
+    "ES_VAL": ["ES_VAL_1", "ES_VAL_2"]
 }
 
 # debugging, tip, python starts at 0, unlike Matlab
@@ -135,6 +136,7 @@ PHASE_TO_SOURCE = {
     "ES_ZBIAS": "ES",     
     "ES_quad": "ES",
     "LE_RL": "LE",
+    "ES_VAL": "ES",
 }
 
 model_name = model_versions[phase][version]
@@ -3707,7 +3709,41 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "t",
                 "v",
                 "alpha",]
-            
+    elif phase == "ES_VAL":
+        if version == 0:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_Value_diff',
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_Value_diff']
+        elif version == 1:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_V_E',
+                'v_V_S'
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_V_E',
+                'v_V_S'
+                ]
+                
     # diagnistics
     diag_dir = Path(fig_dir) / "diagnostics"
     ensure_dir(diag_dir)
