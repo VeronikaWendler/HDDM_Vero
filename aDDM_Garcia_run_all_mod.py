@@ -142,6 +142,7 @@ model_versions  = {
                 "ES_ZBIAS_27"],
     "ES_quad": ["ES_quad_1","ES_quad_2"],
     "LE_RL": ["LE_RL_1","LE_RL_2"],
+    "ES_VAL": ["ES_VAL_1", "ES_VAL_2"]
    
 }
 
@@ -150,17 +151,18 @@ PHASE_TO_SOURCE = {
     "ES_ZBIAS": "ES", 
     "ES_quad": "ES",    
     "LE_RL": "LE",
+    "ES_VAL": "ES",
 }
 
 
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["ES"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
+PHASE_RUN_ORDER = ["ES_VAL"]                                         # order
+SKIP_PHASES     = {"LE","ES_ZBIAS","ES","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "ES"
+start_phase = "ES_VAL"
 start_version = 0
 started = False
 
@@ -1001,6 +1003,34 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
 
         return m, infdata
     
+    
+    elif phase == "ES_VAL":
+        if version == 0:   
+            v_reg = {'model': 'v ~ Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 1:  
+            v_reg = {'model': 'v ~ 1 + V_E + V_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            
+        
+        m = hddm.models.HDDMRegressor(data, 
+                                    reg_descr,
+                                    p_outlier=.05, 
+                                    include=['a', 't', 'v', 'z'],
+                                    group_only_regressors=False,
+                                    keep_regressor_trace=True
+                                    )
+        m.find_starting_values()
+        infdata = m.sample(samples,
+                   burn=200,
+                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                   db='pickle',
+                   return_infdata=True, loglike=True, ppc=True)
+
+        return m, infdata
+    
+    
+    
     elif phase == 'LE_RL':
         if version == 0:
             m = hddm.models.HDDMrl(data, include=['a', 't', 'v', 'alpha'])
@@ -1014,6 +1044,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             return m, infdata
         else:
             raise ValueError(f"Invalid version {version}")
+    
      
 ###############################################################################################################    
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -2118,7 +2149,7 @@ if __name__ == "__main__":
             #data                = data[data["rt"] > 0.250]
             # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
             # ------------------------------------------------------------------
-            if phase in ("ES_ZBIAS", "ES_quad"):
+            if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL"):
 
                 data["response"] = pd.to_numeric(data["chose_left"], errors="coerce")
                 print("[ZBIAS DEBUG] head of response mapping:")
@@ -2178,6 +2209,11 @@ if __name__ == "__main__":
             data["z_AttentionW_S"] = pd.to_numeric(data["z_AttentionW_S"], errors="coerce")
             data["z_InattentionW_E"] = pd.to_numeric(data["z_InattentionW_E"], errors="coerce")
             data["z_InattentionW_S"] = pd.to_numeric(data["z_InattentionW_S"], errors="coerce")
+  
+            data["V_E"] = pd.to_numeric(data["V_E"], errors="coerce")
+            data["V_S"] = pd.to_numeric(data["V_S"], errors="coerce")
+            data["Value_diff"] = pd.to_numeric(data["Value_diff"], errors="coerce")
+
             
             # keep only trials with strictly positive dwell time on both sides, this can be changed; depends on the goal
             #data = data[(data["DwellLeft"] > -1) & (data["DwellRight"] > -1)]
@@ -2224,7 +2260,16 @@ if __name__ == "__main__":
                                        "z_AttentionW_E",
                                        "z_AttentionW_S",
                                        "z_InattentionW_E",
-                                       "z_InattentionW_S",'AttentionW_early','InattentionW_early', 'AttentionW_late','InattentionW_late', 'ES_AttentionW_early','ES_InattentionW_early', 'ES_AttentionW_late','ES_InattentionW_late'])   
+                                       "z_InattentionW_S",
+                                       'AttentionW_early',
+                                       'InattentionW_early',
+                                       'AttentionW_late',
+                                       'InattentionW_late',
+                                       'ES_AttentionW_early',
+                                       'ES_InattentionW_early',
+                                       'ES_AttentionW_late',
+                                       'ES_InattentionW_late',
+                                       "V_E", "V_S", "Value_diff"])   
             
             # ------------------------------------------------------------
             # quick report at the start

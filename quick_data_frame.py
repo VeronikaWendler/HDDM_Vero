@@ -250,7 +250,7 @@ to_z = ['AttentionW',            # symmetric, continuous
         'abs_DwellPropAdvCorr',
         'balance', 'DwellPropAdvantageCorrect',
         "AW_bal","IAW_bal","AttentionW_E", "AttentionW_S", "InattentionW_E", "InattentionW_S",
-        ]              # etc. add more if needed
+        ]             
 
 for c in to_z:
     mu, sd = data[c].mean(), data[c].std()
@@ -263,14 +263,10 @@ data['z_IAW_image'] = data['z_InattentionW'] * data['image_is_sub']
 
 
 # Early vs Late per-subject median split + gated regressors 
-
-# split on the same subset
 phase_filter = "ES"
 excluded_subjects = [1, 4, 5, 6, 14, 99]
 data = (data.query("phase == @phase_filter").loc[~data['sub_id'].isin(excluded_subjects)].copy())
 data = data.dropna(subset=['DwellTimeAdvantage', 'OVcate_2', 'chose_right', 'corr'])
-
-# per-subject median RT 
 data['rt_median_subj'] = data.groupby('sub_id')['rtime'].transform('median')
 
 #early/late dummies
@@ -292,7 +288,19 @@ for c in base_cols:
 # print(data[['sub_id','rtime','rt_median_subj','RT_group']].head())
 # data[['early','late']].sum()  # should roughly split half/half per subject
 
+#-------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Value models (Sebastian):
+# Response coded
+# Value difference model:
+#v = β0 + β1 ⋅ (V_E − V_S) + ϵ
+# 
+# independent value model:
+#v = β0 + β1 ⋅ V_E + β2 ⋅  V_S + ϵ
 
+data["V_E"] = data["p1"]
+data["V_S"] = data["p2"]
+
+data["Value_diff"] = data["V_E"] - data["V_S"]
 
 
 
