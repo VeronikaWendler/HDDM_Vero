@@ -155,13 +155,13 @@ PHASE_TO_SOURCE = {
 
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["ES_ZBIAS"]                                         # order
-SKIP_PHASES     = {"LE","ES","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
+PHASE_RUN_ORDER = ["ES"]                                         # order
+SKIP_PHASES     = {"LE","ES_ZBIAS","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "ES_ZBIAS"
-start_version = 26
+start_phase = "ES"
+start_version = 0
 started = False
 
 # dir
@@ -543,6 +543,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             v_reg = {'model': 'v ~ 1 + AttentionW_early + InattentionW_early + AttentionW_late + InattentionW_late', 'link_func': lambda x: x}
             reg_descr = [v_reg] 
             depends_on = {'a': 'trial_type'}
+        
         else:
             raise ValueError(f"Is this version illegal ?? It feels illegal...")   
         
@@ -563,7 +564,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             reg_descr,
             p_outlier=.05,
             include=include_list,  
-            depends_on = depends_on,
             group_only_regressors=False,
             keep_regressor_trace=True
         )
@@ -886,7 +886,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 24:
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-        elif version == 25:
+        elif version == 25: # z = 0.55
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         elif version == 26: # z is 0.5 and not a free parameter, not included in the include_list
