@@ -177,7 +177,7 @@ def run_version_1_a():
 #        "/home/jovyan/OfficialTutorials/For_Linux/models_dir_OV/OV_replication_EE_1_0.pkl"
 #    ]
 #    
-#    models = []
+#    models = []+
 #    for path in model_paths:
 #        with open(path, "rb") as f:
 #            models.append(pickle.load(f))
