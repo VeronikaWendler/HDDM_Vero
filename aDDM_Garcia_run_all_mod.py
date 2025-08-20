@@ -883,10 +883,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             v_reg = {'model': 'v ~ 1 + ES_AttentionW_early + ES_InattentionW_early:C(OVcate) + ES_AttentionW_late + ES_InattentionW_late:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on = {'a': 'trial_type', 't': 'trial_type'}
-        elif version == 24:
+        elif version == 24: ## z = 0.55
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-        elif version == 25: # z = 0.55
+        elif version == 25: 
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         elif version == 26: # z is 0.5 and not a free parameter, not included in the include_list
