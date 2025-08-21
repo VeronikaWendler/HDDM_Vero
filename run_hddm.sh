@@ -14,7 +14,7 @@ export PYTHONUNBUFFERED=1                     # prints appear immediately
 export MPLCONFIGDIR=/tmp/mplcache
 
 
-# Define variables 
+# path for container and workspace
 IMAGE=$HOME/containers/hddm_latest.sif
 PROJECT=$HOME/sharedscratch/HDDM_Vero
 
