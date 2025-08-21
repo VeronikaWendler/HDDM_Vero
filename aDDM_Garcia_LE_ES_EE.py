@@ -71,7 +71,7 @@ numba.config.CACHE_ENABLE = False
 # ß1 = AttentionW,
 # ß2 = InattentionW,
 
-#
+##
 # ϵ = noise
 # PropDwell_opt = proportion of dwell time on the option with higher expected value
 # PropDwell_sub = proportion of dwell time on the option with lower expected value
