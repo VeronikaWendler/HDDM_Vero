@@ -285,8 +285,7 @@ for c in base_cols:
     data[f'{c}_late']  = data[c] * data['late']
 
 
-# print(data[['sub_id','rtime','rt_median_subj','RT_group']].head())
-# data[['early','late']].sum()  # should roughly split half/half per subject
+
 
 #-------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Value models (Sebastian):
@@ -301,6 +300,11 @@ data["V_E"] = data["p1"]
 data["V_S"] = data["p2"]
 
 data["Value_diff"] = data["V_E"] - data["V_S"]
+
+#---------------------------------------------------------------------------------------------------------------------------------------------------------------
+# good vs poor performers
+
+
 
 
 

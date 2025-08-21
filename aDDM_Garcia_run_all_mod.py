@@ -163,7 +163,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES_VAL"
-start_version = 3
+start_version = 5
 started = False
 
 # dir
@@ -1014,14 +1014,16 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             reg_descr = [v_reg]
         elif version == 2:
             v_reg = {'model': 'v ~ 1 + V_E + V_S + PropDwell_Left + PropDwell_Right', 'link_func': lambda x: x}
-        
         elif version == 3:
             v_reg = {'model': 'v ~ 1 + Value_diff + DTA', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         elif version == 4:
             v_reg = {'model': 'v ~ 1 + PropDwell_Left + PropDwell_Right', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            depends_on = {}
+        elif version == 5:
+            v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        
 
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
