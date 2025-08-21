@@ -79,7 +79,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 1    # defining version #
+version = 5    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES_VAL']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -553,6 +553,10 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=600, accur
         elif version == 1:  
             v_reg = {'model': 'v ~ 1 + V_E + V_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+        elif version == 5:
+            v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        
             
         
         m = hddm.models.HDDMRegressor(data, 
@@ -3754,6 +3758,18 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_V_E',
                 'v_V_S'
                 ]
+        elif version == 5:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'v_Value_diff']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Value_diff']
                 
     elif phase == "LE_RL":
         if version == 0:
