@@ -163,7 +163,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES_VAL"
-start_version = 5
+start_version = 7
 started = False
 
 # dir
@@ -1024,7 +1024,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         
-
+        elif version == 6:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     p_outlier=.05, 
@@ -2158,7 +2161,7 @@ if __name__ == "__main__":
             data["chose_right"] = pd.to_numeric(data["chose_right"], errors="coerce")
             data["chose_left"] = pd.to_numeric(data["chose_left"], errors="coerce")
 
-            #data                = data[data["rt"] > 0.250]
+            data                = data[data["rt"] > 0.250]
             # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
             # ------------------------------------------------------------------
             if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL"):
