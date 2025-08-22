@@ -1032,9 +1032,9 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 7:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            
         elif version == 8:
             v_reg = {'model': 'v ~ 0 + V_E + V_S + PropDwell_Left + PropDwell_Right', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
         elif version == 9:
             v_reg = {'model': 'v ~ 0 + Value_diff + DTA', 'link_func': lambda x: x}
             reg_descr = [v_reg]
