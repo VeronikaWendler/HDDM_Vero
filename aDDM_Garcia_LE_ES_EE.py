@@ -79,7 +79,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 6    # defining version #
+version = 7    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES_VAL']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -3785,6 +3785,104 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'z',
                 'v_ES_AttentionW',
                 'v_ES_InattentionW']
+        # S is upper boundary   
+        elif version == 7:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']
+        
+        elif version == 8:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'V_E',
+                'V_S',
+                'PropDwell_Left',
+                'PropDwell_Right']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'V_E',
+                'V_S',
+                'PropDwell_Left',
+                'PropDwell_Right']
+        
+        elif version == 9:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'Value_diff',
+                'DTA']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'Value_diff',
+                'DTA']
+        
+        elif version == 10:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'PropDwell_Left',
+                'PropDwell_Right']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'PropDwell_Left',
+                'PropDwell_Right']
+            
+        elif version == 11:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'Value_diff',]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'Value_diff',]
+            
+        elif version == 12:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'AttentionW_E',
+                'AttentionW_S',
+                'InattentionW_E',
+                'InattentionW_S']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'AttentionW_E',
+                'AttentionW_S',
+                'InattentionW_E',
+                'InattentionW_S']
+        
+            
             
     elif phase == "LE_RL":
         if version == 0:
@@ -3800,6 +3898,8 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 "t",
                 "v",
                 "alpha",]
+    
+    
     
     # diagnistics
     diag_dir = Path(fig_dir) / "diagnostics"
