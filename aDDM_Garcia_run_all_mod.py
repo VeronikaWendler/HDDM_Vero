@@ -163,7 +163,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES_VAL"
-start_version = 8
+start_version = 13
 started = False
 
 # dir
@@ -1048,12 +1048,15 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             v_reg = {'model': 'v ~ 0 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         
-        
+        # E = upper boundary 
+        elif version == 13:   
+            v_reg = {'model': 'v ~ Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
         
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     p_outlier=.05, 
-                                    include=['a', 't', 'v', 'z'],
+                                    include=['a', 't', 'v'],   #'z'
                                     group_only_regressors=False,
                                     keep_regressor_trace=True
                                     )
@@ -2188,16 +2191,16 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL"):
 
-                data["response"] = pd.to_numeric(data["chose_right"], errors="coerce")
+                data["response"] = pd.to_numeric(data["chose_left"], errors="coerce")
                 print("[ZBIAS DEBUG] head of response mapping:")
-                print(data[["chose_right","corr","response"]].head(10).to_string(index=False))
+                print(data[["chose_left","corr","response"]].head(10).to_string(index=False))
                 print("counts:", data["response"].value_counts(dropna=False).to_dict())
                 # sanity checks ...are we actually filtering the right things
-                mismatches = (data["response"] != data["chose_right"]).sum()
-                assert mismatches == 0, f"{mismatches} rows where response ≠ chose_right!"
+                mismatches = (data["response"] != data["chose_left"]).sum()
+                assert mismatches == 0, f"{mismatches} rows where response ≠ chose_left!"
             else:
                 data["response"] = pd.to_numeric(data["corr"], errors="coerce")
-                print(data[["chose_right","corr","response"]].head(5).to_string(index=False))
+                print(data[["chose_left","corr","response"]].head(5).to_string(index=False))
 
             
             print(f"[DEBUG] phase={phase}  response counts:\n",
