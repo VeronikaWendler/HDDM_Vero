@@ -1,0 +1,43 @@
+### This is the README file for the CCT_Matlab_PPC subfolder from the HDDM_Vero project.
+### This subfodler is a copy of Dr Chih-Chung Tings simulation code.
+
+Here, I am specifying the purpose and structure of files & folders:
+
+### data: 
+- holds the csv file "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT" which is the main csv file for analysis
+- holds matlab files that contain most columns of interest of the transformed csv file (transformed into mat files to fit Chih-Chung Tings simulation code)
+
+
+### These files below are directly taken from Dr Chih-Chung Ting and serve as orientation
+
+- EvidenceAccumulate_Bright.m
+- Sim_Bright_fixedALL.m
+- Sim_Bright_HDDMestimate.m
+- Figure_Accuracy_RT.m --> plots accuracy and RT from the empirical data with the overlayed simulation
+
+
+### These files below are from Prof Dr Sebastian Gluth ( modified to plot RT and gaze data from the csv file but also to plot the .mat simulations)
+
+- simulationESmodel_v2.m   --> Sebastian's original simulation idea
+- plotEmpiricalData.m       --> this file plots not only the emprical data (csv file) but also plots dwell-time, gaze, RT & accuracy plots from the simulations
+- simulationESmodel_plotWithSEM.m   --> holds plotting functions
+
+
+### These files below are used in my project to simulate data with paramters from the aDDM and DDM 
+
+### Code for the aDDM can be used with or wihtout starting point bias
+- EvidenceAccumulate_ES_VAL_m2.m
+- gelman_rubin_ES_VAL_m7.csv
+- params_ES_VAL_m7.csv 
+- Sim_ES_fixedALL_VAL_7.m
+
+### code for the dual addm with different attentional/inattentional weights for E & S options (this is flawed and probably not correct yet)
+- EvidenceAccumulate_ES_m45.m
+- gelman_rubin_ES_m45.m
+- params_ES_m45.m
+- Sim_ES_m45_fixedALL.m
+
+### This code computes mean and STD per subject and per OV level, then lognormal transforms them similar to Ting & Gluth, 2024 style but I think it has some issues as I am unsure about the correctness of the lognormal transformation
+
+- Fixation_Metrics_Simulation.m
+- Fixation_mean_log_simulation_ES

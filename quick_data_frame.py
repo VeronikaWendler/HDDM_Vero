@@ -188,7 +188,6 @@ data['IAW_bal'] = data['InattentionW'] * data['balance']
 # original drift rate formula:
 # v = β0 + β1 * (PropDwell_opt​ * V_opt​ − PropDwell_sub * V_sub) + β2 * (PropDwell_sub * V_opt​ − PropDwell_opt​ * V_sub)+ϵ
 
-
 # dirft rate with two separate thetas for S and E :
 # v = β0 + β1 * AttentionW_E + β2 * AttentionW_S + β3 * InattentionW_E + β4 * InattentionW_S  +ϵ
 
