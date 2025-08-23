@@ -41,3 +41,29 @@ Here, I am specifying the purpose and structure of files & folders:
 
 - Fixation_Metrics_Simulation.m
 - Fixation_mean_log_simulation_ES
+
+Models that belong to the parameter files:
+
+## E is the upper boundary for the models below
+#### params_ES_ZBIAS_m25
+ - here we include z in include list
+    v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+    reg_descr = [v_reg]
+
+#### params_ES_ZBIAS_m26
+-  z is 0.5 and not a free parameter, not included in the include_list
+    v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+    reg_descr = [v_reg]
+
+#### params_ES_VAL_m7
+- no intercept (z is inlcuded as free param)
+    v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+    reg_descr = [v_reg]
+
+## Correct (1) is the upper boundary for the models below - accuracy coded
+
+#### params_ES_m45
+- z is fixed at 0.5 not inclded as a free parameter
+v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
+    reg_descr = [v_reg]
+    depends_on = {'a': 'OVcate'} 
