@@ -79,7 +79,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 14    # defining version #
+version = 15    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES_VAL']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -125,7 +125,8 @@ model_versions = {
                 "ES_ZBIAS_14", "ES_ZBIAS_15", "ES_ZBIAS_16", "ES_ZBIAS_17", "ES_ZBIAS_18", "ES_ZBIAS_19", "ES_ZBIAS_20", "ES_ZBIAS_21", "ES_ZBIAS_22", "ES_ZBIAS_23", "ES_ZBIAS_24", "ES_ZBIAS_25", "ES_ZBIAS_26"],
     "ES_quad": ["ES_quad_1","ES_quad_2"],
     "LE_RL": ["LE_RL_1", "LE_RL_2"],
-    "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3", "ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8", "ES_VAL_9", "ES_VAL_10", "ES_VAL_11", "ES_VAL_12", "ES_VAL_13", "ES_VAL_14", "ES_VAL_15"]
+    "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3", "ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8", "ES_VAL_9", "ES_VAL_10", "ES_VAL_11", "ES_VAL_12", "ES_VAL_13", "ES_VAL_14", "ES_VAL_15",
+               "ES_VAL_16", "ES_VAL_17"]
 }
 
 # debugging, tip, python starts at 0, unlike Matlab
@@ -3909,8 +3910,29 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'AttentionW_S',
                 'InattentionW_E',
                 'InattentionW_S']
-            
-            
+        elif version == 15:
+            params_of_interest = [
+                'a',
+                't',
+                'Value_diff']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'Value_diff']  
+        elif version == 16:
+            params_of_interest = [
+                'a',
+                't',
+                'ES_AttentionW',
+                'ES_InattentionW']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'ES_AttentionW',
+                'ES_InattentionW']          
+
     elif phase == "LE_RL":
         if version == 0:
             params_of_interest = [
