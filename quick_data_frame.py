@@ -68,6 +68,19 @@ data['ES_InattentionW'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwe
 data['ES_AttentionW'] = data['ES_AttentionW']
 data['ES_InattentionW'] = data['ES_InattentionW']
 
+
+
+data['ES_AttentionW_S'] = (data['PropDwell_Right'] * data['p2']) - (data['PropDwell_Left'] * data['p1'])
+data['ES_AttentionW_E'] = (data['PropDwell_Left'] * data['p1']) - (data['PropDwell_Right'] * data['p2'])
+
+data['ES_InattentionW_E'] = (data['PropDwell_Right'] * data['p1']) - (data['PropDwell_Left'] * data['p2'])
+data['ES_InattentionW_S'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwell_Right'] * data['p1'])
+
+
+
+
+
+
 # the CCT drift rate regression 
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2 ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ϵ
 

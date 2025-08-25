@@ -142,7 +142,8 @@ model_versions  = {
                 "ES_ZBIAS_27"],
     "ES_quad": ["ES_quad_1","ES_quad_2"],
     "LE_RL": ["LE_RL_1","LE_RL_2"],
-    "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3", "ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8","ES_VAL_9", "ES_VAL_10", "ES_VAL_11", "ES_VAL_12",  "ES_VAL_13", "ES_VAL_14", "ES_VAL_15","ES_VAL_16", "ES_VAL_17" ]
+    "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3", "ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8","ES_VAL_9", "ES_VAL_10", "ES_VAL_11", "ES_VAL_12",  "ES_VAL_13", "ES_VAL_14", "ES_VAL_15","ES_VAL_16", "ES_VAL_17",
+               "ES_VAL_18", "ES_VAL_19", "ES_VAL_20", "ES_VAL_21", "ES_VAL_22", "ES_VAL_23", "ES_VAL_24"]
    
 }
 
@@ -163,7 +164,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES_VAL"
-start_version = 15
+start_version = 17
 started = False
 
 # dir
@@ -1062,11 +1063,38 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 16:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+        
+        # E is upper boudnary, z is included
+        elif version == 17:
+            v_reg = {'model': 'v ~ 1 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 18:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW_E + ES_AttentionW_S + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 19:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        elif version == 20:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'t': 'OVcate'}    
+        elif version == 21:
+            v_reg = {'model': 'v ~ 0 + AttentionW_E + AttentionW_S + InattentionW_E + InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 22:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW_E + ES_AttentionW_S + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 23:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
             
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     p_outlier=.05, 
-                                    include=['a', 't', 'v'],   #'z'
+                                    include=['a', 't', 'v', 'z'],   #'z'
+                                    depends_on=depends_on,
                                     group_only_regressors=False,
                                     keep_regressor_trace=True
                                     )
