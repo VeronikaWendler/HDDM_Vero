@@ -79,7 +79,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 16    # defining version #
+version = 17    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES_VAL']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -3932,7 +3932,163 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 't',
                 'v_ES_AttentionW',
                 'v_ES_InattentionW']          
-
+            
+            
+            
+        elif version == 17:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_AttentionW_E',
+                'v_AttentionW_S',
+                'v_InattentionW_E',
+                'v_InattentionW_S'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_AttentionW_E',
+                'v_AttentionW_S',
+                'v_InattentionW_E',
+                'v_InattentionW_S']         
+        elif version == 18:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_ES_AttentionW_E',
+                'v_ES_AttentionW_S',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_ES_AttentionW_E',
+                'v_ES_AttentionW_S',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']     
+        elif version == 19:
+            params_of_interest = [
+                'a(low)',
+                'a(medium)',
+                'a(high)',
+                't',
+                'z',
+                'v_Intercept',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW:C(OVcate)[low]',
+                'v_ES_InattentionW:C(OVcate)[medium]',
+                'v_ES_InattentionW:C(OVcate)[high]']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a(low)',
+                'a(medium)',
+                'a(high)',
+                't',
+                'z',
+                'v_Intercept',
+                'v_ES_AttentionW_E',
+                'v_ES_AttentionW_S',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']        
+        elif version == 20:
+            params_of_interest = [
+                'a',
+                't(low)',
+                't(medium)',
+                't(high)',
+                'z',
+                'v_Intercept',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW:C(OVcate)[low]',
+                'v_ES_InattentionW:C(OVcate)[medium]',
+                'v_ES_InattentionW:C(OVcate)[high]']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't(low)',
+                't(medium)',
+                't(high)',
+                'z',
+                'v_Intercept',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW:C(OVcate)[low]',
+                'v_ES_InattentionW:C(OVcate)[medium]',
+                'v_ES_InattentionW:C(OVcate)[high]']        
+                
+        elif version == 21:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'v_AttentionW_E',
+                'v_AttentionW_S',
+                'v_InattentionW_E',
+                'v_InattentionW_S'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_AttentionW_E',
+                'v_AttentionW_S',
+                'v_InattentionW_E',
+                'v_InattentionW_S']    
+            
+        elif version == 22:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW_E',
+                'v_ES_AttentionW_S',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW_E',
+                'v_ES_AttentionW_S',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']     
+        elif version == 23:
+            params_of_interest = [
+                'a(low)',
+                'a(medium)',
+                'a(high)',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW:C(OVcate)[low]',
+                'v_ES_InattentionW:C(OVcate)[medium]',
+                'v_ES_InattentionW:C(OVcate)[high]']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a(low)',
+                'a(medium)',
+                'a(high)',
+                't',
+                'z',
+                'v_ES_AttentionW_E',
+                'v_ES_AttentionW_S',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']        
+            
+            
     elif phase == "LE_RL":
         if version == 0:
             params_of_interest = [
