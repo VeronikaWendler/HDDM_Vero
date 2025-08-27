@@ -143,7 +143,7 @@ model_versions  = {
     "ES_quad": ["ES_quad_1","ES_quad_2"],
     "LE_RL": ["LE_RL_1","LE_RL_2"],
     "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3", "ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8","ES_VAL_9", "ES_VAL_10", "ES_VAL_11", "ES_VAL_12",  "ES_VAL_13", "ES_VAL_14", "ES_VAL_15","ES_VAL_16", "ES_VAL_17",
-               "ES_VAL_18", "ES_VAL_19", "ES_VAL_20", "ES_VAL_21", "ES_VAL_22", "ES_VAL_23", "ES_VAL_24", "ES_VAL_25"]
+               "ES_VAL_18", "ES_VAL_19", "ES_VAL_20", "ES_VAL_21", "ES_VAL_22", "ES_VAL_23", "ES_VAL_24", "ES_VAL_25", "ES_VAL_26", "ES_VAL_27", "ES_VAL_28"]
    
 }
 
@@ -164,7 +164,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES_VAL"
-start_version = 24
+start_version = 25
 started = False
 
 # dir
@@ -1093,6 +1093,15 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on = {'t': 'OVcate'} 
+        # S is upper boundary
+        elif version == 25:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        elif version == 26:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+
             
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
@@ -2233,16 +2242,16 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL"):
 
-                data["response"] = pd.to_numeric(data["chose_left"], errors="coerce")
+                data["response"] = pd.to_numeric(data["chose_right"], errors="coerce")
                 print("[ZBIAS DEBUG] head of response mapping:")
-                print(data[["chose_left","corr","response"]].head(10).to_string(index=False))
+                print(data[["chose_right","corr","response"]].head(10).to_string(index=False))
                 print("counts:", data["response"].value_counts(dropna=False).to_dict())
                 # sanity checks ...are we actually filtering the right things
-                mismatches = (data["response"] != data["chose_left"]).sum()
-                assert mismatches == 0, f"{mismatches} rows where response ≠ chose_left!"
+                mismatches = (data["response"] != data["chose_right"]).sum()
+                assert mismatches == 0, f"{mismatches} rows where response ≠ chose_right!"
             else:
                 data["response"] = pd.to_numeric(data["corr"], errors="coerce")
-                print(data[["chose_left","corr","response"]].head(5).to_string(index=False))
+                print(data[["chose_right","corr","response"]].head(5).to_string(index=False))
 
             
             print(f"[DEBUG] phase={phase}  response counts:\n",
