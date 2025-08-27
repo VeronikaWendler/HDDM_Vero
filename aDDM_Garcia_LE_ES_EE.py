@@ -79,7 +79,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 23    # defining version #
+version = 7    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES_VAL']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -3807,81 +3807,81 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'a',
                 't',
                 'z',
-                'V_E',
-                'V_S',
-                'PropDwell_Left',
-                'PropDwell_Right']
+                'v_V_E',
+                'v_V_S',
+                'v_PropDwell_Left',
+                'v_PropDwell_Right']
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
                 'a',
                 't',
                 'z',
-                'V_E',
-                'V_S',
-                'PropDwell_Left',
-                'PropDwell_Right']
+                'v_V_E',
+                'v_V_S',
+                'v_PropDwell_Left',
+                'v_PropDwell_Right']
         
         elif version == 9:
             params_of_interest = [
                 'a',
                 't',
                 'z',
-                'Value_diff',
-                'DTA']
+                'v_Value_diff',
+                'v_DTA']
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
                 'a',
                 't',
                 'z',
-                'Value_diff',
-                'DTA']
+                'v_Value_diff',
+                'v_DTA']
         
         elif version == 10:
             params_of_interest = [
                 'a',
                 't',
                 'z',
-                'PropDwell_Left',
-                'PropDwell_Right']
+                'v_PropDwell_Left',
+                'v_PropDwell_Right']
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
                 'a',
                 't',
                 'z',
-                'PropDwell_Left',
-                'PropDwell_Right']
+                'v_PropDwell_Left',
+                'v_PropDwell_Right']
             
         elif version == 11:
             params_of_interest = [
                 'a',
                 't',
                 'z',
-                'Value_diff',]
+                'v_Value_diff',]
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
                 'a',
                 't',
                 'z',
-                'Value_diff',]
+                'v_Value_diff',]
             
         elif version == 12:
             params_of_interest = [
                 'a',
                 't',
                 'z',
-                'AttentionW_E',
-                'AttentionW_S',
-                'InattentionW_E',
-                'InattentionW_S']
+                'v_AttentionW_E',
+                'v_AttentionW_S',
+                'v_InattentionW_E',
+                'v_InattentionW_S']
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
                 'a',
                 't',
                 'z',
-                'AttentionW_E',
-                'AttentionW_S',
-                'InattentionW_E',
-                'InattentionW_S']
+                'v_AttentionW_E',
+                'v_AttentionW_S',
+                'v_InattentionW_E',
+                'v_InattentionW_S']
             
         elif version == 13:
             params_of_interest = [
