@@ -79,7 +79,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 27    # defining version #
+version = 3    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES_VAL']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -3759,6 +3759,67 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_V_E',
                 'v_V_S'
                 ]
+            
+        elif version == 2:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_V_E',
+                'v_V_S',
+                'v_PropDwell_Left',
+                'v_PropDwell_Right'
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_V_E',
+                'v_V_S',
+                'v_PropDwell_Left',
+                'v_PropDwell_Right'
+                ]
+            
+        elif version == 3:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_Value_diff',
+                'v_DTA'
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_Value_diff',
+                'v_DTA']
+            
+        elif version == 4:
+            params_of_interest = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_PropDwell_Left',
+                'v_PropDwell_Right'
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_PropDwell_Left',
+                'v_PropDwell_Right'
+                ]
+            
         elif version == 5:
             params_of_interest = [
                 'a',
