@@ -79,7 +79,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 12    # defining version #
+version = 24    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES_VAL']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -126,7 +126,7 @@ model_versions = {
     "ES_quad": ["ES_quad_1","ES_quad_2"],
     "LE_RL": ["LE_RL_1", "LE_RL_2"],
     "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3", "ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8", "ES_VAL_9", "ES_VAL_10", "ES_VAL_11", "ES_VAL_12", "ES_VAL_13", "ES_VAL_14", "ES_VAL_15",
-               "ES_VAL_16", "ES_VAL_17","ES_VAL_18", "ES_VAL_19", "ES_VAL_20", "ES_VAL_21", "ES_VAL_22", "ES_VAL_23", "ES_VAL_24"]
+               "ES_VAL_16", "ES_VAL_17","ES_VAL_18", "ES_VAL_19", "ES_VAL_20", "ES_VAL_21", "ES_VAL_22", "ES_VAL_23", "ES_VAL_24", "ES_VAL_25", "ES_VAL_26", "ES_VAL_27", "ES_VAL_28", "ES_VAL_29"]
 }
 
 # debugging, tip, python starts at 0, unlike Matlab
@@ -4088,6 +4088,62 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_InattentionW_E',
                 'v_ES_InattentionW_S']        
             
+        elif version == 24:
+            params_of_interest = [    
+                'a',
+                't(low)',
+                't(medium)',
+                't(high)',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW:C(OVcate)[low]',
+                'v_ES_InattentionW:C(OVcate)[medium]',
+                'v_ES_InattentionW:C(OVcate)[high]']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't(low)',
+                't(medium)',
+                't(high)',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW:C(OVcate)[low]',
+                'v_ES_InattentionW:C(OVcate)[medium]',
+                'v_ES_InattentionW:C(OVcate)[high]']        
+        elif version == 25:
+            params_of_interest = [    
+                'a(low)',
+                'a(medium)',
+                'a(high)',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a(low)',
+                'a(medium)',
+                'a(high)',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']   
+        elif version == 26:
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']   
             
     elif phase == "LE_RL":
         if version == 0:
