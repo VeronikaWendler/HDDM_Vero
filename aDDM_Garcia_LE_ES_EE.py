@@ -79,7 +79,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 26    # defining version #
+version = 27    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['ES_VAL']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -4144,6 +4144,21 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_Intercept',
                 'v_ES_AttentionW',
                 'v_ES_InattentionW']   
+            
+        elif version == 27:
+            params_of_interest = [    
+                'a',
+                't',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']
+
+            
             
     elif phase == "LE_RL":
         if version == 0:
