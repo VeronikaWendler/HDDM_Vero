@@ -143,7 +143,8 @@ model_versions  = {
     "ES_quad": ["ES_quad_1","ES_quad_2"],
     "LE_RL": ["LE_RL_1","LE_RL_2"],
     "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3", "ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8","ES_VAL_9", "ES_VAL_10", "ES_VAL_11", "ES_VAL_12",  "ES_VAL_13", "ES_VAL_14", "ES_VAL_15","ES_VAL_16", "ES_VAL_17",
-               "ES_VAL_18", "ES_VAL_19", "ES_VAL_20", "ES_VAL_21", "ES_VAL_22", "ES_VAL_23", "ES_VAL_24", "ES_VAL_25", "ES_VAL_26", "ES_VAL_27", "ES_VAL_28"]
+               "ES_VAL_18", "ES_VAL_19", "ES_VAL_20", "ES_VAL_21", "ES_VAL_22", "ES_VAL_23", "ES_VAL_24", "ES_VAL_25", "ES_VAL_26", "ES_VAL_27", "ES_VAL_28",
+               "ES_VAL_29", "ES_VAL_30", "ES_VAL_31"]
    
 }
 
@@ -164,7 +165,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES_VAL"
-start_version = 27
+start_version = 29
 started = False
 
 # dir
@@ -1110,75 +1111,85 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             
+        # S is upper boundary and we're calculating seperate inattent weights
+        elif version == 29:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW_E - ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
             
-        #  Fix z
-        from copy import deepcopy
-        cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
-        idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
-        cfg['params_default'][idx_z] = 0.52     #  - changing it again to E being upper (chose_left) - if S shoudl be upper, then set (chose_right)
-        
-        # SANITY‐CHECK 
-        assert cfg['params'][idx_z] == 'z'
-        assert cfg['params_default'][idx_z] == 0.52, \
-            f"z default not 0.55 but {cfg['params_default'][idx_z]}"
-
-        # build the model
-        m = hddm.models.HDDMRegressor(
-            data,
-            reg_descr,
-            depends_on=depends_on,
-            p_outlier=.05,
-            include=['a', 't', 'v'],     #  z is not in include as not a free param
-            group_only_regressors=False,
-            keep_regressor_trace=True,
-            model_config=cfg
-        )
-
-        print("\n[ZBIAS DEBUG] model_config['params']       =", m.model_config['params'])
-        print("[ZBIAS DEBUG] model_config['params_default'] =", m.model_config['params_default'])
-        zi = m.model_config['params'].index('z')
-        print(f"[ZBIAS DEBUG] default for 'z' = {m.model_config['params_default'][zi]}\n")  
-        
-        print("[ZBIAS DEBUG] sampling nodes in m.nodes_db:\n",
-              [n for n in m.nodes_db.index if n.split('_')[0] in ['a','t','v','z']])
-
-
+        elif version == 30:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E - ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            
+            
+        m = hddm.models.HDDMRegressor(data, 
+                                    reg_descr,
+                                    p_outlier=.05, 
+                                    include=['a', 't', 'v', 'z'],   #'z'
+                                    depends_on=depends_on,
+                                    group_only_regressors=False,
+                                    keep_regressor_trace=True
+                                    )
         m.find_starting_values()
-        infdata = m.sample(
-            samples,
-            burn=200,
-            dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'),
-            db='pickle',
-            return_infdata=True,
-            loglike=True,
-            ppc=True
-        )
-
-        # final check that z never got sampled
-        assert "z" not in infdata.posterior.data_vars, \
-            "ERROR: 'z' appeared in the posterior!"
-        print("[DEBUG] z absent from posterior - confirmed fixed.")
+        infdata = m.sample(samples,
+                   burn=200,
+                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                   db='pickle',
+                   return_infdata=True, loglike=True, ppc=True)
 
         return m, infdata
         
         
         
-        # m = hddm.models.HDDMRegressor(data, 
-        #                             reg_descr,
-        #                             p_outlier=.05, 
-        #                             include=['a', 't', 'v', 'z'],   #'z'
-        #                             depends_on=depends_on,
-        #                             group_only_regressors=False,
-        #                             keep_regressor_trace=True
-        #                             )
+        # #  Fix z
+        # from copy import deepcopy
+        # cfg = deepcopy(hddm.model_config.model_config['ddm_hddm_base'])
+        # idx_z = cfg['params'].index('z')        # position 2 in ['v','a','z','t'] according to hddm source code but not sure if this works
+        # cfg['params_default'][idx_z] = 0.52     #  - changing it again to E being upper (chose_left) - if S shoudl be upper, then set (chose_right)
+        
+        # # SANITY‐CHECK 
+        # assert cfg['params'][idx_z] == 'z'
+        # assert cfg['params_default'][idx_z] == 0.52, \
+        #     f"z default not 0.55 but {cfg['params_default'][idx_z]}"
+
+        # # build the model
+        # m = hddm.models.HDDMRegressor(
+        #     data,
+        #     reg_descr,
+        #     depends_on=depends_on,
+        #     p_outlier=.05,
+        #     include=['a', 't', 'v'],     #  z is not in include as not a free param
+        #     group_only_regressors=False,
+        #     keep_regressor_trace=True,
+        #     model_config=cfg
+        # )
+
+        # print("\n[ZBIAS DEBUG] model_config['params']       =", m.model_config['params'])
+        # print("[ZBIAS DEBUG] model_config['params_default'] =", m.model_config['params_default'])
+        # zi = m.model_config['params'].index('z')
+        # print(f"[ZBIAS DEBUG] default for 'z' = {m.model_config['params_default'][zi]}\n")  
+        
+        # print("[ZBIAS DEBUG] sampling nodes in m.nodes_db:\n",
+        #       [n for n in m.nodes_db.index if n.split('_')[0] in ['a','t','v','z']])
+
+
         # m.find_starting_values()
-        # infdata = m.sample(samples,
-        #            burn=200,
-        #            dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
-        #            db='pickle',
-        #            return_infdata=True, loglike=True, ppc=True)
+        # infdata = m.sample(
+        #     samples,
+        #     burn=200,
+        #     dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'),
+        #     db='pickle',
+        #     return_infdata=True,
+        #     loglike=True,
+        #     ppc=True
+        # )
+
+        # # final check that z never got sampled
+        # assert "z" not in infdata.posterior.data_vars, \
+        #     "ERROR: 'z' appeared in the posterior!"
+        # print("[DEBUG] z absent from posterior - confirmed fixed.")
 
         # return m, infdata
+        
     
     
     

@@ -65,17 +65,9 @@ data['EE_middle'] = (data['MiddleDominantLoc_Left'] & data['FinalFix_Left']).ast
 
 data['ES_AttentionW'] = (data['PropDwell_Right'] * data['p2']) - (data['PropDwell_Left'] * data['p1'])
 data['ES_InattentionW'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwell_Right'] * data['p1'])
-data['ES_AttentionW'] = data['ES_AttentionW']
-data['ES_InattentionW'] = data['ES_InattentionW']
 
-
-
-data['ES_AttentionW_S'] = (data['PropDwell_Right'] * data['p2']) - (data['PropDwell_Left'] * data['p1'])
-data['ES_AttentionW_E'] = (data['PropDwell_Left'] * data['p1']) - (data['PropDwell_Right'] * data['p2'])
-
-data['ES_InattentionW_E'] = (data['PropDwell_Right'] * data['p1']) - (data['PropDwell_Left'] * data['p2'])
-data['ES_InattentionW_S'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwell_Right'] * data['p1'])
-
+data['ES_InattentionW_E'] = (data['PropDwell_Right'] * data['p1']) 
+data['ES_InattentionW_S'] = (data['PropDwell_Left'] * data['p2']) 
 
 
 
