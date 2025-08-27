@@ -1105,6 +1105,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 27:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+        # S is upper bound and z fixed at 0.48 (throw out of include list)
+        elif version == 28:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
             
             
         #  Fix z
@@ -2298,16 +2302,16 @@ if __name__ == "__main__":
             # ------------------------------------------------------------------
             if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL"):
 
-                data["response"] = pd.to_numeric(data["chose_left"], errors="coerce")
+                data["response"] = pd.to_numeric(data["chose_right"], errors="coerce")
                 print("[ZBIAS DEBUG] head of response mapping:")
-                print(data[["chose_left","corr","response"]].head(10).to_string(index=False))
+                print(data[["chose_right","corr","response"]].head(10).to_string(index=False))
                 print("counts:", data["response"].value_counts(dropna=False).to_dict())
                 # sanity checks ...are we actually filtering the right things
-                mismatches = (data["response"] != data["chose_left"]).sum()
-                assert mismatches == 0, f"{mismatches} rows where response ≠ chose_left!"
+                mismatches = (data["response"] != data["chose_right"]).sum()
+                assert mismatches == 0, f"{mismatches} rows where response ≠ chose_right!"
             else:
                 data["response"] = pd.to_numeric(data["corr"], errors="coerce")
-                print(data[["chose_left","corr","response"]].head(5).to_string(index=False))
+                print(data[["chose_right","corr","response"]].head(5).to_string(index=False))
 
             
             print(f"[DEBUG] phase={phase}  response counts:\n",
