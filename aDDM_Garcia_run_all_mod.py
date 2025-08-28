@@ -165,7 +165,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "ES_VAL"
-start_version = 33
+start_version = 34
 started = False
 
 # dir
@@ -1132,7 +1132,9 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 33:
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            
+        elif version == 34:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
         
           
         m = hddm.models.HDDMRegressor(data, 
