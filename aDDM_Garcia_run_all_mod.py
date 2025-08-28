@@ -1102,7 +1102,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 26:
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-        # E is upper bound and z fixed at 0.55 (throw out of include list)
+        # E is upper bound and z fixed at 0.52 (throw out of include list)
         elif version == 27:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
