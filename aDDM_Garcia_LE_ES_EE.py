@@ -4228,8 +4228,8 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'z',
                 'v_Intercept',
                 'v_ES_AttentionW',
-                'v_ES_Inattention_E',
-                'v_ES_Inattention_S']
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
                 'a',
@@ -4237,24 +4237,24 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'z',
                 'v_Intercept',
                 'v_ES_AttentionW',
-                'v_ES_Inattention_E',
-                'v_ES_Inattention_S']
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
         elif version == 30:
             params_of_interest = [    
                 'a',
                 't',
                 'z',
                 'v_ES_AttentionW',
-                'v_ES_Inattention_E',
-                'v_ES_Inattention_S']
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
                 'a',
                 't',
                 'z',
                 'v_ES_AttentionW',
-                'v_ES_Inattention_E',
-                'v_ES_Inattention_S']
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
         
         elif version == 31:
             params_of_interest = [    
@@ -4263,8 +4263,8 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'z',
                 'v_Intercept',
                 'v_ES_AttentionW',
-                'v_ES_Inattention_E',
-                'v_ES_Inattention_S']
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
                 'a',
@@ -4272,8 +4272,8 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'z',
                 'v_Intercept',
                 'v_ES_AttentionW',
-                'v_ES_Inattention_E',
-                'v_ES_Inattention_S']
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
             
         elif version == 32:
             params_of_interest = [    
@@ -4281,16 +4281,16 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 't',
                 'z',
                 'v_ES_AttentionW',
-                'v_ES_Inattention_E',
-                'v_ES_Inattention_S']
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
                 'a',
                 't',
                 'z',
                 'v_ES_AttentionW',
-                'v_ES_Inattention_E',
-                'v_ES_Inattention_S']
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
             
 
     elif phase == "LE_RL":
