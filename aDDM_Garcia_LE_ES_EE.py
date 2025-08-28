@@ -4220,8 +4220,8 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_AttentionW',
                 'v_ES_InattentionW']
 
-        # S is upper boundary and we're calculating seperate inattent weights
-        elif version == 29:
+        # S is upper boundary and we're calculating seperate inattent weights #
+        elif version == 29: 
             params_of_interest = [    
                 'a',
                 't',
