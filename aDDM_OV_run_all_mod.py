@@ -1583,7 +1583,6 @@ if __name__ == "__main__":
             data["ES_AttentionW"]  = pd.to_numeric(data["ES_AttentionW"],  errors="coerce")
             data["ES_InattentionW"]= pd.to_numeric(data["ES_InattentionW"],errors="coerce")
             data["subj_idx"]    = data["sub_id"]
-            data["val_diff"] = pd.to_numeric(data["val_diff"],errors="coerce")
             data["ES_InattentionW_E"]  = pd.to_numeric(data["ES_InattentionW_E"],  errors="coerce")
             data["ES_InattentionW_S"] = pd.to_numeric(data["ES_InattentionW_S"], errors="coerce")
             data["Value_diff"] = pd.to_numeric(data["Value_diff"], errors="coerce")
