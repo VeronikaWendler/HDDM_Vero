@@ -18,13 +18,13 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 # ---------------- configuration -----------------------------------------
 PROJECT_DIR    = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
-FIG_DIR        = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_VAL_36/recovery_ES_VAL_m36"
+FIG_DIR        = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_VAL_7/recovery_ES_VAL_m7"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 EMPIRICAL_POST_PATHS = [
-    BASE_MODEL_DIR / "garcia_replication_ES_VAL_36_0.nc",
-    BASE_MODEL_DIR / "garcia_replication_ES_VAL_36_1.nc",
-    BASE_MODEL_DIR / "garcia_replication_ES_VAL_36_2.nc",
+    BASE_MODEL_DIR / "garcia_replication_ES_VAL_7_0.nc",
+    BASE_MODEL_DIR / "garcia_replication_ES_VAL_7_1.nc",
+    BASE_MODEL_DIR / "garcia_replication_ES_VAL_7_2.nc",
 ]
 
 N_REPS    = 10        # as in the paper
@@ -33,32 +33,26 @@ BURN      = 100
 
 # group-level parameters (means)
 PARAM_LIST = [
-    'a(high)',
-    'a(low)',
-    'a(medium)',
+    'a',
     't',
     'z',
     'v_ES_AttentionW',
-    'v_ES_InattentionW_E',
-    'v_ES_InattentionW_S'
+    'v_ES_InattentionW'
 ]
 
             
 # corresponding group-level SD names (as they appear in idata)
 PARAM_LIST_SD = [
-    'a(high)_std',
-    'a(low)_std',
-    'a(medium)_std',
+    'a_std',
     't_std',
     'z_std',
     'v_ES_AttentionW_std',
-    'v_ES_InattentionW_E_std',
-    'v_ES_InattentionW_S_std'
+    'v_ES_InattentionW_std'
 ]
 PARAM_SD_MAP = dict(zip(PARAM_LIST, PARAM_LIST_SD))
 
 # HDDM model spec
-v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
 reg_descr = [v_reg]
 
 # ------------- helpers ---------------------------------------------------
@@ -137,29 +131,28 @@ def simulate_dataset(true_individuals, raw_df):
         ov   = _norm_ov(tr["OVcate"])
         pars = true_individuals[subj]
 
-        # choose a per OVcate
-        a_key = f"a({ov})"
-        if a_key not in pars:
-            # fallbacks in case labels are slightly different
-            map_ = {"low": "a(low)", "medium": "a(medium)", "high": "a(high)"}
-            a_key = map_.get(ov, "a(low)")
-        a_val = float(pars[a_key])
+        # # choose a per OVcate
+        # a_key = f"a({ov})"
+        # if a_key not in pars:
+        #     # fallbacks in case labels are slightly different
+        #     map_ = {"low": "a(low)", "medium": "a(medium)", "high": "a(high)"}
+        #     a_key = map_.get(ov, "a(low)")
+        # a_val = float(pars[a_key])
 
         # drift per trial from regressors (no intercept by design: 0 + X)
         v_trial = (
             pars["v_ES_AttentionW"]     * float(tr["ES_AttentionW"]) +
-            pars["v_ES_InattentionW_E"] * float(tr["ES_InattentionW_E"]) +
-            pars["v_ES_InattentionW_S"] * float(tr["ES_InattentionW_S"])
+            pars["v_ES_InattentionW"] * float(tr["ES_InattentionW_E"])
         )
 
-        par_dict = {"v": v_trial, "a": a_val, "t": float(pars["t"])}
+        par_dict = {"v": v_trial, "a": float(pars["a"]), "t": float(pars["t"])}
         if "z" in pars:
             par_dict["z"] = float(pars["z"])
 
         trial_df, _ = hddm.generate.gen_rand_data(par_dict, size=1, subjs=1)
 
         # carry over predictors & identifiers
-        for col in ["subj_idx", "OVcate", "ES_AttentionW", "ES_InattentionW_E", "ES_InattentionW_S"]:
+        for col in ["subj_idx", "OVcate", "ES_AttentionW", "ES_InattentionW"]:
             trial_df[col] = tr[col]
         sim_rows.append(trial_df)
 
@@ -170,7 +163,6 @@ def refit_and_get_means(sim_df, seed):
     mdl = hddm.HDDMRegressor(
         sim_df, reg_descr,
         include=["a","t","v","z"],
-        depends_on={'a': 'OVcate'},
         p_outlier=0.05,
         keep_regressor_trace=True,
         group_only_regressors=False,
@@ -184,11 +176,6 @@ def refit_and_get_means(sim_df, seed):
 import re
 
 def extract_individual_means(mdl):
-    """
-    Posterior mean for all subject-specific parameters, including depends_on levels.
-    Returns a dict keyed by (subj, parameter_name) where parameter_name matches PARAM_LIST
-    e.g., ("a(low)", "a(medium)", "a(high)", "t", "z", "v_ES_AttentionW", ...)
-    """
     out = {}
     for node in mdl.nodes_db.index:
         if "_subj." not in node:
@@ -294,7 +281,6 @@ for rep in trange(start_rep, N_REPS, desc="parameter-recovery", unit="rep"):
 
         np.random.seed(20_000 + rep)
         mdl = hddm.HDDMRegressor(sim_df, reg_descr, include=["a","t","v","z"],
-                                 depends_on={'a':'OVcate'},
                                  p_outlier=0.05, keep_regressor_trace=True,
                                  group_only_regressors=False)
         mdl.find_starting_values()
