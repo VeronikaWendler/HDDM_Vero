@@ -10,7 +10,7 @@ from scipy import stats as st
 
 # ---------- paths ----------
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
-FIG_DIR     = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_35/recovery_m35"
+FIG_DIR     = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_VAL_36/recovery_ES_VAL_m36"
 IN_CSV      = FIG_DIR / "true_vs_recovered_individual2.csv"
 OUT_PNG     = FIG_DIR / "scatter_individual_ALL_params_3.png"
 OUT_STATS   = FIG_DIR / "scatter_individual_ALL_params_3.csv"
@@ -22,7 +22,14 @@ if df.empty:
     raise SystemExit("The individual CSV is empty.")
 
 # order panels: key ones first, then alphabetical
-priority = ["t", "v_Intercept", "a_Intercept"]
+priority = ['a(high)',
+            'a(low)',
+            'a(medium)',
+            't',
+            'z',
+            'v_ES_AttentionW',
+            'v_ES_InattentionW_E',
+            'v_ES_InattentionW_S']
 params = sorted(
     df["parameter"].unique(),
     key=lambda p: (p not in priority, priority.index(p) if p in priority else 0, p)
@@ -42,7 +49,7 @@ def regress_stats(x, y):
     return dict(ok=True, N=n, R2=r2, p=float(res.pvalue), RMSE=rmse)
 
 
-AX_LIMS = {"t": (0.0, 1.0), "v_Intercept": (0.0, 2.5)}
+AX_LIMS = {"t": (0.0, 1.0)}
 
 def _p_text(p):
     if not np.isfinite(p):
