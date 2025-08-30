@@ -1,8 +1,4 @@
-# Veronika Wendler
-# 22.01.25
-# code for the attentional drift diffusion model - originally, I used this in summer 2024 in Quebec and was inspired by Jan WIllem De Gee's regression models somewhere on GitHub - but this version is pretty much my creation in Python3
- 
-# import libraries
+# import libraries  
 import pandas as pd
 import numpy as np
 import hddm
@@ -27,7 +23,23 @@ from patsy import dmatrix
 from joblib import Parallel, delayed
 import time
 import arviz as az
+from joblib import Parallel, delayed
+import cloudpickle, dill
+cloudpickle.dump = dill.dump
+
+
+# -------------------------------------------------------------------------
+# patch: make a dummy _gdbm module so “import _gdbm” never fails
+import types, sys
+sys.modules.setdefault('winreg', types.ModuleType('winreg'))
+
+sys.modules.setdefault('_gdbm', types.ModuleType('_gdbm'))
+# -------------------------------------------------------------------------
+
+
 import dill as pickle
+from copy import deepcopy   # for modfiying z to be 0.55 (like in Sebastian's Matlab)
+import argparse
 
 # warning settings
 import warnings
@@ -48,30 +60,42 @@ PROJECT_DIR = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace"))
 def ensure_dir(path):
     Path(path).mkdir(parents=True, exist_ok=True)
 
+#from helper_functions_2 import prepare_data
+#import compact_models
+
+# for Z bias coding
+from scipy.special import expit   # for inverse‑logit treans
+
+
+def make_z_link(full_stimulus_vector):
+    stim = np.asarray(full_stimulus_vector, dtype=int)
+
+    def _link(x):
+        """
+        x can be a NumPy array *or* a pandas Series coming from HDDM.
+        We return the *same* type HDDM gave us so later code still works.
+        """
+        # --- make sure stim is at least as long as x ---
+        if stim.size < len(x):
+            reps = (len(x) // stim.size) + 1
+            stim_aligned = np.tile(stim, reps)[:len(x)]
+        else:
+            stim_aligned = stim[:len(x)]
+
+        z = np.where(stim_aligned == 0,
+                     1.0 - expit(x),   # flip for stimulus==0
+                     expit(x))         # usual inverse‑logit
+
+        # preserve the incoming container type
+        if hasattr(x, "index"):            # it's a pandas Series
+            return pd.Series(z, index=x.index, name="z")
+        return z                           # plain NumPy array
+
+    return _link
+
 
 #------------------------------------------------------------------------------------------------------------------
-# Structure of saving:
 
-# /home/jovyan/OfficialTutorials/THESIS_HDDM
-#     ├── data_sets_garcia/
-#     │   └── GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv
-#     ├── model_dir_garcia_CCT/
-#     │   ├── EE_0 ...n
-#     │   ├── ES_0 ..n
-#     │   ├── ESEE_0 ...n
-#     │   ├── LEESEE_0 ...n
-#     ├── figures_garcia_CCT/
-#     │   └── garcia_replication_EE_n/
-#     │       ├── diagnostics/
-#     │       │   ├── gelman_rubic.txt
-#     │       │   ├── DIC.txt
-#     │       │   ├── results.csv
-#     │       │   └── posteriors.pdf
-#     │   └── garcia_replication_ES_n/
-#     │   └── garcia_replication_ESEE_n/
-#     │   └── garcia_replication_LEESEE_n/
-#     |   with_sub99_noRTcriteria - contains HDDM with no RT exclusion criteria + participant 99
-#     ├── other_script.py
 #------------------------------------------------------------------------------------------------------------------
 
 # addm regression formula
@@ -86,10 +110,16 @@ def ensure_dir(path):
 # V_sub = value of the worse option
 
 
+# created these new columns
+#data['ES_AttentionW'] = (data['PropDwell_Right'] * data['p2']) - (data['PropDwell_Left'] * data['p1'])
+#data['ES_InattentionW'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwell_Right'] * data['p1'])
+#data['ES_AttentionW'] = data['ES_AttentionW'].round(3)
+#data['ES_InattentionW'] = data['ES_InattentionW'].round(3)
+##
 # hard-coded 
-nr_models       = 5         # number of MCMC chains
-nr_samples      = 11000      # samples per chain
-parallel        = True     # parallel
+nr_models       = 3         # number of MCMC chains
+nr_samples      = 1200       # samples per chain - do 11000 but for now for a quick one we do 600
+parallel        = True      # parallel
 model_base_name = "OV_replication_"
 model_versions  = {
     "LE":     ["LE_1","LE_2","LE_3","LE_4","LE_5", "LE_6", "LE_7"],
@@ -97,25 +127,37 @@ model_versions  = {
     "EE":     ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":   ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE": ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
+    "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3","ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8", "ES_VAL_8", "ES_VAL_9", "ES_VAL_10", "ES_VAL_11"]
 }
 
 # ------------------------------------------------------------------
+
+PHASE_TO_SOURCE = {
+    "ES_ZBIAS": "ES", 
+    "ES_quad": "ES",    
+    "LE_RL": "LE",
+    "ES_VAL": "ES",
+}
+
+
+
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["LE"]                                     # order
-SKIP_PHASES     = {"ES","EE", "ESEE", "LEESEE"}                 # ignored this phase
-RUN_ALL_MODELS  = True                                        # False = just load existing fits
+PHASE_RUN_ORDER = ["ES_VAL"]                                         # order
+SKIP_PHASES     = {"LE","ES_ZBIAS","ES","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
+RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "LE"
-start_version = 4
+start_phase = "ES_VAL"
+start_version = 0
 started = False
 
-# dir
 # dir
 PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 
 BASE_MODEL_DIR = PROJECT_DIR / "models_dir_OV"
 FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_OV"
+
+# -----
 
 # ------------------------------------------------------------------
 
@@ -169,7 +211,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=11000, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=1200, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -362,7 +404,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=110
             depends_on = {'t': 'phase'}
         else:
             raise ValueError(f"Invalid version {version}")
-     
         
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
@@ -381,7 +422,66 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=110
 
         return m, infdata
 
+        
+        
+    elif phase == "ES_VAL":
+        depends_on = {}
+        if version == 0:   
+            v_reg = {'model': 'v ~ Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 1:
+            v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 2:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        # ATTENTION    
+        # changing the boundary here - s is upper bound
+        elif version == 3:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 4:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'}    
+        elif version == 5:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        # S is upper boundary
+        elif version == 6:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 7:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 8:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        elif version == 9:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E:C(OVcate) + ES_InattentionW_S:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        
+        m = hddm.models.HDDMRegressor(data, 
+                                    reg_descr,
+                                    p_outlier=.05, 
+                                    include=['a', 't', 'v', 'z'],   #'z'
+                                    depends_on=depends_on,
+                                    group_only_regressors=False,
+                                    keep_regressor_trace=True
+                                    )
+        m.find_starting_values()
+        infdata = m.sample(samples,
+                   burn=200,
+                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                   db='pickle',
+                   return_infdata=True, loglike=True, ppc=True)
 
+        return m, infdata
+        
+        
 ###############################################################################################################    
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -391,8 +491,8 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=110
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=11000,
-                         n_jobs=5,
+                         samples=1200,
+                         n_jobs=3,
                          run=True,
                          parallel=True,
                          model_name='model',
@@ -423,6 +523,7 @@ def drift_diffusion_hddm(data,
             for i in range(n_jobs):
                 model, infdata = results[i]
                 model.save(os.path.join(model_dir, f"{model_name}_{i}.hddm"))
+                
                 with open(os.path.join(model_dir, f"{model_name}_{i}.pkl"), "wb") as f:
                     pickle.dump(model, f)
                 infdata = sanitize_infdata(infdata)  # clean before saving
@@ -439,6 +540,7 @@ def drift_diffusion_hddm(data,
                                        accuracy_coding 
                                        )
             model.save(os.path.join(model_dir, model_name + ".hddm"))
+
             with open(os.path.join(model_dir, f"{model_name}.pkl"), "wb") as f:
                 pickle.dump(model, f)
             infdata = sanitize_infdata(infdata)
@@ -455,8 +557,8 @@ def drift_diffusion_hddm(data,
 import dill as pickle
 
 def drift_diffusion_hddmRL(data, 
-                         samples=11000, 
-                         n_jobs=5,
+                         samples=1200, 
+                         n_jobs=3,
                          run=True,
                          parallel=True,
                          model_name='model',
@@ -1397,15 +1499,14 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
 
 model_dir = BASE_MODEL_DIR
 
+
 # ==================================================================
-# LOOP – runs every (phase, version) - pairing
+# BATCH DRIVER – runs every (phase, version) - pairing
 # ==================================================================
 
 if __name__ == "__main__":
 
     data_full = pd.read_csv((PROJECT_DIR / "data_sets" / "data_sets_OV" / "OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix(), sep=",")
-
-
     # loop over phases and versions
     for phase in PHASE_RUN_ORDER:
         if phase in SKIP_PHASES:
@@ -1431,39 +1532,88 @@ if __name__ == "__main__":
             print(f"\n===  PHASE {phase} : {model_name}  ===")
 
             # --------------- filter data for this phase ---------------
+            source_phase = PHASE_TO_SOURCE.get(phase, phase)   #assignes ES_ZBIAS
+
             if phase == "ESEE":
                 data = data_full[data_full["phase"].isin(["ES", "EE"])].copy()
             elif phase == "LEESEE":
                 data = data_full[data_full["phase"].isin(["LE", "ES", "EE"])].copy()
             else:
-                data = data_full[data_full["phase"] == phase].copy()
+                data = data_full[data_full["phase"] == source_phase].copy() 
+            
+            if data.empty:
+                raise ValueError(f"No rows left after filtering for phase '{phase}' "
+                                 f"(source = '{source_phase}')")
 
             # ---------------- preprocessing ---------------
-
+            data["gazeCI"]  = pd.to_numeric(data["gazeCI"],  errors="coerce")
+            data["gazeSE"]= pd.to_numeric(data["gazeSE"],errors="coerce")
             data["phase"]       = data["phase"].astype("category")
             data["rt"]          = pd.to_numeric(data["rtime"], errors="coerce")
+            data["chose_right"] = pd.to_numeric(data["chose_right"], errors="coerce")
+            data["chose_left"] = pd.to_numeric(data["chose_left"], errors="coerce")
+
             data                = data[data["rt"] > 0.250]
-            data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
+            # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
+            # ------------------------------------------------------------------
+            if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL"):
+
+                data["response"] = pd.to_numeric(data["chose_right"], errors="coerce")
+                print("[ZBIAS DEBUG] head of response mapping:")
+                print(data[["chose_right","corr","response"]].head(10).to_string(index=False))
+                print("counts:", data["response"].value_counts(dropna=False).to_dict())
+                # sanity checks ...are we actually filtering the right things
+                mismatches = (data["response"] != data["chose_right"]).sum()
+                assert mismatches == 0, f"{mismatches} rows where response ≠ chose_right!"
+            else:
+                data["response"] = pd.to_numeric(data["corr"], errors="coerce")
+                print(data[["chose_right","corr","response"]].head(5).to_string(index=False))
+
+            
+            print(f"[DEBUG] phase={phase}  response counts:\n",
+            data["response"].value_counts(dropna=False).head())
+            
             data["OVcate"]      = data["OVcate_2"].astype("category")
             data["Abscate"]     = data["Abscate_2"].astype("category")
             data["cond"]     = data["cond"].fillna(-1)
             data["cond"]     = data["cond"].astype("int")
-
             data["AttentionW"]  = pd.to_numeric(data["AttentionW"],  errors="coerce")
             data["InattentionW"]= pd.to_numeric(data["InattentionW"],errors="coerce")
+            data["ES_AttentionW"]  = pd.to_numeric(data["ES_AttentionW"],  errors="coerce")
+            data["ES_InattentionW"]= pd.to_numeric(data["ES_InattentionW"],errors="coerce")
             data["subj_idx"]    = data["sub_id"]
+            data["stimulus"] = pd.to_numeric(data["stimulus"], errors="coerce")
+            data["val_diff"] = pd.to_numeric(data["val_diff"],errors="coerce")
+            data["DwellPropAdvantage"] = pd.to_numeric(data["DwellPropAdvantage"],errors="coerce")
+            data["ES_InattentionW_E"]  = pd.to_numeric(data["ES_InattentionW_E"],  errors="coerce")
+            data["ES_InattentionW_S"] = pd.to_numeric(data["ES_InattentionW_S"], errors="coerce")
+            data["Value_diff"] = pd.to_numeric(data["Value_diff"], errors="coerce")
+
+            
+            # keep only trials with strictly positive dwell time on both sides, this can be changed; depends on the goal
+            #data = data[(data["DwellLeft"] > -1) & (data["DwellRight"] > -1)]
             data = data[~data["subj_idx"].isin({6, 14, 20, 26, 2, 9, 18})]
-            data = data.dropna(subset=["rt","response","OVcate","Abscate",
-                                       "subj_idx","AttentionW","InattentionW", "cond"])
+            data = data.dropna(subset=["rt",
+                                       "response",
+                                       "OVcate",
+                                       "Abscate",
+                                       "subj_idx",
+                                       "AttentionW",
+                                       "InattentionW",
+                                       "cond",
+                                       "ES_AttentionW", "ES_InattentionW", "ES_InattentionW_E", "ES_InattentionW_S"])   
             
             # ------------------------------------------------------------
-            # gives you a quick report at the start
+            # quick report at the start
             quick_report(data, phase, version, model_name, phase_key)
 
+            # fig_dir = os.path.join("figures_dir_garcia", full_model_name)
+            # ensure_dir(os.path.join(fig_dir, "diagnostics"))
+            
             fig_dir = FIG_DIR_ROOT / full_model_name
             ensure_dir(fig_dir / "diagnostics")
 
-            # run hddm function ------------------------------------------
+            # # run hddm function 
             drift_diffusion_hddm(
                 data=data,
                 samples=nr_samples,

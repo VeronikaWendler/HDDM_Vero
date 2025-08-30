@@ -3,10 +3,7 @@ import pandas as pd
 import numpy as np 
 
 
-data = pd.read_csv(
-    "C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/"
-    "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"
-)
+data = pd.read_csv("C:\Cluster_Github\HDDM_Vero\data_sets\data_sets_OV\OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv")
 
 data['chose_right'] = data['chose_right'].astype(int)
 data['chose_left']  = 1 - data['chose_right']          # 1 = left, 0 = right
@@ -20,42 +17,42 @@ data['FirstFix_Right'] = (data['FirstFixLoc']  == 2).astype(int)
 data['FinalFix_Left']  = (data['FinalFixLoc']  == 1).astype(int)
 data['FinalFix_Right'] = (data['FinalFixLoc']  == 2).astype(int)
 
-# --- middle-dominant location ----------------------------------------
-data['MiddleDominantLoc_Left']  = (data['MiddleDominantLoc'] == 1).astype(int)
-data['MiddleDominantLoc_Right'] = (data['MiddleDominantLoc'] == 2).astype(int)
+# # --- middle-dominant location ----------------------------------------
+# data['MiddleDominantLoc_Left']  = (data['MiddleDominantLoc'] == 1).astype(int)
+# data['MiddleDominantLoc_Right'] = (data['MiddleDominantLoc'] == 2).astype(int)
 
-# sequence model cols
+# # sequence model cols
 
-data['ESE'] = (data['FirstFix_Left'] & data['MiddleDominantLoc_Right'] & data['FinalFix_Left']).astype(int)
-data['ESS'] = (data['FirstFix_Left'] & data['MiddleDominantLoc_Right'] & data['FinalFix_Right']).astype(int)
-data['EEE'] = (data['FirstFix_Left'] & data['MiddleDominantLoc_Left'] & data['FinalFix_Left']).astype(int)
-data['EES'] = (data['FirstFix_Left'] & data['MiddleDominantLoc_Left'] & data['FinalFix_Right']).astype(int)
+# data['ESE'] = (data['FirstFix_Left'] & data['MiddleDominantLoc_Right'] & data['FinalFix_Left']).astype(int)
+# data['ESS'] = (data['FirstFix_Left'] & data['MiddleDominantLoc_Right'] & data['FinalFix_Right']).astype(int)
+# data['EEE'] = (data['FirstFix_Left'] & data['MiddleDominantLoc_Left'] & data['FinalFix_Left']).astype(int)
+# data['EES'] = (data['FirstFix_Left'] & data['MiddleDominantLoc_Left'] & data['FinalFix_Right']).astype(int)
 
-data['SES'] = (data['FirstFix_Right'] & data['MiddleDominantLoc_Left'] & data['FinalFix_Right']).astype(int)
-data['SEE'] = (data['FirstFix_Right'] & data['MiddleDominantLoc_Left'] & data['FinalFix_Left']).astype(int)
-data['SSS'] = (data['FirstFix_Right'] & data['MiddleDominantLoc_Right'] & data['FinalFix_Right']).astype(int)
-data['SSE'] = (data['FirstFix_Right'] & data['MiddleDominantLoc_Right'] & data['FinalFix_Left']).astype(int)
+# data['SES'] = (data['FirstFix_Right'] & data['MiddleDominantLoc_Left'] & data['FinalFix_Right']).astype(int)
+# data['SEE'] = (data['FirstFix_Right'] & data['MiddleDominantLoc_Left'] & data['FinalFix_Left']).astype(int)
+# data['SSS'] = (data['FirstFix_Right'] & data['MiddleDominantLoc_Right'] & data['FinalFix_Right']).astype(int)
+# data['SSE'] = (data['FirstFix_Right'] & data['MiddleDominantLoc_Right'] & data['FinalFix_Left']).astype(int)
 
-# test easy models:
+# # test easy models:
 
-data['ES_first'] = (data['FirstFix_Left'] & data['MiddleDominantLoc_Right']).astype(int)
-data['EE_first'] = (data['FirstFix_Left'] & data['MiddleDominantLoc_Left']).astype(int)
+# data['ES_first'] = (data['FirstFix_Left'] & data['MiddleDominantLoc_Right']).astype(int)
+# data['EE_first'] = (data['FirstFix_Left'] & data['MiddleDominantLoc_Left']).astype(int)
 
-data['SE_first'] = (data['FirstFix_Right'] & data['MiddleDominantLoc_Left']).astype(int)
-data['SS_first'] = (data['FirstFix_Right'] & data['MiddleDominantLoc_Right']).astype(int)
-
-
-data['ES_final'] = (data['FirstFix_Left'] & data['FinalFix_Right']).astype(int)
-data['EE_final'] = (data['FirstFix_Left'] & data['FinalFix_Left']).astype(int)
-
-data['SE_final'] = (data['FirstFix_Right'] & data['FinalFix_Left']).astype(int)
-data['SS_final'] = (data['FirstFix_Right'] & data['FinalFix_Right']).astype(int)
+# data['SE_first'] = (data['FirstFix_Right'] & data['MiddleDominantLoc_Left']).astype(int)
+# data['SS_first'] = (data['FirstFix_Right'] & data['MiddleDominantLoc_Right']).astype(int)
 
 
-data['SS_middle'] = (data['MiddleDominantLoc_Right'] & data['FinalFix_Right']).astype(int)
-data['SE_middle'] = (data['MiddleDominantLoc_Right'] & data['FinalFix_Left']).astype(int)
-data['ES_middle'] = (data['MiddleDominantLoc_Left'] & data['FinalFix_Right']).astype(int)
-data['EE_middle'] = (data['MiddleDominantLoc_Left'] & data['FinalFix_Left']).astype(int)
+# data['ES_final'] = (data['FirstFix_Left'] & data['FinalFix_Right']).astype(int)
+# data['EE_final'] = (data['FirstFix_Left'] & data['FinalFix_Left']).astype(int)
+
+# data['SE_final'] = (data['FirstFix_Right'] & data['FinalFix_Left']).astype(int)
+# data['SS_final'] = (data['FirstFix_Right'] & data['FinalFix_Right']).astype(int)
+
+
+# data['SS_middle'] = (data['MiddleDominantLoc_Right'] & data['FinalFix_Right']).astype(int)
+# data['SE_middle'] = (data['MiddleDominantLoc_Right'] & data['FinalFix_Left']).astype(int)
+# data['ES_middle'] = (data['MiddleDominantLoc_Left'] & data['FinalFix_Right']).astype(int)
+# data['EE_middle'] = (data['MiddleDominantLoc_Left'] & data['FinalFix_Left']).astype(int)
 
 # computing regressors for the addm according to Sebastian:
 #driftRate = driftConstant*((fix(t,f)==1)*(choiceSet(t,1)-theta*choiceSet(t,2))+...
@@ -312,10 +309,7 @@ data["Value_diff"] = data["V_E"] - data["V_S"]
 
 
 
-data.to_csv(
-    "C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/"
-    "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
-    index=False,)
+data.to_csv("C:\Cluster_Github\HDDM_Vero\data_sets\data_sets_OV\OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",index=False,)
 
 
 
