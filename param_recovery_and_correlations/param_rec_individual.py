@@ -142,7 +142,7 @@ def simulate_dataset(true_individuals, raw_df):
         # drift per trial from regressors (no intercept by design: 0 + X)
         v_trial = (
             pars["v_ES_AttentionW"]     * float(tr["ES_AttentionW"]) +
-            pars["v_ES_InattentionW"] * float(tr["ES_InattentionW_E"])
+            pars["v_ES_InattentionW"] * float(tr["ES_InattentionW"])
         )
 
         par_dict = {"v": v_trial, "a": float(pars["a"]), "t": float(pars["t"])}
