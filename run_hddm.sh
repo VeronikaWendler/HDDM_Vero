@@ -25,5 +25,5 @@ export MPLBACKEND=Agg
 singularity exec \
     --bind ${PROJECT}:/workspace \
     ${IMAGE} \
-    python /workspace/param_recovery_and_correlations/aDDM_OV_run_all_mod.py
+    python /workspace/aDDM_OV_run_all_mod.py
 
