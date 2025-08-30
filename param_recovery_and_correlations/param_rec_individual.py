@@ -68,6 +68,18 @@ def atomic_to_csv(df: pd.DataFrame, path: Path):
     df.to_csv(tmp, index=False)
     os.replace(tmp, path)
 
+def _read_or_empty(path, cols):
+    # empty or missing file -> empty dataframe with expected columns
+    if (not path.exists()) or (path.stat().st_size == 0):
+        return pd.DataFrame(columns=cols)
+    try:
+        df = pd.read_csv(path)
+    except pd.errors.EmptyDataError:
+        return pd.DataFrame(columns=cols)
+    keep = [c for c in cols if c in df.columns]
+    return df[keep] if keep else pd.DataFrame(columns=cols)
+
+
 def extract_group_sample(idata, *, seed=None):
     rng   = np.random.default_rng(seed)
     draw  = rng.integers(idata.posterior.dims["draw"])
@@ -166,7 +178,7 @@ def refit_and_get_means(sim_df, seed):
     mdl.find_starting_values()
     mdl.sample(N_SAMPLES, burn=BURN, db='ram', dbname=f'ram_{seed}')
     means = {p: mdl.nodes_db.loc[p, 'node'].trace().mean() for p in PARAM_LIST}
-    return means
+    return means, mdl
 
 
 import re
@@ -232,13 +244,6 @@ TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws2.csv"  ### NEW
 
 expected_per_rep = len(PARAM_LIST)
 
-def _read_or_empty(path, cols):
-    if path.exists():
-        df = pd.read_csv(path)
-        # keep only expected columns if present
-        keep = [c for c in cols if c in df.columns]
-        return df[keep]
-    return pd.DataFrame(columns=cols)
 
 # load existing partials
 group_cols = ["rep", "parameter", "true", "recovered"]
@@ -289,6 +294,7 @@ for rep in trange(start_rep, N_REPS, desc="parameter-recovery", unit="rep"):
 
         np.random.seed(20_000 + rep)
         mdl = hddm.HDDMRegressor(sim_df, reg_descr, include=["a","t","v","z"],
+                                 depends_on={'a':'OVcate'},
                                  p_outlier=0.05, keep_regressor_trace=True,
                                  group_only_regressors=False)
         mdl.find_starting_values()
