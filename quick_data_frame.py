@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np 
 
 
-data = pd.read_csv("C:\Cluster_Github\HDDM_Vero\data_sets\data_sets_OV\OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv")
+data = pd.read_csv("C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_OV/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT copy.csv")
 
 data['chose_right'] = data['chose_right'].astype(int)
 data['chose_left']  = 1 - data['chose_right']          # 1 = left, 0 = right
@@ -309,7 +309,7 @@ data["Value_diff"] = data["V_E"] - data["V_S"]
 
 
 
-data.to_csv("C:\Cluster_Github\HDDM_Vero\data_sets\data_sets_OV\OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",index=False,)
+data.to_csv("C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_OV/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT copy.csv",index=False,)
 
 
 
