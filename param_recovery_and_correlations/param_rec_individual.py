@@ -22,9 +22,9 @@ FIG_DIR        = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_VAL_36/
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 EMPIRICAL_POST_PATHS = [
-    BASE_MODEL_DIR / "garcia_replication_ES_36_0.nc",
-    BASE_MODEL_DIR / "garcia_replication_ES_36_1.nc",
-    BASE_MODEL_DIR / "garcia_replication_ES_36_2.nc",
+    BASE_MODEL_DIR / "garcia_replication_ES_VAL_36_0.nc",
+    BASE_MODEL_DIR / "garcia_replication_ES_VAL_36_1.nc",
+    BASE_MODEL_DIR / "garcia_replication_ES_VAL_36_2.nc",
 ]
 
 N_REPS    = 10        # as in the paper
