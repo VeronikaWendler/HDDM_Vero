@@ -73,33 +73,33 @@ data['ES_InattentionW_S'] = (data['PropDwell_Left'] * data['p2'])
 # the CCT drift rate regression 
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2 ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ϵ
 
-max_abs = np.nanmax(np.abs(data['DwellTimeAdvantage']))
-data['dta_norm'] = data['DwellTimeAdvantage'] / max_abs
-data['z_dynamic']   = (data['dta_norm'] + 1) / 2                            # dynamic z sscaled by gaze
-data['z_static'] = 0.55                                                     #Sebastian's idea 
+# max_abs = np.nanmax(np.abs(data['DwellTimeAdvantage']))
+# data['dta_norm'] = data['DwellTimeAdvantage'] / max_abs
+# data['z_dynamic']   = (data['dta_norm'] + 1) / 2                            # dynamic z sscaled by gaze
+# data['z_static'] = 0.55                                                     #Sebastian's idea 
 
-# Which option is the correct one?
-data['target_option'] = np.where(data['p1'] > data['p2'], 'E', 'S')
-# stimulus
-data['stimulus'] = np.where(data['target_option']=='E', 1, 0)
-# value difference
-data['val_diff'] = data['V_corr'] - data['V_sub']
-# Response code (0/1)
-data['resp'] = (data['chose_left']==data['stimulus']).astype(int)
-# flipping val_diff so it’s positive when resp=1 (when they chose the correct side)
-data['val_diff*'] = data['val_diff'] * data['resp'].map({1:1, 0:-1})
-# gaze-imbalance regressors because we can see in emp. data that much gaze to either option is disadvantageous
-data['abs_DwellPropAdv'] = data['DwellPropAdvantage'].abs()   # |Prop_S – Prop_E|
-data['gaze_quad']= data['DwellPropAdvantage'] ** 2             # (Prop_S – Prop_E)^2
+# # Which option is the correct one?
+# data['target_option'] = np.where(data['p1'] > data['p2'], 'E', 'S')
+# # stimulus
+# data['stimulus'] = np.where(data['target_option']=='E', 1, 0)
+# # value difference
+# data['val_diff'] = data['V_corr'] - data['V_sub']
+# # Response code (0/1)
+# data['resp'] = (data['chose_left']==data['stimulus']).astype(int)
+# # flipping val_diff so it’s positive when resp=1 (when they chose the correct side)
+# data['val_diff*'] = data['val_diff'] * data['resp'].map({1:1, 0:-1})
+# # gaze-imbalance regressors because we can see in emp. data that much gaze to either option is disadvantageous
+# data['abs_DwellPropAdv'] = data['DwellPropAdvantage'].abs()   # |Prop_S – Prop_E|
+# data['gaze_quad']= data['DwellPropAdvantage'] ** 2             # (Prop_S – Prop_E)^2
 
 
 
 # v = β0  + β_deltaV * (V_S - V_E) + β_lin * (G_S - G_E) + β_quad * (G_S - G_E)**2
 
-data["gaze_bal"]   = 1 - data["DwellPropAdvantage"]**2     # penalty (1 at centre, 0 at extremes)
-data["val_bal_int"] = data["val_diff"] * data["gaze_bal"]  # interaction that drives drift
+# data["gaze_bal"]   = 1 - data["DwellPropAdvantage"]**2     # penalty (1 at centre, 0 at extremes)
+# data["val_bal_int"] = data["val_diff"] * data["gaze_bal"]  # interaction that drives drift
 
-# new predictors (let's not compute quadratic - easier)
+# # new predictors (let's not compute quadratic - easier)
 
 
 # -----------------------------------------------------------------
@@ -163,22 +163,22 @@ data['val_diff_corr'] = data['V_corr'] - data['V_sub']
 # gaze balance weight - gaze is disadvantageous for choice --> reduces accuracy
 # given teh strange u shape, we could assume that at both extremes gaze acts even more
 # --> non-linear effect
-data['w'] = 1 - data['DwellPropAdvantageCorrect']**2  
-data['w_dv'] = data['w'] * data['val_diff_corr']   # --> in a second model this could also interact with OV
-data['absDPAC']= np.abs(data['DwellPropAdvantageCorrect'])
+# data['w'] = 1 - data['DwellPropAdvantageCorrect']**2  
+# data['w_dv'] = data['w'] * data['val_diff_corr']   # --> in a second model this could also interact with OV
+# data['absDPAC']= np.abs(data['DwellPropAdvantageCorrect'])
 
 
 
-data["abs_DwellPropAdvCorr"] = data["DwellPropAdvantageCorrect"].abs()   # is large when the difference between correct and incorrect is large
-data["balance"] = 1 - data["abs_DwellPropAdvCorr"]  # is close to 1 when gaze is balanced (linear)
+# data["abs_DwellPropAdvCorr"] = data["DwellPropAdvantageCorrect"].abs()   # is large when the difference between correct and incorrect is large
+# data["balance"] = 1 - data["abs_DwellPropAdvCorr"]  # is close to 1 when gaze is balanced (linear)
 
-# v = b0 + b1*abs_DwellPropAdvCorr + b2*balance:C(OVcate)
-# a = 
+# # v = b0 + b1*abs_DwellPropAdvCorr + b2*balance:C(OVcate)
+# # a = 
 
-# v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2 ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ϵ
+# # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2 ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ϵ
 
-data['AW_bal']  = data['AttentionW']   * data['balance']
-data['IAW_bal'] = data['InattentionW'] * data['balance']
+# data['AW_bal']  = data['AttentionW']   * data['balance']
+# data['IAW_bal'] = data['InattentionW'] * data['balance']
 
 
 
@@ -239,18 +239,7 @@ data['InattentionW_S'] = data['Value_S_opt'] * data['DwellProp_E'] - data['Value
 
 to_z = ['AttentionW',            # symmetric, continuous
         'InattentionW',          # symmetric, continuous
-        'gaze_quad',             # if you use it
-        'val_diff',
-        'val_bal_int',
-        'DwellPropAdvantage',
-        'abs_DwellPropAdv',
-        'val_diff_corr',
-        'w_dv',
-        'w',
-        'absDPAC',
-        'abs_DwellPropAdvCorr',
-        'balance', 'DwellPropAdvantageCorrect',
-        "AW_bal","IAW_bal","AttentionW_E", "AttentionW_S", "InattentionW_E", "InattentionW_S",
+        "AttentionW_E", "AttentionW_S", "InattentionW_E", "InattentionW_S",
         ]             
 
 for c in to_z:
@@ -263,27 +252,27 @@ data['z_IAW_image'] = data['z_InattentionW'] * data['image_is_sub']
 
 
 
-# Early vs Late per-subject median split + gated regressors 
-phase_filter = "ES"
-excluded_subjects = [1, 4, 5, 6, 14, 99]
-data = (data.query("phase == @phase_filter").loc[~data['sub_id'].isin(excluded_subjects)].copy())
-data = data.dropna(subset=['DwellTimeAdvantage', 'OVcate_2', 'chose_right', 'corr'])
-data['rt_median_subj'] = data.groupby('sub_id')['rtime'].transform('median')
+# # Early vs Late per-subject median split + gated regressors 
+# phase_filter = "ES"
+# excluded_subjects = [1, 4, 5, 6, 14, 99]
+# data = (data.query("phase == @phase_filter").loc[~data['sub_id'].isin(excluded_subjects)].copy())
+# data = data.dropna(subset=['DwellTimeAdvantage', 'OVcate_2', 'chose_right', 'corr'])
+# data['rt_median_subj'] = data.groupby('sub_id')['rtime'].transform('median')
 
-#early/late dummies
-data['early'] = (data['rtime'] <= data['rt_median_subj']).astype(int)
-data['late']  = (data['rtime'] > data['rt_median_subj']).astype(int)
-data['RT_group'] = np.where(data['early'] == 1, 'early', 'late')
-data['trial_type'] = data['rtime'] <= data['rt_median_subj']
-data['trial_type'] = data['trial_type'].map({True: 'ET', False: 'LT'})
-base_cols = ['AttentionW', 'InattentionW',
-             'ES_AttentionW', 'ES_InattentionW',
-             'AttentionW_E', 'AttentionW_S', 'InattentionW_E', 'InattentionW_S']
-base_cols = [c for c in base_cols if c in data.columns]
+# #early/late dummies
+# data['early'] = (data['rtime'] <= data['rt_median_subj']).astype(int)
+# data['late']  = (data['rtime'] > data['rt_median_subj']).astype(int)
+# data['RT_group'] = np.where(data['early'] == 1, 'early', 'late')
+# data['trial_type'] = data['rtime'] <= data['rt_median_subj']
+# data['trial_type'] = data['trial_type'].map({True: 'ET', False: 'LT'})
+# base_cols = ['AttentionW', 'InattentionW',
+#              'ES_AttentionW', 'ES_InattentionW',
+#              'AttentionW_E', 'AttentionW_S', 'InattentionW_E', 'InattentionW_S']
+# base_cols = [c for c in base_cols if c in data.columns]
 
-for c in base_cols:
-    data[f'{c}_early'] = data[c] * data['early']
-    data[f'{c}_late']  = data[c] * data['late']
+# for c in base_cols:
+#     data[f'{c}_early'] = data[c] * data['early']
+#     data[f'{c}_late']  = data[c] * data['late']
 
 
 
