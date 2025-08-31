@@ -56,10 +56,10 @@ from pathlib import Path
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2,low ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ β3 x (gazeS -gazeE)
 
 # params:
-version = 6     # set which version you want to run
+version = 0     # set which version you want to run
 run = False       # if True, the the models run, if False the models load
 
-phase = ['LE']  #['ES', 'EE']  
+phase = ['ES_VAL']  #['ES', 'EE']  
 
 # determine whether to use a single phase or the combined ESEE model or LEESEE
 if set(phase) == {'ES', 'EE'}:
@@ -74,8 +74,8 @@ else:
 # update the phase variable
 phase = phase_key
 
-nr_models = 5 
-nr_samples = 11000
+nr_models = 3 
+nr_samples = 1200
 parallel = True
 
 # dir
@@ -92,7 +92,8 @@ model_versions = {
     'ES': ['ES_1', 'ES_2', 'ES_3', 'ES_4', 'ES_5', 'ES_6', 'ES_7'],
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
-    'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5']
+    'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5'],
+    'ES_VAL': ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3","ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8", "ES_VAL_8", "ES_VAL_9", "ES_VAL_10", "ES_VAL_11"]
 }
 
 if phase not in model_versions:
@@ -101,6 +102,19 @@ if phase not in model_versions:
 model_name = model_versions[phase][version]
 
 data = pd.read_csv((PROJECT_DIR / "data_sets" / "data_sets_OV" / "OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix(), sep=",")
+
+
+
+PHASE_TO_SOURCE = {
+    "ES_ZBIAS": "ES", 
+    "ES_quad": "ES",    
+    "LE_RL": "LE",
+    "ES_VAL": "ES",
+}
+
+
+
+
 
 #data filtering
 if phase == 'ESEE':
@@ -469,6 +483,48 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=11000, acc
                    return_infdata=True, loglike=True, ppc=True)
 
         return m, infdata
+    
+    
+    
+    elif phase == "ES_VAL":
+        depends_on = {}
+        if version == 0:   
+            v_reg = {'model': 'v ~ Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 1:
+            v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 2:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        # ATTENTION    
+        # changing the boundary here - s is upper bound
+        elif version == 3:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 4:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'}    
+        elif version == 5:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        # S is upper boundary
+        elif version == 6:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 7:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 8:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        elif version == 9:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E:C(OVcate) + ES_InattentionW_S:C(OVcate)', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Main function for running/loading models
@@ -1529,6 +1585,189 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Drift InattentionW:C(phase)[EE]',
             ]
             
+    elif phase == 'ES_VAL':
+        if version == 0:  
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_Value_diff']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_Value_diff']
+        elif phase == 1:
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_Value_diff']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Value_diff']
+        elif version == 2:
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']
+        elif version == 3:
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']    
+        elif version == 4:
+            params_of_interest = [    
+                'a(high)',
+                'a(low)',
+                'a(medium)',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW:C(OVcate)[high]',
+                'v_ES_InattentionW:C(OVcate)[low]',
+                'v_ES_InattentionW:C(OVcate)[medium]',
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a(high)',
+                'a(low)',
+                'a(medium)',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW:C(OVcate)[high]',
+                'v_ES_InattentionW:C(OVcate)[low]',
+                'v_ES_InattentionW:C(OVcate)[medium]']  
+        elif version == 5:
+            params_of_interest = [    
+                'a(high)',
+                'a(low)',
+                'a(medium)',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a(high)',
+                'a(low)',
+                'a(medium)',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']    
+        elif version == 6:
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Intercept',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
+            
+        elif version == 7:
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
+        elif version == 8:
+            params_of_interest = [    
+                'a(high)',
+                'a(low)',
+                'a(medium)',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a(high)',
+                'a(low)',
+                'a(medium)',                
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S'] 
+
+        elif version == 9:
+            params_of_interest = [    
+                'a(high)',
+                'a(low)',
+                'a(medium)',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E:C(OVcate)[high]',
+                'v_ES_InattentionW_E:C(OVcate)[low]',
+                'v_ES_InattentionW_E:C(OVcate)[medium]',
+                'v_ES_InattentionW_S:C(OVcate)[high]',
+                'v_ES_InattentionW_S:C(OVcate)[low]',
+                'v_ES_InattentionW_S:C(OVcate)[medium]']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a(high)',
+                'a(low)',
+                'a(medium)',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E:C(OVcate)[high]',
+                'v_ES_InattentionW_E:C(OVcate)[low]',
+                'v_ES_InattentionW_E:C(OVcate)[medium]',
+                'v_ES_InattentionW_S:C(OVcate)[high]',
+                'v_ES_InattentionW_S:C(OVcate)[low]',
+                'v_ES_InattentionW_S:C(OVcate)[medium]']
+        
    # diagnistics
     diag_dir = Path(fig_dir) / "diagnostics"
     ensure_dir(diag_dir)
@@ -1630,7 +1869,7 @@ ensure_dir(model_dir)
 
 # this calls our ddm functions depending on whether we run or load models
 if run:
-    if phase == 'EE' or phase == 'ES':
+    if phase == 'EE' or phase == 'ES' or phase == 'ES_VAL':
         print(f'Running DDM... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,
@@ -1641,9 +1880,10 @@ if run:
             model_name=model_base_name + model_name,
             model_dir=model_dir,
             version=version,
-            phase=phase,  # Use updated phase key
+            phase=phase, 
             accuracy_coding=True
         )
+    
     
     elif phase == 'ESEE':  # Ensure this condition runs only for the combined model
         print(f'Running Combined Model (ES+EE)... {model_base_name + model_name}')
@@ -1687,7 +1927,7 @@ if run:
             phase=phase,  
         )
 else:
-    if phase == 'EE' or phase == 'ES':
+    if phase == 'EE' or phase == 'ES' or phase == 'ES_VAL':
         print(f'loading DDM... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,

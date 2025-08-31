@@ -426,6 +426,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         
     elif phase == "ES_VAL":
         depends_on = {}
+        # S is upper bound
         if version == 0:   
             v_reg = {'model': 'v ~ Value_diff', 'link_func': lambda x: x}
             reg_descr = [v_reg]
@@ -435,8 +436,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 2:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-        # ATTENTION    
-        # changing the boundary here - s is upper bound
         elif version == 3:
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
@@ -448,7 +447,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on = {'a': 'OVcate'} 
-        # S is upper boundary
         elif version == 6:
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
