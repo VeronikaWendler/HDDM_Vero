@@ -4,7 +4,7 @@ import pandas as pd
 
 # ---- paths ----
 in_csv = r"C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"
-out_dir = r"C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/macleod_cluster_out/garcia_replication_ES_35/correlation"
+out_dir = r"C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/macleod_cluster_out/garcia_replication_ES_VAL_36/correlation"
 out_csv = os.path.join(out_dir, "reuslts_ES_accuracy.csv")  # keeping your exact filename
 
 # ---- load ----

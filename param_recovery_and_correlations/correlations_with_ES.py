@@ -8,15 +8,15 @@ import matplotlib.pyplot as plt
 #paths
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 
-M35_DIAG = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "diagnostics"
-OUT_DIR  = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "correlation"
+M35_DIAG = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_VAL_36" / "diagnostics"
+OUT_DIR  = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_VAL_36" / "correlation"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 CANDIDATES = [
-    PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "correlation" / "results_ES_accuracy.csv",
-    PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "correlation" / "reuslts_ES_accuracy.csv",
-    PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garcia_replication_ES_35" / "correlation" / "results_ES_accuracy.csv",
-    PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garcia_replication_ES_35" / "correlation" / "reuslts_ES_accuracy.csv",
+    PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_VAL_36" / "correlation" / "results_ES_accuracy.csv",
+    PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_VAL_36" / "correlation" / "reuslts_ES_accuracy.csv",
+    PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garcia_replication_ES_VAL_36" / "correlation" / "results_ES_accuracy.csv",
+    PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garcia_replication_ES_VAL_36" / "correlation" / "reuslts_ES_accuracy.csv",
 ]
 
 override = os.getenv("ES_ACC_CSV")
@@ -41,54 +41,66 @@ def _read_results(path: Path) -> pd.DataFrame:
         df = df.reset_index().rename(columns={"index": "param"})
     return df
 
-def _extract_all_subject_params(df: pd.DataFrame, central="mean"):
+def _extract_all_subject_params(df, central="mean"):
     by_param = {}
-    pat = re.compile(r"^(?P<base>.+)_subj\.(?P<sid>\d+)$")
+    # Updated regex to capture things like a_subj(high).12
+    pat = re.compile(r"^(?P<base>.+)_subj(?:\((?P<mod>.+?)\))?\.(?P<sid>\d+)$")
     for _, row in df.iterrows():
         m = pat.match(str(row["param"]))
         if not m:
             continue
         base = m.group("base")
+        mod = m.group("mod")
         sid  = int(m.group("sid"))
         val  = float(row.get(central, row.get("mean")))
-        by_param.setdefault(base, {})[sid] = val
+
+        if mod:
+            full_name = f"{base}({mod})"
+        else:
+            full_name = base
+
+        by_param.setdefault(full_name, {})[sid] = val
     return by_param
 
-def add_theta_params_to_results(m35_in_csv: Path, m35_out_csv: Path, use_median=False) -> Path:
+
+
+def add_theta_params_to_results(m35_in_csv, m35_out_csv, use_median=False):
+    
     df = _read_results(m35_in_csv)
     central = "50q" if use_median else "mean"
+
+    # All subj-level mappings
     subj_maps = _extract_all_subject_params(df, central=central)
 
     need = {
-        "num_chart":  "v_z_IAW_chart",
-        "num_image":  "v_z_IAW_image",
-        "den_low":    "v_z_AttentionW:C(OVcate)[low]",
-        "den_medium": "v_z_AttentionW:C(OVcate)[medium]",
-        "den_high":   "v_z_AttentionW:C(OVcate)[high]",
+        "num_v_ES_InattentionW_S":  "v_ES_InattentionW_S",
+        "num_v_ES_InattentionW_E":  "v_ES_InattentionW_E",
+        "num_v_ES_AttentionW":    "v_ES_AttentionW"
     }
-    for p in need.values():
+    for k, p in need.items():
         if p not in subj_maps:
-            raise ValueError(f"Missing subject-level parameter: {p}_subj.<id>")
+            raise ValueError(f"Missing subject-level parameter in results: '{p}_subj.<id>'")
 
+    num_InatWS  = subj_maps[need["num_v_ES_InattentionW_S"]]
+    num_InatWE  = subj_maps[need["num_v_ES_InattentionW_E"]]
+    att    = subj_maps[need["num_v_ES_AttentionW"]]
+   
     combos = [
-        ("theta_chart_low",    subj_maps[need["num_chart"]], subj_maps[need["den_low"]]),
-        ("theta_chart_medium", subj_maps[need["num_chart"]], subj_maps[need["den_medium"]]),
-        ("theta_chart_high",   subj_maps[need["num_chart"]], subj_maps[need["den_high"]]),
-        ("theta_image_low",    subj_maps[need["num_image"]], subj_maps[need["den_low"]]),
-        ("theta_image_medium", subj_maps[need["num_image"]], subj_maps[need["den_medium"]]),
-        ("theta_image_high",   subj_maps[need["num_image"]], subj_maps[need["den_high"]]),
+        ("theta_InatWS",   num_InatWS, att),
+        ("theta_InatWE",   num_InatWE, att),
     ]
 
+    new_rows = []
     cols = list(df.columns)
     if "param" not in cols:
         cols = ["param"] + [c for c in cols if c != "param"]
 
-    new_rows = []
     for base, num_map, den_map in combos:
-        for sid in sorted(set(num_map).intersection(den_map)):
+        common = sorted(set(num_map).intersection(den_map))
+        for sid in common:
             den = den_map[sid]
             if den is None or np.isclose(den, 0.0):
-                continue
+                continue  
             mean_val = num_map[sid] / den
             row = {c: np.nan for c in cols}
             row["param"] = f"{base}_subj.{sid}"
@@ -97,12 +109,13 @@ def add_theta_params_to_results(m35_in_csv: Path, m35_out_csv: Path, use_median=
                 row["50q"] = mean_val
             new_rows.append(row)
 
-    if not new_rows:
-        raise ValueError("No theta rows were created.")
-    df_out = pd.concat([df, pd.DataFrame(new_rows, columns=cols)], ignore_index=True)
+    df_theta = pd.DataFrame(new_rows, columns=cols)
+    df_out = pd.concat([df, df_theta], ignore_index=True)
     df_out.to_csv(m35_out_csv, index=False)
-    print(f"Saved augmented results with θ params -> {m35_out_csv}")
+    print(f"Saved augmented results with theta params in {m35_out_csv}")
     return m35_out_csv
+
+
 
 def _p_text(p: float) -> str:
     if not np.isfinite(p):
