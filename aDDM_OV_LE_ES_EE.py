@@ -56,7 +56,7 @@ from pathlib import Path
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2,low ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ β3 x (gazeS -gazeE)
 
 # params:
-version = 1     # set which version you want to run
+version = 2     # set which version you want to run
 run = False       # if True, the the models run, if False the models load
 
 phase = ['ES_VAL']  #['ES', 'EE']  
@@ -1768,7 +1768,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_InattentionW_S:C(OVcate)[low]',
                 'v_ES_InattentionW_S:C(OVcate)[medium]']
         
-   # diagnistics
+    # diagnistics
     diag_dir = Path(fig_dir) / "diagnostics"
     ensure_dir(diag_dir)
     
@@ -1783,7 +1783,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     (diag_dir / "DIC.txt").write_text(f"DIC: {dic}\n")
 
     size_plot = len(combined_model.data.subj_idx.unique()) / 3.0 * 1.5
-    combined_model.plot_posterior_predictive(samples=50, bins=100, figsize=(6, size_plot), save=True, path=str(diag_dir), format="pdf")
+    combined_model.plot_posterior_predictive(samples=10, bins=100, figsize=(6, size_plot), save=True, path=str(diag_dir), format="pdf")
     
     # shrink font for the next set of plots
     matplotlib.rcParams.update({"font.size": 6})
@@ -1861,6 +1861,8 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         safe = _sanitize_filename(f)
         if safe != f:
             os.rename(diag_dir / f, diag_dir / safe)
+
+ 
 
     
 model_dir = BASE_MODEL_DIR
