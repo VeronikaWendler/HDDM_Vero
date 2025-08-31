@@ -28,16 +28,25 @@ def _read_results(path):
 
 def _extract_all_subject_params(df, central="mean"):
     by_param = {}
-    pat = re.compile(r"^(?P<base>.+)_subj\.(?P<sid>\d+)$")
+    # Updated regex to capture things like a_subj(high).12
+    pat = re.compile(r"^(?P<base>.+)_subj(?:\((?P<mod>.+?)\))?\.(?P<sid>\d+)$")
     for _, row in df.iterrows():
         m = pat.match(str(row["param"]))
         if not m:
             continue
         base = m.group("base")
+        mod = m.group("mod")
         sid  = int(m.group("sid"))
         val  = float(row.get(central, row.get("mean")))
-        by_param.setdefault(base, {})[sid] = val
+
+        if mod:
+            full_name = f"{base}({mod})"
+        else:
+            full_name = base
+
+        by_param.setdefault(full_name, {})[sid] = val
     return by_param
+
 
 def inv_logit(x):
     return np.exp(x) / (1 + np.exp(x))
