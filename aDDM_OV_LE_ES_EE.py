@@ -59,7 +59,7 @@ from pathlib import Path
 version = 2     # set which version you want to run
 run = False       # if True, the the models run, if False the models load
 
-phase = ['ES_VAL']  #['ES', 'EE']  
+phase = ['ES_VAL']  #['ES', 'EE']  #
 
 # determine whether to use a single phase or the combined ESEE model or LEESEE
 if set(phase) == {'ES', 'EE'}:
