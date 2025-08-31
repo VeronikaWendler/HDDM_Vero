@@ -56,7 +56,7 @@ from pathlib import Path
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2,low ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ β3 x (gazeS -gazeE)
 
 # params:
-version = 9     # set which version you want to run
+version = 2     # set which version you want to run
 run = False       # if True, the the models run, if False the models load
 
 phase = ['ES_VAL']  #['ES', 'EE']  #
@@ -497,8 +497,6 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=11000, acc
         elif version == 2:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-        # ATTENTION    
-        # changing the boundary here - s is upper bound
         elif version == 3:
             v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
