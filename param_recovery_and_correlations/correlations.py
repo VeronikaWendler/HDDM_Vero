@@ -11,9 +11,9 @@ import math
 # Paths
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 
-M35_DIAG = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "diagnostics"
+M35_DIAG = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_VAL_36" / "diagnostics"
 RL1_DIAG = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_LE_RL_1" / "diagnostics"
-OUT_DIR  = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_35" / "correlation"
+OUT_DIR  = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_VAL_36" / "correlation"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 def _read_results(path):
@@ -43,16 +43,7 @@ def inv_logit(x):
     return np.exp(x) / (1 + np.exp(x))
 
 def add_theta_params_to_results(m35_in_csv, m35_out_csv, use_median=False):
-    """
-    Create six new subject-level params:
-      theta_chart_low_subj.<id>    = v_z_IAW_chart_subj.<id>  / v_z_AttentionW:C(OVcate)[low]_subj.<id>
-      theta_chart_medium_subj.<id> = v_z_IAW_chart_subj.<id>  / v_z_AttentionW:C(OVcate)[medium]_subj.<id>
-      theta_chart_high_subj.<id>   = v_z_IAW_chart_subj.<id>  / v_z_AttentionW:C(OVcate)[high]_subj.<id>
-      theta_image_low_subj.<id>    = v_z_IAW_image_subj.<id>  / v_z_AttentionW:C(OVcate)[low]_subj.<id>
-      theta_image_medium_subj.<id> = v_z_IAW_image_subj.<id>  / v_z_AttentionW:C(OVcate)[medium]_subj.<id>
-      theta_image_high_subj.<id>   = v_z_IAW_image_subj.<id>  / v_z_AttentionW:C(OVcate)[high]_subj.<id>
-    Saves a new CSV with the extra rows added (other stats left NaN; mean is populated).
-    """
+    
     df = _read_results(m35_in_csv)
     central = "50q" if use_median else "mean"
 
@@ -60,29 +51,21 @@ def add_theta_params_to_results(m35_in_csv, m35_out_csv, use_median=False):
     subj_maps = _extract_all_subject_params(df, central=central)
 
     need = {
-        "num_chart":  "v_z_IAW_chart",
-        "num_image":  "v_z_IAW_image",
-        "den_low":    "v_z_AttentionW:C(OVcate)[low]",
-        "den_medium": "v_z_AttentionW:C(OVcate)[medium]",
-        "den_high":   "v_z_AttentionW:C(OVcate)[high]",
+        "num_v_ES_InattentionW_S":  "v_ES_InattentionW_S",
+        "num_v_ES_InattentionW_E":  "v_ES_InattentionW_E",
+        "num_v_ES_AttentionW":    "v_ES_AttentionW"
     }
     for k, p in need.items():
         if p not in subj_maps:
             raise ValueError(f"Missing subject-level parameter in results: '{p}_subj.<id>'")
 
-    num_chart  = subj_maps[need["num_chart"]]
-    num_image  = subj_maps[need["num_image"]]
-    den_low    = subj_maps[need["den_low"]]
-    den_medium = subj_maps[need["den_medium"]]
-    den_high   = subj_maps[need["den_high"]]
-
+    num_InatWS  = subj_maps[need["num_v_ES_InattentionW_S"]]
+    num_InatWE  = subj_maps[need["num_v_ES_InattentionW_E"]]
+    att    = subj_maps[need["num_v_ES_AttentionW"]]
+   
     combos = [
-        ("theta_chart_low",   num_chart, den_low),
-        ("theta_chart_medium",num_chart, den_medium),
-        ("theta_chart_high",  num_chart, den_high),
-        ("theta_image_low",   num_image, den_low),
-        ("theta_image_medium",num_image, den_medium),
-        ("theta_image_high",  num_image, den_high),
+        ("theta_InatWS",   num_InatWS, att),
+        ("theta_InatWE",   num_InatWE, att),
     ]
 
     new_rows = []
