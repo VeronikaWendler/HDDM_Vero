@@ -49,7 +49,7 @@ from scipy import stats
 import matplotlib.pyplot as plt
 
 # ------------------------- config & paths -------------------------
-PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
+PROJECT_DIR = Path(os.getenv("PROJECT_DIR", r"C:/Cluster_Github/HDDM_Vero")).resolve()
 M35_DIAG    = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_VAL_36" / "diagnostics"
 OUT_DIR     = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_VAL_36" / "correlation" / "sp_phase"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
