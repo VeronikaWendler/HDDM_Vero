@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np 
 
 
-data = pd.read_csv("C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_OV/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT copy.csv")
+data = pd.read_csv("C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_OV/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv")
 
 data['chose_right'] = data['chose_right'].astype(int)
 data['chose_left']  = 1 - data['chose_right']          # 1 = left, 0 = right
@@ -63,11 +63,18 @@ data['FinalFix_Right'] = (data['FinalFixLoc']  == 2).astype(int)
 data['ES_AttentionW'] = (data['PropDwell_Right'] * data['p2']) - (data['PropDwell_Left'] * data['p1'])
 data['ES_InattentionW'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwell_Right'] * data['p1'])
 
-data['ES_InattentionW_E'] = (data['PropDwell_Right'] * data['p1']) 
+#old convention gives you negative predictor
+#data['ES_InattentionW_E'] = (data['PropDwell_Right'] * data['p1']) 
 data['ES_InattentionW_S'] = (data['PropDwell_Left'] * data['p2']) 
 
+#new changes:
+# flip sign so “more unattended E” now codes as *more* evidence in the positive direction
+data['ES_InattentionW_E'] = - (data['PropDwell_Right'] * data['p1'])
 
-
+# just to experiment a final time:
+data['ES_AttentionW_S'] = (data['PropDwell_Right'] * data['p2'])
+# this would also need to be flipped
+data['ES_AttentionW_E'] = - (data['PropDwell_Left'] * data['p1']) 
 
 
 # the CCT drift rate regression 
@@ -298,7 +305,7 @@ data["Value_diff"] = data["V_E"] - data["V_S"]
 
 
 
-data.to_csv("C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_OV/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT copy.csv",index=False,)
+data.to_csv("C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_OV/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",index=False,)
 
 
 

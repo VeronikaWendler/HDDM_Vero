@@ -122,7 +122,7 @@ def make_z_link(full_stimulus_vector):
 ##
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
-nr_samples      = 1200       # samples per chain - do 11000 but for now for a quick one we do 600
+nr_samples      = 6000       # samples per chain - do 11000 but for now for a quick one we do 600
 parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
@@ -144,8 +144,8 @@ model_versions  = {
     "LE_RL": ["LE_RL_1","LE_RL_2"],
     "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3", "ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8","ES_VAL_9", "ES_VAL_10", "ES_VAL_11", "ES_VAL_12",  "ES_VAL_13", "ES_VAL_14", "ES_VAL_15","ES_VAL_16", "ES_VAL_17",
                "ES_VAL_18", "ES_VAL_19", "ES_VAL_20", "ES_VAL_21", "ES_VAL_22", "ES_VAL_23", "ES_VAL_24", "ES_VAL_25", "ES_VAL_26", "ES_VAL_27", "ES_VAL_28",
-               "ES_VAL_29", "ES_VAL_30", "ES_VAL_31", "ES_VAL_32", "ES_VAL_33", "ES_VAL_34", "ES_VAL_35", "ES_VAL_36", "ES_VAL_37", "ES_VAL_38"]
-   
+               "ES_VAL_29", "ES_VAL_30", "ES_VAL_31", "ES_VAL_32", "ES_VAL_33", "ES_VAL_34", "ES_VAL_35", "ES_VAL_36", "ES_VAL_37", "ES_VAL_38"],
+    "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11" ],
 }
 
 
@@ -154,18 +154,19 @@ PHASE_TO_SOURCE = {
     "ES_quad": "ES",    
     "LE_RL": "LE",
     "ES_VAL": "ES",
+    "For_paper": "ES",
 }
 
 
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["ES_VAL"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","ES","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
+PHASE_RUN_ORDER = ["For_paper"]                                         # order
+SKIP_PHASES     = {"LE","ES_ZBIAS","ES","ES_VAL","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "ES_VAL"
-start_version = 35
+start_phase = "For_paper"
+start_version = 0
 started = False
 
 # dir
@@ -228,7 +229,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=1200, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=6000, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -1144,7 +1145,65 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
             reg_descr = [v_reg]
             depends_on = {'a': 'OVcate'} 
         
-          
+        
+        #re-runnign the most successful models with a sampling nr that makes reviewers happy
+    elif phase ==  "For_paper":
+        depends_on = {}
+        # 0 model:
+        if version == 0:
+            # jsut start sampling
+
+            m = hddm.models.HDDMRegressor(data, 
+                                    p_outlier=.05, 
+                                    include=['a', 't', 'v', 'z'],   #'z'
+                                    depends_on=depends_on,
+                                    group_only_regressors=False,
+                                    keep_regressor_trace=True
+                                    )
+            m.find_starting_values()
+            infdata = m.sample(samples,
+                               burn=1000,
+                               dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                               db='pickle',
+                               return_infdata=True, loglike=True, ppc=True)
+            return m, infdata
+        
+        elif version == 1:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 2:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        elif version == 3:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 4:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        # ES - dual inattention models - do what Sebastian said regarding the recoding/cahnging the sgin of the ES_InattnetionW_S param
+        
+        elif version == 5:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 6:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        elif version == 7:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 8:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        elif version == 9:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW_E + ES_AttentionW_S + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        else:
+            raise ValueError(f"Invalid version {version}")
+        
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     p_outlier=.05, 
@@ -1155,7 +1214,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
                                     )
         m.find_starting_values()
         infdata = m.sample(samples,
-                   burn=200,
+                   burn=1000,
                    dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                    db='pickle',
                    return_infdata=True, loglike=True, ppc=True)
@@ -1265,8 +1324,8 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=1200,
-                         n_jobs=3,
+                         samples=6000,
+                         n_jobs=5,
                          run=True,
                          parallel=True,
                          model_name='model',
@@ -2335,7 +2394,7 @@ if __name__ == "__main__":
             data                = data[data["rt"] > 0.250]
             # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
             # ------------------------------------------------------------------
-            if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL"):
+            if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL", "For_paper"):
 
                 data["response"] = pd.to_numeric(data["chose_right"], errors="coerce")
                 print("[ZBIAS DEBUG] head of response mapping:")
@@ -2391,6 +2450,13 @@ if __name__ == "__main__":
             data["InattentionW_E"] = pd.to_numeric(data["InattentionW_E"], errors="coerce")
             data["InattentionW_S"] = pd.to_numeric(data["InattentionW_S"], errors="coerce")
             
+            data["ES_AttentionW_E"]  = pd.to_numeric(data["ES_AttentionW_E"],  errors="coerce")
+            data["ES_AttentionW_S"] = pd.to_numeric(data["ES_AttentionW_S"], errors="coerce")
+            data["ES_InattentionW_E"] = pd.to_numeric(data["ES_InattentionW_E"], errors="coerce")
+            data["ES_InattentionW_S"] = pd.to_numeric(data["ES_InattentionW_S"], errors="coerce")
+            data["ES_AttentionW"]  = pd.to_numeric(data["ES_AttentionW"],  errors="coerce")
+            data["ES_InattentionW"]  = pd.to_numeric(data["ES_InattentionW"],  errors="coerce")
+
             data["z_AttentionW_E"]  = pd.to_numeric(data["z_AttentionW_E"],  errors="coerce")
             data["z_AttentionW_S"] = pd.to_numeric(data["z_AttentionW_S"], errors="coerce")
             data["z_InattentionW_E"] = pd.to_numeric(data["z_InattentionW_E"], errors="coerce")
@@ -2455,7 +2521,14 @@ if __name__ == "__main__":
                                        'ES_InattentionW_early',
                                        'ES_AttentionW_late',
                                        'ES_InattentionW_late',
-                                       "V_E", "V_S", "Value_diff"])   
+                                       "V_E", "V_S", "Value_diff",
+                                       "ES_AttentionW_E",
+                                       "ES_AttentionW_S",
+                                       "ES_InattentionW_E",
+                                       "ES_InattentionW_S",
+                                       "ES_AttentionW",
+                                       "ES_InattentionW",
+                                       ])   
             
             # ------------------------------------------------------------
             # quick report at the start
