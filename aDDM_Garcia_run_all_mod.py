@@ -1157,8 +1157,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
                                     p_outlier=.05, 
                                     include=['a', 't', 'v', 'z'],   #'z'
                                     depends_on=depends_on,
-                                    group_only_regressors=False,
-                                    keep_regressor_trace=True
                                     )
             m.find_starting_values()
             infdata = m.sample(samples,
