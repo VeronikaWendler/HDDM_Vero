@@ -1153,7 +1153,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         if version == 0:
             # jsut start sampling
 
-            m = hddm.models.HDDMRegressor(data, 
+            m = hddm.models.HDDM(data, 
                                     p_outlier=.05, 
                                     include=['a', 't', 'v', 'z'],   #'z'
                                     depends_on=depends_on,
