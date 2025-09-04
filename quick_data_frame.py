@@ -84,7 +84,7 @@ data['ES_AttentionW_E'] = - (data['PropDwell_Left'] * data['p1'])
 # data['dta_norm'] = data['DwellTimeAdvantage'] / max_abs
 # data['z_dynamic']   = (data['dta_norm'] + 1) / 2                            # dynamic z sscaled by gaze
 # data['z_static'] = 0.55                                                     #Sebastian's idea 
-
+#
 # # Which option is the correct one?
 # data['target_option'] = np.where(data['p1'] > data['p2'], 'E', 'S')
 # # stimulus
