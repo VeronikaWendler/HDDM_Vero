@@ -1596,6 +1596,11 @@ def run_version_36():
         da = idata.posterior[varname]
         return da.stack(sample=["chain","draw"]).values
 
+
+    import numpy as np
+
+    vIA_E = np.abs(draws("v_ES_InattentionW_E"))
+
     # 3. extract everything you need
     a_high    = draws("a(high)")
     a_low    = draws("a(low)")
@@ -1604,7 +1609,7 @@ def run_version_36():
     z        = draws("z")
     #inter    = draws("v_Intercept")
     vA   = draws("v_ES_AttentionW")
-    vIA_E    = draws("v_ES_InattentionW_E")
+    #vIA_E    = draws("v_ES_InattentionW_E")
     vIA_S    = draws("v_ES_InattentionW_S")
 
 
@@ -1637,7 +1642,7 @@ def run_version_36():
 
     df_group = pd.DataFrame(group)
     df_group.to_csv(
-        os.path.join(MODELS_DIR, "group_level_MAP_table_ES_VAL_36.csv"),
+        os.path.join(MODELS_DIR, "group_level_MAP_table_ES_VAL_36_unsigned.csv"),
         index=False
         )
     print("group‐level estimates:")
@@ -1661,7 +1666,7 @@ def run_version_36():
 
     df_comp = pd.DataFrame(rows)
     df_comp.to_csv(
-        os.path.join(MODELS_DIR, "combined_parameter_comparison_table_ES_VAL_36.csv"),
+        os.path.join(MODELS_DIR, "combined_parameter_comparison_table_ES_VAL_36_unsigned.csv"),
         index=False
         )
 
