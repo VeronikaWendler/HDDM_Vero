@@ -1451,6 +1451,11 @@ def run_version_14():
 #     print("OV Combined Parameter Comparison Table:")
 #     print(df_combined_OV)
 
+
+#########################################################################################################################
+#########################################################################################################################
+
+
 import arviz as az
 import pandas as pd
 PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
@@ -1562,7 +1567,105 @@ def run_version_35():
         os.path.join(MODELS_DIR, "combined_parameter_comparison_table_ES_garcia_m35.csv"),
         index=False
         )
-      
+    
+    
+    
+########################################################################################################################
+import arviz as az
+import pandas as pd
+PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
+
+def run_version_36():
+    import arviz as az
+    import pandas as pd
+    import os
+    PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
+    MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_garcia")    
+    nc_paths = [
+        os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_36_2.nc"),
+        os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_36_1.nc"),
+        os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_36_0.nc"),
+    ]
+    idatas = [az.from_netcdf(p) for p in nc_paths]
+
+    # 2. concatenate along a new “chain” axis
+    idata = az.concat(idatas, dim="chain")
+
+    # shortcut to pull out a flattened array of draws for any var
+    def draws(varname):
+        da = idata.posterior[varname]
+        return da.stack(sample=["chain","draw"]).values
+
+    # 3. extract everything you need
+    a_high    = draws("a(high)")
+    a_low    = draws("a(low)")
+    a_med    = draws("a(medium)")
+    t        = draws("t")
+    z        = draws("z")
+    #inter    = draws("v_Intercept")
+    vA   = draws("v_ES_AttentionW")
+    vIA_E    = draws("v_ES_InattentionW_E")
+    vIA_S    = draws("v_ES_InattentionW_S")
+
+
+    # 4. compute the θ’s
+    thetaE  = vIA_E / vA
+    thetaS  = vIA_S / vA
+
+    # helper for 95% HDI
+    def hdi(arr):
+        lo, hi = az.hdi(arr, hdi_prob=0.95)
+        return lo, hi
+
+    # 5A. build the group‐level MAP / HDI table
+    group = []
+    for name, arr in [
+        ("a(high)", a_high),
+        ("a(low)", a_low),
+        ("a(med)", a_med),
+        ("t", t),
+        ("z", z),
+        ("v_ES_AttentionW",  vA),
+        ("v_ES_InattentionW_E",  vIA_E),
+        ("v_ES_InattentionW_S", vIA_S),
+        ("θE", thetaE),
+        ("θS", thetaS),
+    ]:
+        m = arr.mean()
+        lo, hi = hdi(arr)
+        group.append({"Parameter": name, "MAP": m, "HDI_lower": lo, "HDI_upper": hi})
+
+    df_group = pd.DataFrame(group)
+    df_group.to_csv(
+        os.path.join(MODELS_DIR, "group_level_MAP_table_ES_VAL_36.csv"),
+        index=False
+        )
+    print("group‐level estimates:")
+    print(df_group)
+
+    # 5B. build the paired‐difference table
+    rows = []
+    def diff(x, y): 
+        return x.mean() - y.mean(), *hdi(x - y)
+
+    for (label, xa, xb) in [
+        ("θE-θS", thetaE, thetaS),
+        ("E−S b2", vIA_E, vIA_S),
+
+        ("Med−Low a", a_med, a_low),
+        ("High−Low a", a_high, a_low),
+        ("High−Med a", a_high, a_med),
+    ]:
+        m, lo, hi = diff(xa, xb)
+        rows.append({"Comparison": label, "MeanDiff": m, "HDI_lower": lo, "HDI_upper": hi})
+
+    df_comp = pd.DataFrame(rows)
+    df_comp.to_csv(
+        os.path.join(MODELS_DIR, "combined_parameter_comparison_table_ES_VAL_36.csv"),
+        index=False
+        )
+
+
 ################################### for LEESEE phase differences ##############################################################################
 ################################### for LEESEE phase differences ##############################################################################
 
@@ -1782,7 +1885,7 @@ def run_version_35():
     
 if __name__ == "__main__":
     
-    version = 35
+    version = 36
     if version == 10:
         run_version_1_a()
     elif version == 11:
@@ -1799,4 +1902,6 @@ if __name__ == "__main__":
         run_version_14()
     elif version == 35:
         run_version_35()
+    elif version == 36:
+        run_version_36()
     
