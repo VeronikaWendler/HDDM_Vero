@@ -122,7 +122,7 @@ def make_z_link(full_stimulus_vector):
 ##
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
-nr_samples      = 1200       # samples per chain - do 11000 but for now for a quick one we do 600
+nr_samples      = 6000       # samples per chain - do 11000 but for now for a quick one we do 600
 parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
@@ -145,7 +145,7 @@ model_versions  = {
     "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3", "ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8","ES_VAL_9", "ES_VAL_10", "ES_VAL_11", "ES_VAL_12",  "ES_VAL_13", "ES_VAL_14", "ES_VAL_15","ES_VAL_16", "ES_VAL_17",
                "ES_VAL_18", "ES_VAL_19", "ES_VAL_20", "ES_VAL_21", "ES_VAL_22", "ES_VAL_23", "ES_VAL_24", "ES_VAL_25", "ES_VAL_26", "ES_VAL_27", "ES_VAL_28",
                "ES_VAL_29", "ES_VAL_30", "ES_VAL_31", "ES_VAL_32", "ES_VAL_33", "ES_VAL_34", "ES_VAL_35", "ES_VAL_36", "ES_VAL_37", "ES_VAL_38"],
-    "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13" ],
+    "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14" ],
 }
 
 
@@ -166,7 +166,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "For_paper"
-start_version = 12
+start_version = 13
 started = False
 #
 # dir
@@ -229,7 +229,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=1200, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=6000, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -1165,7 +1165,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
                                db='pickle',
                                return_infdata=True, loglike=True, ppc=True)
             return m, infdata
-        
+        # aDDM + SP
         elif version == 1:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
@@ -1213,6 +1213,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 12:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW_dwell + ES_InattentionW_E_dwell + ES_InattentionW_S_dwell', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+        # z is inlcuded - DDM + SP    - 6000 samples
+        elif version == 13:
+            v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
             
             
         else:
@@ -1228,7 +1232,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
                                     )
         m.find_starting_values()
         infdata = m.sample(samples,
-                   burn=200,
+                   burn=1000,
                    dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                    db='pickle',
                    return_infdata=True, loglike=True, ppc=True)
@@ -1338,7 +1342,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=1200,
+                         samples=6000,
                          n_jobs=5,
                          run=True,
                          parallel=True,
