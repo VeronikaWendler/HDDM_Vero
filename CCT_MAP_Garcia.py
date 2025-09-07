@@ -1582,9 +1582,9 @@ def run_version_36():
     PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
     MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_garcia")    
     nc_paths = [
-        os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_36_2.nc"),
-        os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_36_1.nc"),
-        os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_36_0.nc"),
+        os.path.join(MODELS_DIR,"garcia_replication_For_paper_7_2.nc"),
+        os.path.join(MODELS_DIR,"garcia_replication_For_paper_7_1.nc"),
+        os.path.join(MODELS_DIR,"garcia_replication_For_paper_7_0.nc"),
     ]
     idatas = [az.from_netcdf(p) for p in nc_paths]
 
@@ -1642,7 +1642,7 @@ def run_version_36():
 
     df_group = pd.DataFrame(group)
     df_group.to_csv(
-        os.path.join(MODELS_DIR, "group_level_MAP_table_ES_VAL_36_unsigned.csv"),
+        os.path.join(MODELS_DIR, "group_level_MAP_table_For_paper_7_unsigned.csv"),
         index=False
         )
     print("group‐level estimates:")
@@ -1666,7 +1666,7 @@ def run_version_36():
 
     df_comp = pd.DataFrame(rows)
     df_comp.to_csv(
-        os.path.join(MODELS_DIR, "combined_parameter_comparison_table_ES_VAL_36_unsigned.csv"),
+        os.path.join(MODELS_DIR, "combined_parameter_comparison_table_For_paper_7.csv"),
         index=False
         )
 
