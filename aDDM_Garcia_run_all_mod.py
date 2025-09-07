@@ -122,7 +122,7 @@ def make_z_link(full_stimulus_vector):
 ##
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
-nr_samples      = 6000       # samples per chain - do 11000 but for now for a quick one we do 600
+nr_samples      = 1200       # samples per chain - do 11000 but for now for a quick one we do 600
 parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
@@ -166,7 +166,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "For_paper"
-start_version = 6
+start_version = 10
 started = False
 
 # dir
@@ -229,7 +229,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=6000, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=1200, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -1202,12 +1202,9 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             
         # again with more samples (10 thousand each)
         elif version == 10:
-            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
-            reg_descr = [v_reg]
-            depends_on = {'a': 'OVcate'} 
-        elif version == 11:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW_E + ES_AttentionW_S + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+       
             
             
             
@@ -1224,7 +1221,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
                                     )
         m.find_starting_values()
         infdata = m.sample(samples,
-                   burn=1000,
+                   burn=200,
                    dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                    db='pickle',
                    return_infdata=True, loglike=True, ppc=True)
@@ -1334,7 +1331,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=6000,
+                         samples=1200,
                          n_jobs=5,
                          run=True,
                          parallel=True,

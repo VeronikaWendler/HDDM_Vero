@@ -72,9 +72,9 @@ data['ES_InattentionW_S'] = (data['PropDwell_Left'] * data['p2'])
 data['ES_InattentionW_E'] = data['PropDwell_Right'] * data['p1']
 
 # just to experiment a final time:
-data['ES_AttentionW_S'] = (data['PropDwell_Right'] * data['p2'])
+data['ES_AttentionW_S'] = data['PropDwell_Right'] * data['p2']
 # this would also need to be flipped
-data['ES_AttentionW_E'] = - (data['PropDwell_Left'] * data['p1']) 
+data['ES_AttentionW_E'] = data['PropDwell_Left'] * data['p1'] 
 
 
 # the CCT drift rate regression 
