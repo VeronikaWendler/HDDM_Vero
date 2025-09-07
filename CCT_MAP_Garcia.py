@@ -1722,48 +1722,108 @@ def run_version_36():
 #         )
     
     
+    # import os
+    # import arviz as az
+    # import pandas as pd
+
+    # PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
+    # MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_garcia")
+
+    # # ---------- 1) Helper: load & concat chains for a model ----------
+    # def load_idata(model_stem, chain_idxs=(0,1,2)):
+    #     """
+    #     model_stem: e.g., 'garcia_replication_ES_VAL_36'
+    #     expects files: f"{model_stem}_{i}.nc" inside MODELS_DIR
+    #     returns: InferenceData with chains concatenated along 'chain'
+    #     """
+    #     paths = [os.path.join(MODELS_DIR, f"{model_stem}_{i}.nc") for i in chain_idxs]
+    #     idatas = [az.from_netcdf(p) for p in paths]
+    #     # Concatenate along a new chain axis
+    #     idata = az.concat(idatas, dim="chain")
+    #     return idata
+
+    # # ---------- 2) Load BOTH models (dual vs shared) ----------
+    # # Adjust stems to your filenames
+    # dual_stem   = "garcia_replication_ES_VAL_36"
+    # shared_stem = "garcia_replication_ES_VAL_26"
+
+    # # If you have 4 chains (0..3), set chain_idxs=(0,1,2,3)
+    # dual_idata   = load_idata(dual_stem,   chain_idxs=(0,1,2))
+    # shared_idata = load_idata(shared_stem, chain_idxs=(0,1,2))
+
+    # # ---------- 3) LOO comparison (predictive fit) ----------
+    # # Tip: If you get errors about 'log_likelihood', ensure your .nc includes it.
+    # cmp_loo = az.compare({"dual": dual_idata, "shared": shared_idata},
+    #                  method="BB-pseudo-BMA", ic="loo")
+    # print("\nLOO compare (BB-pseudo-BMA):")
+    # print(cmp_loo)
+
+    # cmp_loo_df = cmp_loo.reset_index().rename(columns={"index":"model"})
+    # cmp_loo_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO.csv"), index=False)
+
+    # # Also pointwise LOO (useful diagnostics; optional)
+    # loo_dual   = az.loo(dual_idata, pointwise=True)
+    # loo_shared = az.loo(shared_idata, pointwise=True)
+    # pd.DataFrame({
+    #     "dual_elpd":   [loo_dual.elpd_loo],
+    #     "dual_p_loo":  [loo_dual.p_loo],
+    #     "shared_elpd": [loo_shared.elpd_loo],
+    #     "shared_p_loo":[loo_shared.p_loo]
+    #     }).to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO_summary.csv"), index=False)
+
+    # # ---------- 4) Stacking weights (model averaging) ----------
+    # cmp_stack = az.compare({"dual": dual_idata, "shared": shared_idata},
+    #                    method="stacking", ic="loo")
+    # print("\nStacking weights (LOO):")
+    # print(cmp_stack)
+
+    # cmp_stack_df = cmp_stack.reset_index().rename(columns={"index":"model"})
+    # cmp_stack_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_stacking.csv"), index=False)
+
+    # # ---------- 5) Quick console rule-of-thumb ----------
+    # best = cmp_loo_df.iloc[0]         # top row is the best by ELPD
+    # other = cmp_loo_df.iloc[1]
+    # print(f"\nBest by LOO: {best['model']} (elpd_diff=0 by definition).")
+    # print(f"Runner-up: {other['model']}, elpd_diff={other['elpd_diff']:.2f}, "
+    #       f"SE={other['elpd_diff_se']:.2f} — if |elpd_diff| > SE, that’s meaningful support for the best model.")
+
     import os
     import arviz as az
     import pandas as pd
+    import numpy as np
 
     PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
     MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_garcia")
 
     # ---------- 1) Helper: load & concat chains for a model ----------
-    def load_idata(model_stem, chain_idxs=(0,1,2)):
-        """
-        model_stem: e.g., 'garcia_replication_ES_VAL_36'
-        expects files: f"{model_stem}_{i}.nc" inside MODELS_DIR
-        returns: InferenceData with chains concatenated along 'chain'
-        """
+    def load_idata(model_stem, chain_idxs=(0,1,2,3)):
+        
         paths = [os.path.join(MODELS_DIR, f"{model_stem}_{i}.nc") for i in chain_idxs]
         idatas = [az.from_netcdf(p) for p in paths]
-        # Concatenate along a new chain axis
         idata = az.concat(idatas, dim="chain")
         return idata
 
     # ---------- 2) Load BOTH models (dual vs shared) ----------
-    # Adjust stems to your filenames
     dual_stem   = "garcia_replication_ES_VAL_36"
     shared_stem = "garcia_replication_ES_VAL_26"
 
-    # If you have 4 chains (0..3), set chain_idxs=(0,1,2,3)
-    dual_idata   = load_idata(dual_stem,   chain_idxs=(0,1,2))
-    shared_idata = load_idata(shared_stem, chain_idxs=(0,1,2))
+    # change chain_idxs if you truly only have 3 chains
+    dual_idata   = load_idata(dual_stem,   chain_idxs=(0,1,2,3))
+    shared_idata = load_idata(shared_stem, chain_idxs=(0,1,2,3))
 
     # ---------- 3) LOO comparison (predictive fit) ----------
-    # Tip: If you get errors about 'log_likelihood', ensure your .nc includes it.
-    cmp_loo = az.compare({"dual": dual_idata, "shared": shared_idata},
-                     method="BB-pseudo-BMA", ic="loo")
+    cmps = {"dual": dual_idata, "shared": shared_idata}
+    cmp_loo = az.compare(cmps, method="BB-pseudo-BMA", ic="loo")
     print("\nLOO compare (BB-pseudo-BMA):")
     print(cmp_loo)
 
     cmp_loo_df = cmp_loo.reset_index().rename(columns={"index":"model"})
     cmp_loo_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO.csv"), index=False)
 
-    # Also pointwise LOO (useful diagnostics; optional)
-    loo_dual   = az.loo(dual_idata, pointwise=True)
+    # Pointwise LOO + Pareto-k diagnostics (useful with those PSIS warnings)
+    loo_dual   = az.loo(dual_idata,   pointwise=True)
     loo_shared = az.loo(shared_idata, pointwise=True)
+
     pd.DataFrame({
         "dual_elpd":   [loo_dual.elpd_loo],
         "dual_p_loo":  [loo_dual.p_loo],
@@ -1771,22 +1831,37 @@ def run_version_36():
         "shared_p_loo":[loo_shared.p_loo]
         }).to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO_summary.csv"), index=False)
 
+    pareto_df = pd.DataFrame({
+        "model": ["dual","shared"],
+        "frac_k>0.7": [np.mean(loo_dual.pareto_k.values>0.7),
+                   np.mean(loo_shared.pareto_k.values>0.7)],
+        "frac_k>1.0": [np.mean(loo_dual.pareto_k.values>1.0),
+                   np.mean(loo_shared.pareto_k.values>1.0)],
+        })
+    pareto_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_pareto_k.csv"), index=False)
+    print("\nPareto-k reliability:")
+    print(pareto_df)
+
     # ---------- 4) Stacking weights (model averaging) ----------
-    cmp_stack = az.compare({"dual": dual_idata, "shared": shared_idata},
-                       method="stacking", ic="loo")
+    cmp_stack = az.compare(cmps, method="stacking", ic="loo")
     print("\nStacking weights (LOO):")
     print(cmp_stack)
-
     cmp_stack_df = cmp_stack.reset_index().rename(columns={"index":"model"})
     cmp_stack_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_stacking.csv"), index=False)
 
     # ---------- 5) Quick console rule-of-thumb ----------
-    best = cmp_loo_df.iloc[0]         # top row is the best by ELPD
+    best  = cmp_loo_df.iloc[0]     # top row = best by ELPD
     other = cmp_loo_df.iloc[1]
-    print(f"\nBest by LOO: {best['model']} (elpd_diff=0 by definition).")
-    print(f"Runner-up: {other['model']}, elpd_diff={other['elpd_diff']:.2f}, "
-          f"SE={other['elpd_diff_se']:.2f} — if |elpd_diff| > SE, that’s meaningful support for the best model.")
+    se_col = "elpd_diff_se" if "elpd_diff_se" in cmp_loo_df.columns else ("dse" if "dse" in cmp_loo_df.columns else None)
 
+    if se_col is not None:
+        ratio = abs(other["elpd_diff"])/other[se_col] if other[se_col] != 0 else np.inf
+        print(f"\nBest by LOO: {best['model']} (elpd_diff=0).")
+        print(f"Runner-up: {other['model']}, elpd_diff={other['elpd_diff']:.2f}, "
+              f"SE={other[se_col]:.2f} → |elpd_diff|/SE = {ratio:.2f}")
+    else:
+        print(f"\nBest by LOO: {best['model']} (elpd_diff=0). Runner-up: {other['model']}, "
+              f"elpd_diff={other['elpd_diff']:.2f} (SE column not found)")
 
 
 ################################### for LEESEE phase differences ##############################################################################
