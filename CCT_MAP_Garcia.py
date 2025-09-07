@@ -1786,7 +1786,7 @@ def run_version_36():
     # print(f"\nBest by LOO: {best['model']} (elpd_diff=0 by definition).")
     # print(f"Runner-up: {other['model']}, elpd_diff={other['elpd_diff']:.2f}, "
     #       f"SE={other['elpd_diff_se']:.2f} — if |elpd_diff| > SE, that’s meaningful support for the best model.")
-
+    #
     import os
     import arviz as az
     import pandas as pd
@@ -1796,7 +1796,7 @@ def run_version_36():
     MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_garcia")
 
     # ---------- 1) Helper: load & concat chains for a model ----------
-    def load_idata(model_stem, chain_idxs=(0,1,2,3)):
+    def load_idata(model_stem, chain_idxs=(0,1,2)):
         
         paths = [os.path.join(MODELS_DIR, f"{model_stem}_{i}.nc") for i in chain_idxs]
         idatas = [az.from_netcdf(p) for p in paths]
@@ -1808,8 +1808,8 @@ def run_version_36():
     shared_stem = "garcia_replication_ES_VAL_26"
 
     # change chain_idxs if you truly only have 3 chains
-    dual_idata   = load_idata(dual_stem,   chain_idxs=(0,1,2,3))
-    shared_idata = load_idata(shared_stem, chain_idxs=(0,1,2,3))
+    dual_idata   = load_idata(dual_stem,   chain_idxs=(0,1,2))
+    shared_idata = load_idata(shared_stem, chain_idxs=(0,1,2))
 
     # ---------- 3) LOO comparison (predictive fit) ----------
     cmps = {"dual": dual_idata, "shared": shared_idata}
