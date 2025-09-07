@@ -1579,6 +1579,117 @@ def run_version_36():
     import arviz as az
     import pandas as pd
     import os
+    import numpy as np
+
+    PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
+    MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_garcia")
+
+    # ---------- Helpers ----------
+    def load_idata(model_stem: str, chain_idxs=(0,1,2)):
+        paths = [os.path.join(MODELS_DIR, f"{model_stem}_{i}.nc") for i in chain_idxs]
+        idatas = [az.from_netcdf(p) for p in paths]
+        return az.concat(idatas, dim="chain")
+
+    def short_label(stem: str) -> str:
+        toks = stem.split("_")
+        return toks[-1] if toks else stem
+
+    def compare_group(group_name: str, model_stems: list, chain_idxs=(0,1,2)):
+        """Run LOO, stacking, pointwise LOO, and Pareto-k for a set of models; save CSVs."""
+        # Load models
+        model_idatas = {}
+        for stem in model_stems:
+            try:
+                idata = load_idata(stem, chain_idxs=chain_idxs)
+                label = short_label(stem)
+                # Ensure uniqueness if same label appears
+                base, k = label, 1
+                while label in model_idatas:
+                    k += 1
+                    label = f"{base}#{k}"
+                model_idatas[label] = idata
+            except Exception as e:
+                print(f"[WARN] Skipping '{stem}' due to load error: {e}")
+    
+        if len(model_idatas) < 2:
+            print(f"[WARN] Group '{group_name}': need ≥2 models. Got {len(model_idatas)}. Aborting.")
+            return
+
+        # LOO compare
+        cmp_loo = az.compare(model_idatas, method="BB-pseudo-BMA", ic="loo")
+        print(f"\nLOO compare (group: {group_name}):")
+        print(cmp_loo)
+        cmp_loo_df = cmp_loo.reset_index().rename(columns={"index": "model"})
+        cmp_loo_df.to_csv(os.path.join(MODELS_DIR, f"{group_name}_LOO.csv"), index=False)
+    
+        # Stacking weights
+        cmp_stack = az.compare(model_idatas, method="stacking", ic="loo")
+        print(f"\nStacking weights (group: {group_name}):")
+        print(cmp_stack)
+        cmp_stack_df = cmp_stack.reset_index().rename(columns={"index": "model"})
+        cmp_stack_df.to_csv(os.path.join(MODELS_DIR, f"{group_name}_stacking.csv"), index=False)
+    
+        # Pointwise LOO + Pareto-k reliability
+        loo_summ_rows, pareto_rows = [], []
+        for label, idata in model_idatas.items():
+            loo_pw = az.loo(idata, pointwise=True)
+            loo_summ_rows.append({
+                "model": label,
+                "elpd_loo": float(loo_pw.elpd_loo),
+                "p_loo":    float(loo_pw.p_loo),
+            })
+            pk = loo_pw.pareto_k.values
+            pareto_rows.append({
+                "model": label,
+                "frac_k>0.7": float(np.mean(pk > 0.7)),
+                "frac_k>1.0": float(np.mean(pk > 1.0)),
+            })
+    
+        pd.DataFrame(loo_summ_rows).to_csv(
+            os.path.join(MODELS_DIR, f"{group_name}_LOO_summary.csv"), index=False
+        )
+        pd.DataFrame(pareto_rows).to_csv(
+            os.path.join(MODELS_DIR, f"{group_name}_pareto_k.csv"), index=False
+        )
+        print(f"\nPareto-k reliability (group: {group_name}):")
+        print(pd.DataFrame(pareto_rows))
+    
+        # Quick console rule-of-thumb for top 2
+        se_col = "elpd_diff_se" if "elpd_diff_se" in cmp_loo_df.columns else ("dse" if "dse" in cmp_loo_df.columns else None)
+        if len(cmp_loo_df) >= 2:
+            best, runner = cmp_loo_df.iloc[0], cmp_loo_df.iloc[1]
+            if se_col is not None:
+                se_val = runner[se_col]
+                ratio = abs(runner["elpd_diff"]) / se_val if se_val != 0 else np.inf
+                print(f"\nBest by LOO (group {group_name}): {best['model']} (elpd_diff=0).")
+                print(f"Runner-up: {runner['model']}, elpd_diff={runner['elpd_diff']:.2f}, "
+                      f"SE={se_val:.2f} → |elpd_diff|/SE = {ratio:.2f}")
+            else:
+                print(f"\nBest by LOO (group {group_name}): {best['model']} (elpd_diff=0). "
+                      f"Runner-up: {runner['model']}, elpd_diff={runner['elpd_diff']:.2f} (SE column not found)")
+    
+    # ---------- Define your groups ----------
+    # Group 1 (first 4)
+    group1_stems = [
+        "garcia_replication_ES_VAL_16",  # pure DDM (z not included)
+        "garcia_replication_ES_VAL_12",  # DDM + SP (z free)
+        "garcia_replication_ES_VAL_17",  # pure aDDM (z not included)
+        "garcia_replication_ES_VAL_7",   # aDDM + SP (z included)
+    ]
+    
+    # Group 2 (rest)
+    group2_stems = [
+        "garcia_replication_ES_VAL_10",  # Value_diff + DTA (z free)
+        "garcia_replication_ES_VAL_7",   # aDDM + SP (z free)
+        "garcia_replication_ES_VAL_26",  # a ~ OV (z free), shared inattn
+        "garcia_replication_ES_VAL_35",  # dual inattn (no a~OV?)
+        "garcia_replication_ES_VAL_36",  # dual inattn, a ~ OV
+    ]
+
+    # ---------- Run ----------
+    compare_group("group1_first4", group1_stems, chain_idxs=(0,1,2))
+    compare_group("group2_rest",   group2_stems, chain_idxs=(0,1,2))
+    
     # PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
     # MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_garcia")    
 #     nc_paths = [
@@ -1787,81 +1898,135 @@ def run_version_36():
     # print(f"Runner-up: {other['model']}, elpd_diff={other['elpd_diff']:.2f}, "
     #       f"SE={other['elpd_diff_se']:.2f} — if |elpd_diff| > SE, that’s meaningful support for the best model.")
     #
-    import os
-    import arviz as az
-    import pandas as pd
-    import numpy as np
+    
+#     # first table csv etc ...   
+#     # first these need to be compared:
+#     #1.
+#     # garcia_replication_ES_VAL_16 (z not included)
+#     # pure DDM
+#             v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
+#             reg_descr = [v_reg]
+#     # 2.         
+#     # garcia_repliction_ES_VAL_12  (z is free param, hence + SP)
+#     # DDM + SP
+#             v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
+#             reg_descr = [v_reg]
+#     # 3. 
+#     # pure aDDM (z not incldued)
+#     # garica_replication_ES_VAL_17
+#             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+#             reg_descr = [v_reg]
+#     # 4. 
+#     # aDDM + SP (z is included)
+#     # garcia_replication_ES_VAL_7
+#             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+#             reg_descr = [v_reg]
+            
+    
+#     # second table/csv etc....
+#     # models to be compared in a seperate tabel/csv
+#         #modles that I wanat to incldue to compare: 
+   
+#     # indpependent influences of value difference and Dwelltime advantage (z is free param)
+#      # garcia_replication_ES_VAL_10
+#             v_reg = {'model': 'v ~ 0 + Value_diff + DTA', 'link_func': lambda x: x}
+#             reg_descr = [v_reg]
+#  # normal attnetional inattentional no a varies by oV  # (z is free param)
+#     #garcia_replication_ES_VAL_7
+#             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+#             reg_descr = [v_reg]
+#     # garcia_replication_ES_VAL_26
+#             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+#             reg_descr = [v_reg]
+#             depends_on = {'a': 'OVcate'} 
+#     # garcia_replication_ES_VAL_35
+#             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+#             reg_descr = [v_reg]
+#     # garcia_replication_ES_VAL_36
+#             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+#             reg_descr = [v_reg]
+#             depends_on = {'a': 'OVcate'} 
+    
+    
+    
+    
+    
+    
+    # import os
+    # import arviz as az
+    # import pandas as pd
+    # import numpy as np
 
-    PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
-    MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_garcia")
+    # PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
+    # MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_garcia")
 
-    # ---------- 1) Helper: load & concat chains for a model ----------
-    def load_idata(model_stem, chain_idxs=(0,1,2)):
+    # # ---------- 1) Helper: load & concat chains for a model ----------
+    # def load_idata(model_stem, chain_idxs=(0,1,2)):
         
-        paths = [os.path.join(MODELS_DIR, f"{model_stem}_{i}.nc") for i in chain_idxs]
-        idatas = [az.from_netcdf(p) for p in paths]
-        idata = az.concat(idatas, dim="chain")
-        return idata
+    #     paths = [os.path.join(MODELS_DIR, f"{model_stem}_{i}.nc") for i in chain_idxs]
+    #     idatas = [az.from_netcdf(p) for p in paths]
+    #     idata = az.concat(idatas, dim="chain")
+    #     return idata
 
-    # ---------- 2) Load BOTH models (dual vs shared) ----------
-    dual_stem   = "garcia_replication_ES_VAL_36"
-    shared_stem = "garcia_replication_ES_VAL_26"
+    # # ---------- 2) Load BOTH models (dual vs shared) ----------
+    # dual_stem   = "garcia_replication_ES_VAL_36"
+    # shared_stem = "garcia_replication_ES_VAL_26"
 
-    # change chain_idxs if you truly only have 3 chains
-    dual_idata   = load_idata(dual_stem,   chain_idxs=(0,1,2))
-    shared_idata = load_idata(shared_stem, chain_idxs=(0,1,2))
+    # # change chain_idxs if you truly only have 3 chains
+    # dual_idata   = load_idata(dual_stem,   chain_idxs=(0,1,2))
+    # shared_idata = load_idata(shared_stem, chain_idxs=(0,1,2))
 
-    # ---------- 3) LOO comparison (predictive fit) ----------
-    cmps = {"dual": dual_idata, "shared": shared_idata}
-    cmp_loo = az.compare(cmps, method="BB-pseudo-BMA", ic="loo")
-    print("\nLOO compare (BB-pseudo-BMA):")
-    print(cmp_loo)
+    # # ---------- 3) LOO comparison (predictive fit) ----------
+    # cmps = {"dual": dual_idata, "shared": shared_idata}
+    # cmp_loo = az.compare(cmps, method="BB-pseudo-BMA", ic="loo")
+    # print("\nLOO compare (BB-pseudo-BMA):")
+    # print(cmp_loo)
 
-    cmp_loo_df = cmp_loo.reset_index().rename(columns={"index":"model"})
-    cmp_loo_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO.csv"), index=False)
+    # cmp_loo_df = cmp_loo.reset_index().rename(columns={"index":"model"})
+    # cmp_loo_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO.csv"), index=False)
 
-    # Pointwise LOO + Pareto-k diagnostics (useful with those PSIS warnings)
-    loo_dual   = az.loo(dual_idata,   pointwise=True)
-    loo_shared = az.loo(shared_idata, pointwise=True)
+    # # Pointwise LOO + Pareto-k diagnostics (useful with those PSIS warnings)
+    # loo_dual   = az.loo(dual_idata,   pointwise=True)
+    # loo_shared = az.loo(shared_idata, pointwise=True)
 
-    pd.DataFrame({
-        "dual_elpd":   [loo_dual.elpd_loo],
-        "dual_p_loo":  [loo_dual.p_loo],
-        "shared_elpd": [loo_shared.elpd_loo],
-        "shared_p_loo":[loo_shared.p_loo]
-        }).to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO_summary.csv"), index=False)
+    # pd.DataFrame({
+    #     "dual_elpd":   [loo_dual.elpd_loo],
+    #     "dual_p_loo":  [loo_dual.p_loo],
+    #     "shared_elpd": [loo_shared.elpd_loo],
+    #     "shared_p_loo":[loo_shared.p_loo]
+    #     }).to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO_summary.csv"), index=False)
 
-    pareto_df = pd.DataFrame({
-        "model": ["dual","shared"],
-        "frac_k>0.7": [np.mean(loo_dual.pareto_k.values>0.7),
-                   np.mean(loo_shared.pareto_k.values>0.7)],
-        "frac_k>1.0": [np.mean(loo_dual.pareto_k.values>1.0),
-                   np.mean(loo_shared.pareto_k.values>1.0)],
-        })
-    pareto_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_pareto_k.csv"), index=False)
-    print("\nPareto-k reliability:")
-    print(pareto_df)
+    # pareto_df = pd.DataFrame({
+    #     "model": ["dual","shared"],
+    #     "frac_k>0.7": [np.mean(loo_dual.pareto_k.values>0.7),
+    #                np.mean(loo_shared.pareto_k.values>0.7)],
+    #     "frac_k>1.0": [np.mean(loo_dual.pareto_k.values>1.0),
+    #                np.mean(loo_shared.pareto_k.values>1.0)],
+    #     })
+    # pareto_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_pareto_k.csv"), index=False)
+    # print("\nPareto-k reliability:")
+    # print(pareto_df)
 
-    # ---------- 4) Stacking weights (model averaging) ----------
-    cmp_stack = az.compare(cmps, method="stacking", ic="loo")
-    print("\nStacking weights (LOO):")
-    print(cmp_stack)
-    cmp_stack_df = cmp_stack.reset_index().rename(columns={"index":"model"})
-    cmp_stack_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_stacking.csv"), index=False)
+    # # ---------- 4) Stacking weights (model averaging) ----------
+    # cmp_stack = az.compare(cmps, method="stacking", ic="loo")
+    # print("\nStacking weights (LOO):")
+    # print(cmp_stack)
+    # cmp_stack_df = cmp_stack.reset_index().rename(columns={"index":"model"})
+    # cmp_stack_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_stacking.csv"), index=False)
 
-    # ---------- 5) Quick console rule-of-thumb ----------
-    best  = cmp_loo_df.iloc[0]     # top row = best by ELPD
-    other = cmp_loo_df.iloc[1]
-    se_col = "elpd_diff_se" if "elpd_diff_se" in cmp_loo_df.columns else ("dse" if "dse" in cmp_loo_df.columns else None)
+    # # ---------- 5) Quick console rule-of-thumb ----------
+    # best  = cmp_loo_df.iloc[0]     # top row = best by ELPD
+    # other = cmp_loo_df.iloc[1]
+    # se_col = "elpd_diff_se" if "elpd_diff_se" in cmp_loo_df.columns else ("dse" if "dse" in cmp_loo_df.columns else None)
 
-    if se_col is not None:
-        ratio = abs(other["elpd_diff"])/other[se_col] if other[se_col] != 0 else np.inf
-        print(f"\nBest by LOO: {best['model']} (elpd_diff=0).")
-        print(f"Runner-up: {other['model']}, elpd_diff={other['elpd_diff']:.2f}, "
-              f"SE={other[se_col]:.2f} → |elpd_diff|/SE = {ratio:.2f}")
-    else:
-        print(f"\nBest by LOO: {best['model']} (elpd_diff=0). Runner-up: {other['model']}, "
-              f"elpd_diff={other['elpd_diff']:.2f} (SE column not found)")
+    # if se_col is not None:
+    #     ratio = abs(other["elpd_diff"])/other[se_col] if other[se_col] != 0 else np.inf
+    #     print(f"\nBest by LOO: {best['model']} (elpd_diff=0).")
+    #     print(f"Runner-up: {other['model']}, elpd_diff={other['elpd_diff']:.2f}, "
+    #           f"SE={other[se_col]:.2f} → |elpd_diff|/SE = {ratio:.2f}")
+    # else:
+    #     print(f"\nBest by LOO: {best['model']} (elpd_diff=0). Runner-up: {other['model']}, "
+    #           f"elpd_diff={other['elpd_diff']:.2f} (SE column not found)")
 
 
 ################################### for LEESEE phase differences ##############################################################################
