@@ -79,7 +79,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 10    # defining version #
+version = 12    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['For_paper']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -128,7 +128,7 @@ model_versions = {
     "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3", "ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8", "ES_VAL_9", "ES_VAL_10", "ES_VAL_11", "ES_VAL_12", "ES_VAL_13", "ES_VAL_14", "ES_VAL_15",
                "ES_VAL_16", "ES_VAL_17","ES_VAL_18", "ES_VAL_19", "ES_VAL_20", "ES_VAL_21", "ES_VAL_22", "ES_VAL_23", "ES_VAL_24", "ES_VAL_25", "ES_VAL_26", "ES_VAL_27", "ES_VAL_28", "ES_VAL_29",
                "ES_VAL_30", "ES_VAL_31", "ES_VAL_32", "ES_VAL_33", "ES_VAL_34", "ES_VAL_35", "ES_VAL_36", "ES_VAL_37", "ES_VAL_38"],
-    "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11" ],
+    "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13" ],
 
 }
 
@@ -4635,7 +4635,23 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_AttentionW_E',
                 'v_ES_AttentionW_S',
                 'v_ES_InattentionW']
-              
+        elif version == 12:
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW_dwell',
+                'v_ES_InattentionW_E_dwell',
+                'v_ES_InattentionW_S_dwell']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW_dwell',
+                'v_ES_InattentionW_E_dwell',
+                'v_ES_InattentionW_S_dwell']
+            
     elif phase == "LE_RL":
         if version == 0:
             params_of_interest = [
