@@ -1616,6 +1616,57 @@ def run_version_36():
     # 4. compute the θ’s
     thetaE  = vIA_E / vA
     thetaS  = vIA_S / vA
+    
+    # ----- Posterior contrasts, directional probabilities, ROPEs, and CSV -----
+    import numpy as np
+
+    # (A) Your current contrasts (note: here vIA_E is ABS if you set it so above)
+    d_theta_unsigned = thetaE - thetaS          # Δθ using your current definitions
+    d_b2_unsigned    = vIA_E - vIA_S            # Δb2 (if vIA_E is abs, this is a magnitude contrast)
+
+    # (Optional but recommended) Also compute the SIGNED variants from raw draws
+    vIA_E_signed = draws("v_ES_InattentionW_E")   # no abs
+    thetaE_signed = vIA_E_signed / vA
+    thetaS_signed = vIA_S / vA                    # vIA_S is already signed from your draw
+    d_theta_signed = thetaE_signed - thetaS_signed
+    d_b2_signed    = vIA_E_signed - vIA_S
+
+    def summarize_diff(arr, name, rope=None):
+        m = arr.mean()
+        lo, hi = az.hdi(arr, 0.95)
+        p_pos = float(np.mean(arr > 0))
+        out = {"Contrast": name, "Mean": m, "HDI_lower": lo, "HDI_upper": hi, "P(>0)": p_pos}
+        if rope is not None:
+            out["ROPE_low"] = rope[0]
+            out["ROPE_high"] = rope[1]
+            out["ROPE_%"] = float(np.mean((arr >= rope[0]) & (arr <= rope[1])))
+        return out
+
+    # Choose ROPEs that make sense on your scale (adjust if needed)
+    rope_theta = (-0.02, 0.02)   # example for θ differences
+    rope_b2    = (-0.002, 0.002) # example for raw weight differences
+
+    summary_rows = []
+
+    # Unsigned (magnitude-oriented) estimands
+    summary_rows.append(summarize_diff(d_theta_unsigned, "Δθ (unsigned: |vIA_E|/vA − vIA_S/vA)", rope=rope_theta))
+    summary_rows.append(summarize_diff(d_b2_unsigned,   "Δb2 (unsigned: |vIA_E| − vIA_S)",       rope=rope_b2))
+
+    # Signed estimands (as estimated)
+    summary_rows.append(summarize_diff(d_theta_signed, "Δθ (signed: vIA_E/vA − vIA_S/vA)", rope=rope_theta))
+    summary_rows.append(summarize_diff(d_b2_signed,   "Δb2 (signed: vIA_E − vIA_S)",       rope=rope_b2))
+
+    df_contrasts = pd.DataFrame(summary_rows)
+
+    df_contrasts.to_csv(
+        os.path.join(MODELS_DIR, "posterior_contrast_summary_For_paper_7.csv"),
+        index=False
+    )
+
+    print("\nPosterior contrast summary:")
+    print(df_contrasts)
+# -------------------------------------------------------------------------
+
 
     # helper for 95% HDI
     def hdi(arr):

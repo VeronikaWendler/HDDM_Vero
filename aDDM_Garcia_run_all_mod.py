@@ -1199,6 +1199,18 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         elif version == 9:
             v_reg = {'model': 'v ~ 1 + ES_AttentionW_E + ES_AttentionW_S + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+            
+        # again with more samples (10 thousand each)
+        elif version == 10:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        elif version == 11:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW_E + ES_AttentionW_S + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            
+            
+            
         else:
             raise ValueError(f"Invalid version {version}")
         

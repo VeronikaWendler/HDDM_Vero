@@ -69,7 +69,7 @@ data['ES_InattentionW_S'] = (data['PropDwell_Left'] * data['p2'])
 
 #new changes:
 # flip sign so “more unattended E” now codes as *more* evidence in the positive direction
-data['ES_InattentionW_E'] = - (data['PropDwell_Right'] * data['p1'])
+data['ES_InattentionW_E'] = data['PropDwell_Right'] * data['p1']
 
 # just to experiment a final time:
 data['ES_AttentionW_S'] = (data['PropDwell_Right'] * data['p2'])
