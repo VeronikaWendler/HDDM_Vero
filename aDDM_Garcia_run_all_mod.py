@@ -2430,10 +2430,6 @@ if __name__ == "__main__":
             #data["stimulus"] = pd.to_numeric(data["stimulus"], errors="coerce")
             data["DTA"] = pd.to_numeric(data["DTA"],errors="coerce")
             data["DwellPropAdvantage"] = pd.to_numeric(data["DwellPropAdvantage"],errors="coerce")
-            data["gaze_quad"] = pd.to_numeric(data["gaze_quad"],errors="coerce")
-            data["abs_DwellPropAdv"] = pd.to_numeric(data["abs_DwellPropAdv"],errors="coerce")
-            data["IAW_chart"] = pd.to_numeric(data["IAW_chart"],errors="coerce")
-            data["IAW_image"] = pd.to_numeric(data["IAW_image"],errors="coerce")
             
             data["DwellLeft"]  = pd.to_numeric(data["DwellLeft"],  errors="coerce")
             data["DwellRight"] = pd.to_numeric(data["DwellRight"], errors="coerce")
@@ -2458,8 +2454,6 @@ if __name__ == "__main__":
             
             # keep only trials with strictly positive dwell time on both sides, this can be changed; depends on the goal
             #data = data[(data["DwellLeft"] > -1) & (data["DwellRight"] > -1)]
-            data["z_DwellPropAdvantageCorrect"] = pd.to_numeric(data["z_DwellPropAdvantageCorrect"], errors="coerce")
-            data["z_balance"] = pd.to_numeric(data["z_balance"], errors="coerce")
             data = data[~data["subj_idx"].isin({1,4,5,6,14,99})]
             data = data.dropna(subset=["rt",
                                        "response",
