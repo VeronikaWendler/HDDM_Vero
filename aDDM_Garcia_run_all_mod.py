@@ -2427,31 +2427,17 @@ if __name__ == "__main__":
             data["ES_AttentionW"]  = pd.to_numeric(data["ES_AttentionW"],  errors="coerce")
             data["ES_InattentionW"]= pd.to_numeric(data["ES_InattentionW"],errors="coerce")
             data["subj_idx"]    = data["sub_id"]
-            data["stimulus"] = pd.to_numeric(data["stimulus"], errors="coerce")
+            #data["stimulus"] = pd.to_numeric(data["stimulus"], errors="coerce")
             data["DTA"] = pd.to_numeric(data["DTA"],errors="coerce")
-            data["DTA2"] = pd.to_numeric(data["DTA2"],errors="coerce")
-            data["val_diff"] = pd.to_numeric(data["val_diff"],errors="coerce")
             data["DwellPropAdvantage"] = pd.to_numeric(data["DwellPropAdvantage"],errors="coerce")
             data["gaze_quad"] = pd.to_numeric(data["gaze_quad"],errors="coerce")
             data["abs_DwellPropAdv"] = pd.to_numeric(data["abs_DwellPropAdv"],errors="coerce")
             data["IAW_chart"] = pd.to_numeric(data["IAW_chart"],errors="coerce")
             data["IAW_image"] = pd.to_numeric(data["IAW_image"],errors="coerce")
             
-            
-            data["z_AttentionW"]  = pd.to_numeric(data["z_AttentionW"],  errors="coerce")
-            data["z_InattentionW"]= pd.to_numeric(data["z_InattentionW"],errors="coerce")
-            data["z_val_diff"]  = pd.to_numeric(data["z_val_diff"],  errors="coerce")
-            data["z_DwellPropAdvantage"]= pd.to_numeric(data["z_DwellPropAdvantage"],errors="coerce")
-            data["z_gaze_quad"]  = pd.to_numeric(data["z_gaze_quad"],  errors="coerce")
-            data["z_abs_DwellPropAdv"]= pd.to_numeric(data["z_abs_DwellPropAdv"],errors="coerce")
-            data["z_IAW_chart"]= pd.to_numeric(data["z_IAW_chart"],errors="coerce")
-            data["z_IAW_image"]= pd.to_numeric(data["z_IAW_image"],errors="coerce")
-            
             data["DwellLeft"]  = pd.to_numeric(data["DwellLeft"],  errors="coerce")
             data["DwellRight"] = pd.to_numeric(data["DwellRight"], errors="coerce")
-            data["z_AW_bal"] = pd.to_numeric(data["z_AW_bal"], errors="coerce")
-            data["z_IAW_bal"] = pd.to_numeric(data["z_IAW_bal"], errors="coerce")
-            
+     
             data["AttentionW_E"]  = pd.to_numeric(data["AttentionW_E"],  errors="coerce")
             data["AttentionW_S"] = pd.to_numeric(data["AttentionW_S"], errors="coerce")
             data["InattentionW_E"] = pd.to_numeric(data["InattentionW_E"], errors="coerce")
@@ -2464,10 +2450,6 @@ if __name__ == "__main__":
             data["ES_AttentionW"]  = pd.to_numeric(data["ES_AttentionW"],  errors="coerce")
             data["ES_InattentionW"]  = pd.to_numeric(data["ES_InattentionW"],  errors="coerce")
 
-            data["z_AttentionW_E"]  = pd.to_numeric(data["z_AttentionW_E"],  errors="coerce")
-            data["z_AttentionW_S"] = pd.to_numeric(data["z_AttentionW_S"], errors="coerce")
-            data["z_InattentionW_E"] = pd.to_numeric(data["z_InattentionW_E"], errors="coerce")
-            data["z_InattentionW_S"] = pd.to_numeric(data["z_InattentionW_S"], errors="coerce")
   
             data["V_E"] = pd.to_numeric(data["V_E"], errors="coerce")
             data["V_S"] = pd.to_numeric(data["V_S"], errors="coerce")
@@ -2491,27 +2473,8 @@ if __name__ == "__main__":
                                        "gazeCI",
                                        "ES_AttentionW",
                                        "ES_InattentionW",
-                                       "stimulus",
                                        "chose_left",
                                        "DTA",
-                                       "DTA2",
-                                       "z_val_diff",
-                                       "z_DwellPropAdvantage",
-                                       "z_gaze_quad",
-                                       "z_abs_DwellPropAdv",
-                                       "z_IAW_chart",
-                                       "z_IAW_image",
-                                       "z_AttentionW",
-                                       "z_InattentionW",
-                                       'z_DwellPropAdvantage',
-                                       'z_abs_DwellPropAdv',
-                                       'z_val_diff_corr',
-                                       'z_w_dv',
-                                       'z_absDPAC',
-                                       'z_DwellPropAdvantageCorrect',
-                                       'z_balance',
-                                       "z_AW_bal",
-                                       "z_IAW_bal",
                                        "AttentionW_E",
                                        "AttentionW_S",
                                        "InattentionW_E",
@@ -2520,14 +2483,6 @@ if __name__ == "__main__":
                                        "z_AttentionW_S",
                                        "z_InattentionW_E",
                                        "z_InattentionW_S",
-                                       'AttentionW_early',
-                                       'InattentionW_early',
-                                       'AttentionW_late',
-                                       'InattentionW_late',
-                                       'ES_AttentionW_early',
-                                       'ES_InattentionW_early',
-                                       'ES_AttentionW_late',
-                                       'ES_InattentionW_late',
                                        "V_E", "V_S", "Value_diff",
                                        "ES_AttentionW_E",
                                        "ES_AttentionW_S",
@@ -2537,7 +2492,7 @@ if __name__ == "__main__":
                                        "ES_InattentionW",
                                        ])   
             
-            # ------------------------------------------------------------
+            
             # quick report at the start
             quick_report(data, phase, version, model_name, phase_key)
 
