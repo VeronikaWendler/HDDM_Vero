@@ -145,7 +145,7 @@ model_versions  = {
     "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3", "ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8","ES_VAL_9", "ES_VAL_10", "ES_VAL_11", "ES_VAL_12",  "ES_VAL_13", "ES_VAL_14", "ES_VAL_15","ES_VAL_16", "ES_VAL_17",
                "ES_VAL_18", "ES_VAL_19", "ES_VAL_20", "ES_VAL_21", "ES_VAL_22", "ES_VAL_23", "ES_VAL_24", "ES_VAL_25", "ES_VAL_26", "ES_VAL_27", "ES_VAL_28",
                "ES_VAL_29", "ES_VAL_30", "ES_VAL_31", "ES_VAL_32", "ES_VAL_33", "ES_VAL_34", "ES_VAL_35", "ES_VAL_36", "ES_VAL_37", "ES_VAL_38"],
-    "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11" ],
+    "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13" ],
 }
 
 
@@ -166,7 +166,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "For_paper"
-start_version = 10
+start_version = 12
 started = False
 #
 # dir
@@ -1204,8 +1204,15 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
         elif version == 10:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW_E + ES_AttentionW_S + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-       
+        
+        
+        elif version == 11:
+            v_reg = {'model': 'v ~ 0 + V_E + V_S + PropDwell_Left + PropDwell_Right', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
             
+        elif version == 12:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW_dwell + ES_InattentionW_E_dwell + ES_InattentionW_S_dwell', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
             
             
         else:
@@ -2452,6 +2459,10 @@ if __name__ == "__main__":
             data["Value_diff"] = pd.to_numeric(data["Value_diff"], errors="coerce")
 
             
+            data["ES_AttentionW_S_dwell"] = pd.to_numeric(data["ES_AttentionW_S_dwell"], errors="coerce")
+            data["ES_InattentionW_E_dwell"] = pd.to_numeric(data["ES_InattentionW_E_dwell"], errors="coerce")
+            data["ES_InattentionW_S_dwell"] = pd.to_numeric(data["ES_InattentionW_S_dwell"], errors="coerce")
+            
             # keep only trials with strictly positive dwell time on both sides, this can be changed; depends on the goal
             #data = data[(data["DwellLeft"] > -1) & (data["DwellRight"] > -1)]
             data = data[~data["subj_idx"].isin({1,4,5,6,14,99})]
@@ -2484,7 +2495,11 @@ if __name__ == "__main__":
                                        "ES_InattentionW_S",
                                        "ES_AttentionW",
                                        "ES_InattentionW",
+                                       "ES_AttentionW_S_dwell",
+                                       "ES_InattentionW_E_dwell",
+                                       "ES_InattentionW_S_dwell",
                                        ])   
+            
             
             
             # quick report at the start

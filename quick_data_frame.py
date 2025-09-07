@@ -77,6 +77,11 @@ data['ES_AttentionW_S'] = data['PropDwell_Right'] * data['p2']
 data['ES_AttentionW_E'] = data['PropDwell_Left'] * data['p1'] 
 
 
+
+
+
+
+
 # the CCT drift rate regression 
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2 ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ϵ
 
