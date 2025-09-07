@@ -1579,147 +1579,214 @@ def run_version_36():
     import arviz as az
     import pandas as pd
     import os
-    PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
-    MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_garcia")    
-    nc_paths = [
-        os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_36_2.nc"),
-        os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_36_1.nc"),
-        os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_36_0.nc"),
-    ]
-    idatas = [az.from_netcdf(p) for p in nc_paths]
+    # PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
+    # MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_garcia")    
+#     nc_paths = [
+#         os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_36_2.nc"),
+#         os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_36_1.nc"),
+#         os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_36_0.nc"),
+#     ]
+#     idatas = [az.from_netcdf(p) for p in nc_paths]
 
-    # 2. concatenate along a new “chain” axis
-    idata = az.concat(idatas, dim="chain")
+#     # 2. concatenate along a new “chain” axis
+#     idata = az.concat(idatas, dim="chain")
 
-    # shortcut to pull out a flattened array of draws for any var
-    def draws(varname):
-        da = idata.posterior[varname]
-        return da.stack(sample=["chain","draw"]).values
-
-
-    import numpy as np
-
-    vIA_E = np.abs(draws("v_ES_InattentionW_E"))
-
-    # 3. extract everything you need
-    a_high    = draws("a(high)")
-    a_low    = draws("a(low)")
-    a_med    = draws("a(medium)")
-    t        = draws("t")
-    z        = draws("z")
-    #inter    = draws("v_Intercept")
-    vA   = draws("v_ES_AttentionW")
-    #vIA_E    = draws("v_ES_InattentionW_E")
-    vIA_S    = draws("v_ES_InattentionW_S")
+#     # shortcut to pull out a flattened array of draws for any var
+#     def draws(varname):
+#         da = idata.posterior[varname]
+#         return da.stack(sample=["chain","draw"]).values
 
 
-    # 4. compute the θ’s
-    thetaE  = vIA_E / vA
-    thetaS  = vIA_S / vA
+#     import numpy as np
+
+#     vIA_E = np.abs(draws("v_ES_InattentionW_E"))
+
+#     # 3. extract everything you need
+#     a_high    = draws("a(high)")
+#     a_low    = draws("a(low)")
+#     a_med    = draws("a(medium)")
+#     t        = draws("t")
+#     z        = draws("z")
+#     #inter    = draws("v_Intercept")
+#     vA   = draws("v_ES_AttentionW")
+#     #vIA_E    = draws("v_ES_InattentionW_E")
+#     vIA_S    = draws("v_ES_InattentionW_S")
+
+
+#     # 4. compute the θ’s
+#     thetaE  = vIA_E / vA
+#     thetaS  = vIA_S / vA
     
-    # ----- Posterior contrasts, directional probabilities, ROPEs, and CSV -----
-    import numpy as np
+#     # ----- Posterior contrasts, directional probabilities, ROPEs, and CSV -----
+#     import numpy as np
 
-    # (A) Your current contrasts (note: here vIA_E is ABS if you set it so above)
-    d_theta_unsigned = thetaE - thetaS          # Δθ using your current definitions
-    d_b2_unsigned    = vIA_E - vIA_S            # Δb2 (if vIA_E is abs, this is a magnitude contrast)
+#     # (A) Your current contrasts (note: here vIA_E is ABS if you set it so above)
+#     d_theta_unsigned = thetaE - thetaS          # Δθ using your current definitions
+#     d_b2_unsigned    = vIA_E - vIA_S            # Δb2 (if vIA_E is abs, this is a magnitude contrast)
 
-    # (Optional but recommended) Also compute the SIGNED variants from raw draws
-    vIA_E_signed = draws("v_ES_InattentionW_E")   # no abs
-    thetaE_signed = vIA_E_signed / vA
-    thetaS_signed = vIA_S / vA                    # vIA_S is already signed from your draw
-    d_theta_signed = thetaE_signed - thetaS_signed
-    d_b2_signed    = vIA_E_signed - vIA_S
+#     # (Optional but recommended) Also compute the SIGNED variants from raw draws
+#     vIA_E_signed = draws("v_ES_InattentionW_E")   # no abs
+#     thetaE_signed = vIA_E_signed / vA
+#     thetaS_signed = vIA_S / vA                    # vIA_S is already signed from your draw
+#     d_theta_signed = thetaE_signed - thetaS_signed
+#     d_b2_signed    = vIA_E_signed - vIA_S
 
-    def summarize_diff(arr, name, rope=None):
-        m = arr.mean()
-        lo, hi = az.hdi(arr, 0.95)
-        p_pos = float(np.mean(arr > 0))
-        out = {"Contrast": name, "Mean": m, "HDI_lower": lo, "HDI_upper": hi, "P(>0)": p_pos}
-        if rope is not None:
-            out["ROPE_low"] = rope[0]
-            out["ROPE_high"] = rope[1]
-            out["ROPE_%"] = float(np.mean((arr >= rope[0]) & (arr <= rope[1])))
-        return out
+#     def summarize_diff(arr, name, rope=None):
+#         m = arr.mean()
+#         lo, hi = az.hdi(arr, 0.95)
+#         p_pos = float(np.mean(arr > 0))
+#         out = {"Contrast": name, "Mean": m, "HDI_lower": lo, "HDI_upper": hi, "P(>0)": p_pos}
+#         if rope is not None:
+#             out["ROPE_low"] = rope[0]
+#             out["ROPE_high"] = rope[1]
+#             out["ROPE_%"] = float(np.mean((arr >= rope[0]) & (arr <= rope[1])))
+#         return out
 
-    # Choose ROPEs that make sense on your scale (adjust if needed)
-    rope_theta = (-0.02, 0.02)   # example for θ differences
-    rope_b2    = (-0.002, 0.002) # example for raw weight differences
+#     # Choose ROPEs that make sense on your scale (adjust if needed)
+#     rope_theta = (-0.02, 0.02)   # example for θ differences
+#     rope_b2    = (-0.002, 0.002) # example for raw weight differences
 
-    summary_rows = []
+#     summary_rows = []
 
-    # Unsigned (magnitude-oriented) estimands
-    summary_rows.append(summarize_diff(d_theta_unsigned, "Δθ (unsigned: |vIA_E|/vA − vIA_S/vA)", rope=rope_theta))
-    summary_rows.append(summarize_diff(d_b2_unsigned,   "Δb2 (unsigned: |vIA_E| − vIA_S)",       rope=rope_b2))
+#     # Unsigned (magnitude-oriented) estimands
+#     summary_rows.append(summarize_diff(d_theta_unsigned, "Δθ (unsigned: |vIA_E|/vA − vIA_S/vA)", rope=rope_theta))
+#     summary_rows.append(summarize_diff(d_b2_unsigned,   "Δb2 (unsigned: |vIA_E| − vIA_S)",       rope=rope_b2))
 
-    # Signed estimands (as estimated)
-    summary_rows.append(summarize_diff(d_theta_signed, "Δθ (signed: vIA_E/vA − vIA_S/vA)", rope=rope_theta))
-    summary_rows.append(summarize_diff(d_b2_signed,   "Δb2 (signed: vIA_E − vIA_S)",       rope=rope_b2))
+#     # Signed estimands (as estimated)
+#     summary_rows.append(summarize_diff(d_theta_signed, "Δθ (signed: vIA_E/vA − vIA_S/vA)", rope=rope_theta))
+#     summary_rows.append(summarize_diff(d_b2_signed,   "Δb2 (signed: vIA_E − vIA_S)",       rope=rope_b2))
 
-    df_contrasts = pd.DataFrame(summary_rows)
+#     df_contrasts = pd.DataFrame(summary_rows)
 
-    df_contrasts.to_csv(
-        os.path.join(MODELS_DIR, "posterior_contrast_summary_ES_VAL_36.csv"),
-        index=False
-    )
+#     df_contrasts.to_csv(
+#         os.path.join(MODELS_DIR, "posterior_contrast_summary_ES_VAL_36.csv"),
+#         index=False
+#     )
 
-    print("\nPosterior contrast summary:")
-    print(df_contrasts)
-# -------------------------------------------------------------------------
+#     print("\nPosterior contrast summary:")
+#     print(df_contrasts)
+# # -------------------------------------------------------------------------
 
 
-    # helper for 95% HDI
-    def hdi(arr):
-        lo, hi = az.hdi(arr, hdi_prob=0.95)
-        return lo, hi
+#     # helper for 95% HDI
+#     def hdi(arr):
+#         lo, hi = az.hdi(arr, hdi_prob=0.95)
+#         return lo, hi
 
-    # 5A. build the group‐level MAP / HDI table
-    group = []
-    for name, arr in [
-        ("a(high)", a_high),
-        ("a(low)", a_low),
-        ("a(med)", a_med),
-        ("t", t),
-        ("z", z),
-        ("v_ES_AttentionW",  vA),
-        ("v_ES_InattentionW_E",  vIA_E),
-        ("v_ES_InattentionW_S", vIA_S),
-        ("θE", thetaE),
-        ("θS", thetaS),
-    ]:
-        m = arr.mean()
-        lo, hi = hdi(arr)
-        group.append({"Parameter": name, "MAP": m, "HDI_lower": lo, "HDI_upper": hi})
+#     # 5A. build the group‐level MAP / HDI table
+#     group = []
+#     for name, arr in [
+#         ("a(high)", a_high),
+#         ("a(low)", a_low),
+#         ("a(med)", a_med),
+#         ("t", t),
+#         ("z", z),
+#         ("v_ES_AttentionW",  vA),
+#         ("v_ES_InattentionW_E",  vIA_E),
+#         ("v_ES_InattentionW_S", vIA_S),
+#         ("θE", thetaE),
+#         ("θS", thetaS),
+#     ]:
+#         m = arr.mean()
+#         lo, hi = hdi(arr)
+#         group.append({"Parameter": name, "MAP": m, "HDI_lower": lo, "HDI_upper": hi})
 
-    df_group = pd.DataFrame(group)
-    df_group.to_csv(
-        os.path.join(MODELS_DIR, "group_level_MAP_table_ES_VAL_36.csv"),
-        index=False
-        )
-    print("group‐level estimates:")
-    print(df_group)
+#     df_group = pd.DataFrame(group)
+#     df_group.to_csv(
+#         os.path.join(MODELS_DIR, "group_level_MAP_table_ES_VAL_36.csv"),
+#         index=False
+#         )
+#     print("group‐level estimates:")
+#     print(df_group)
 
-    # 5B. build the paired‐difference table
-    rows = []
-    def diff(x, y): 
-        return x.mean() - y.mean(), *hdi(x - y)
+#     # 5B. build the paired‐difference table
+#     rows = []
+#     def diff(x, y): 
+#         return x.mean() - y.mean(), *hdi(x - y)
 
-    for (label, xa, xb) in [
-        ("θE-θS", thetaE, thetaS),
-        ("E−S b2", vIA_E, vIA_S),
+#     for (label, xa, xb) in [
+#         ("θE-θS", thetaE, thetaS),
+#         ("E−S b2", vIA_E, vIA_S),
 
-        ("Med−Low a", a_med, a_low),
-        ("High−Low a", a_high, a_low),
-        ("High−Med a", a_high, a_med),
-    ]:
-        m, lo, hi = diff(xa, xb)
-        rows.append({"Comparison": label, "MeanDiff": m, "HDI_lower": lo, "HDI_upper": hi})
+#         ("Med−Low a", a_med, a_low),
+#         ("High−Low a", a_high, a_low),
+#         ("High−Med a", a_high, a_med),
+#     ]:
+#         m, lo, hi = diff(xa, xb)
+#         rows.append({"Comparison": label, "MeanDiff": m, "HDI_lower": lo, "HDI_upper": hi})
 
-    df_comp = pd.DataFrame(rows)
-    df_comp.to_csv(
-        os.path.join(MODELS_DIR, "combined_parameter_comparison_table_ES_VAL_36.csv"),
-        index=False
-        )
+#     df_comp = pd.DataFrame(rows)
+#     df_comp.to_csv(
+#         os.path.join(MODELS_DIR, "combined_parameter_comparison_table_ES_VAL_36.csv"),
+#         index=False
+#         )
+    
+    
+    import os
+    import arviz as az
+    import pandas as pd
+
+    PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
+    MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_garcia")
+
+    # ---------- 1) Helper: load & concat chains for a model ----------
+    def load_idata(model_stem, chain_idxs=(0,1,2)):
+        """
+        model_stem: e.g., 'garcia_replication_ES_VAL_36'
+        expects files: f"{model_stem}_{i}.nc" inside MODELS_DIR
+        returns: InferenceData with chains concatenated along 'chain'
+        """
+        paths = [os.path.join(MODELS_DIR, f"{model_stem}_{i}.nc") for i in chain_idxs]
+        idatas = [az.from_netcdf(p) for p in paths]
+        # Concatenate along a new chain axis
+        idata = az.concat(idatas, dim="chain")
+        return idata
+
+    # ---------- 2) Load BOTH models (dual vs shared) ----------
+    # Adjust stems to your filenames
+    dual_stem   = "garcia_replication_ES_VAL_36"
+    shared_stem = "garcia_replication_ES_VAL_26"
+
+    # If you have 4 chains (0..3), set chain_idxs=(0,1,2,3)
+    dual_idata   = load_idata(dual_stem,   chain_idxs=(0,1,2))
+    shared_idata = load_idata(shared_stem, chain_idxs=(0,1,2))
+
+    # ---------- 3) LOO comparison (predictive fit) ----------
+    # Tip: If you get errors about 'log_likelihood', ensure your .nc includes it.
+    cmp_loo = az.compare({"dual": dual_idata, "shared": shared_idata},
+                     method="BB-pseudo-BMA", ic="loo")
+    print("\nLOO compare (BB-pseudo-BMA):")
+    print(cmp_loo)
+
+    cmp_loo_df = cmp_loo.reset_index().rename(columns={"index":"model"})
+    cmp_loo_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO.csv"), index=False)
+
+    # Also pointwise LOO (useful diagnostics; optional)
+    loo_dual   = az.loo(dual_idata, pointwise=True)
+    loo_shared = az.loo(shared_idata, pointwise=True)
+    pd.DataFrame({
+        "dual_elpd":   [loo_dual.elpd_loo],
+        "dual_p_loo":  [loo_dual.p_loo],
+        "shared_elpd": [loo_shared.elpd_loo],
+        "shared_p_loo":[loo_shared.p_loo]
+        }).to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO_summary.csv"), index=False)
+
+    # ---------- 4) Stacking weights (model averaging) ----------
+    cmp_stack = az.compare({"dual": dual_idata, "shared": shared_idata},
+                       method="stacking", ic="loo")
+    print("\nStacking weights (LOO):")
+    print(cmp_stack)
+
+    cmp_stack_df = cmp_stack.reset_index().rename(columns={"index":"model"})
+    cmp_stack_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_stacking.csv"), index=False)
+
+    # ---------- 5) Quick console rule-of-thumb ----------
+    best = cmp_loo_df.iloc[0]         # top row is the best by ELPD
+    other = cmp_loo_df.iloc[1]
+    print(f"\nBest by LOO: {best['model']} (elpd_diff=0 by definition).")
+    print(f"Runner-up: {other['model']}, elpd_diff={other['elpd_diff']:.2f}, "
+          f"SE={other['elpd_diff_se']:.2f} — if |elpd_diff| > SE, that’s meaningful support for the best model.")
+
 
 
 ################################### for LEESEE phase differences ##############################################################################
