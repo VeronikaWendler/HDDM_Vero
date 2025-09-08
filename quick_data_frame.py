@@ -63,12 +63,9 @@ data['FinalFix_Right'] = (data['FinalFixLoc']  == 2).astype(int)
 data['ES_AttentionW'] = (data['PropDwell_Right'] * data['p2']) - (data['PropDwell_Left'] * data['p1'])
 data['ES_InattentionW'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwell_Right'] * data['p1'])
 
-#old convention gives you negative predictor
-#data['ES_InattentionW_E'] = (data['PropDwell_Right'] * data['p1']) 
+
 data['ES_InattentionW_S'] = (data['PropDwell_Left'] * data['p2']) 
 
-#new changes:
-# flip sign so “more unattended E” now codes as *more* evidence in the positive direction
 data['ES_InattentionW_E'] = data['PropDwell_Right'] * data['p1']
 
 # just to experiment a final time:
