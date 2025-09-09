@@ -118,7 +118,7 @@ def make_z_link(full_stimulus_vector):
 ##
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
-nr_samples      = 1200       # samples per chain - do 11000 but for now for a quick one we do 600
+nr_samples      = 6000       # samples per chain - do 11000 but for now for a quick one we do 600
 parallel        = True      # parallel
 model_base_name = "OV_replication_"
 model_versions  = {
@@ -127,7 +127,9 @@ model_versions  = {
     "EE":     ["EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":   ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE": ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
-    "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3","ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8", "ES_VAL_8", "ES_VAL_9", "ES_VAL_10", "ES_VAL_11"]
+    "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3","ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8", "ES_VAL_8", "ES_VAL_9", "ES_VAL_10", "ES_VAL_11"],
+    "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", "For_paper_15", "For_paper_16"],
+
 }
 
 # ------------------------------------------------------------------
@@ -137,6 +139,7 @@ PHASE_TO_SOURCE = {
     "ES_quad": "ES",    
     "LE_RL": "LE",
     "ES_VAL": "ES",
+    "For_paper": "ES",
 }
 
 
@@ -147,7 +150,7 @@ SKIP_PHASES     = {"LE","ES_ZBIAS","ES","EE","ES_quad", "ESEE", "LEESEE", "LE_RL
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "ES_VAL"
+start_phase = "For_paper"
 start_version = 0
 started = False
 
@@ -211,7 +214,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=1200, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=6000, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -478,6 +481,57 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
                    return_infdata=True, loglike=True, ppc=True)
 
         return m, infdata
+    
+    elif phase == "For_paper":
+        depends_on = {}
+        # 0 model:
+        if version == 0:
+            # jsut start sampling
+
+            m = hddm.models.HDDM(data, 
+                                    p_outlier=.05, 
+                                    include=['a', 't', 'v', 'z'],   #'z'
+                                    depends_on=depends_on,
+                                    )
+            m.find_starting_values()
+            infdata = m.sample(samples,
+                               burn=1000,
+                               dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                               db='pickle',
+                               return_infdata=True, loglike=True, ppc=True)
+            return m, infdata
+        
+        # z is inlcuded - DDM + SP    - 6000 samples
+        elif version == 1:
+            v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        # z is included - aDDM + SP
+        elif version == 2:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            
+            
+            
+        
+        
+        m = hddm.models.HDDMRegressor(data, 
+                                    reg_descr,
+                                    p_outlier=.05, 
+                                    include=['a', 't', 'v', 'z'],   #'z'
+                                    depends_on=depends_on,
+                                    group_only_regressors=False,
+                                    keep_regressor_trace=True
+                                    )
+        m.find_starting_values()
+        infdata = m.sample(samples,
+                   burn=1000,
+                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                   db='pickle',
+                   return_infdata=True, loglike=True, ppc=True)
+
+        return m, infdata
+        
+
         
         
 ###############################################################################################################    
@@ -489,7 +543,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=120
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=1200,
+                         samples=6000,
                          n_jobs=3,
                          run=True,
                          parallel=True,
@@ -1584,6 +1638,7 @@ if __name__ == "__main__":
             data["ES_InattentionW_E"]  = pd.to_numeric(data["ES_InattentionW_E"],  errors="coerce")
             data["ES_InattentionW_S"] = pd.to_numeric(data["ES_InattentionW_S"], errors="coerce")
             data["Value_diff"] = pd.to_numeric(data["Value_diff"], errors="coerce")
+            data["DTA"] = pd.to_numeric(data["DTA"], errors="coerce")
 
             
             # keep only trials with strictly positive dwell time on both sides, this can be changed; depends on the goal
@@ -1597,7 +1652,7 @@ if __name__ == "__main__":
                                        "AttentionW",
                                        "InattentionW",
                                        "cond",
-                                       "ES_AttentionW", "ES_InattentionW", "ES_InattentionW_E", "ES_InattentionW_S"])   
+                                       "ES_AttentionW", "ES_InattentionW", "ES_InattentionW_E", "ES_InattentionW_S", "DTA"])   
             
             # ------------------------------------------------------------
             # quick report at the start
