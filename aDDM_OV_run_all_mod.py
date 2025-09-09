@@ -145,8 +145,8 @@ PHASE_TO_SOURCE = {
 
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["ES_VAL"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","ES","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
+PHASE_RUN_ORDER = ["For_paper"]                                         # order
+SKIP_PHASES     = {"LE","ES_ZBIAS","ES","EE","ES_VAL","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
@@ -1609,7 +1609,7 @@ if __name__ == "__main__":
             data                = data[data["rt"] > 0.250]
             # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
             # ------------------------------------------------------------------
-            if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL"):
+            if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL", "For_paper"):
 
                 data["response"] = pd.to_numeric(data["chose_right"], errors="coerce")
                 print("[ZBIAS DEBUG] head of response mapping:")
