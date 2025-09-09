@@ -4835,7 +4835,7 @@ def analyze_rl(infdatas, fig_dir, version):
     else:
         alpha_std_summ = None
 
-    # Make a transformed copy of the ArviZ summary and replace alpha rows
+    # Make a transformed copy of the ArviZ summary and replace alpha rows 
     summary_t = summary.copy()
 
     # Replace group alpha row (if present)
@@ -4843,7 +4843,7 @@ def analyze_rl(infdatas, fig_dir, version):
         for k, v in alpha_summ.items():
             summary_t.loc["alpha", k] = v
 
-    # Replace alpha_std row (if present & we could compute it)
+    # Replace alpha_std row (if present & we could compute it) #
     if ("alpha_std" in summary_t.index) and (alpha_std_summ is not None):
         for k, v in alpha_std_summ.items():
             summary_t.loc["alpha_std", k] = v
