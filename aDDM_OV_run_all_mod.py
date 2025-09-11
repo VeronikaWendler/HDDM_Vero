@@ -151,7 +151,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "For_paper"
-start_version = 0
+start_version = 3
 started = False
 
 # dir
@@ -505,13 +505,46 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         elif version == 1:
             v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+            # this did not run because I still need to create the predictors ....
         # z is included - aDDM + SP
         elif version == 2:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             
+        # the other models. 1:
+        elif version == 3:
+            v_reg = {'model': 'v ~ 0 + Value_diff + DTA', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        # number 2:
+        elif version == 4:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        
+        elif version == 5:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
             
+         
+        
+        
+        
+        
+        # # noch ned gesampled
+        # # z is inlcuded - DDM without z
+        # elif version == 1:
+        #     v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
+        #     reg_descr = [v_reg]
+        # # z is included - aDDM without z
+        # elif version == 2:
+        #     v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+        #     reg_descr = [v_reg]
             
+        # # with z included
+            
+        # elif version == 3:
+        #     v_reg = {'model': 'v ~ 1 + Value_diff + DTA', 'link_func': lambda x: x}
+        #     reg_descr = [v_reg]
         
         
         m = hddm.models.HDDMRegressor(data, 
