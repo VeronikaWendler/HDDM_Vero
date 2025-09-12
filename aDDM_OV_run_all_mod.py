@@ -151,7 +151,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "For_paper"
-start_version = 3
+start_version = 6
 started = False
 
 # dir
@@ -532,25 +532,20 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         
         # # noch ned gesampled
         # # z is inlcuded - DDM without z
-        # elif version == 1:
-        #     v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
-        #     reg_descr = [v_reg]
-        # # z is included - aDDM without z
-        # elif version == 2:
-        #     v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
-        #     reg_descr = [v_reg]
+        elif version == 6:
+            v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        # z is included - aDDM without z
+        elif version == 7:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
             
-        # # with z included
-            
-        # elif version == 3:
-        #     v_reg = {'model': 'v ~ 1 + Value_diff + DTA', 'link_func': lambda x: x}
-        #     reg_descr = [v_reg]
-        
+       
         
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     p_outlier=.05, 
-                                    include=['a', 't', 'v', 'z'],   #'z'
+                                    include=['a', 't', 'v'],   #'z'
                                     depends_on=depends_on,
                                     group_only_regressors=False,
                                     keep_regressor_trace=True
