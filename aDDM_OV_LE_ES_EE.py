@@ -56,10 +56,10 @@ from pathlib import Path
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2,low ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ β3 x (gazeS -gazeE)
 
 # params:
-version = 4     # set which version you want to run
+version = 0     # set which version you want to run
 run = False       # if True, the the models run, if False the models load
 
-phase = ['ES_VAL']  #['ES', 'EE']  #
+phase = ['For_paper']  #['ES', 'EE']  #
 
 # determine whether to use a single phase or the combined ESEE model or LEESEE
 if set(phase) == {'ES', 'EE'}:
@@ -93,7 +93,9 @@ model_versions = {
     'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
     'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5'],
-    'ES_VAL': ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3","ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8", "ES_VAL_8", "ES_VAL_9", "ES_VAL_10", "ES_VAL_11"]
+    'ES_VAL': ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3","ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8", "ES_VAL_8", "ES_VAL_9", "ES_VAL_10", "ES_VAL_11"],
+    "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13" ],
+
 }
 
 if phase not in model_versions:
@@ -110,6 +112,7 @@ PHASE_TO_SOURCE = {
     "ES_quad": "ES",    
     "LE_RL": "LE",
     "ES_VAL": "ES",
+    "For_paper": "ES",
 }
 
 
@@ -1765,6 +1768,107 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_InattentionW_S:C(OVcate)[high]',
                 'v_ES_InattentionW_S:C(OVcate)[low]',
                 'v_ES_InattentionW_S:C(OVcate)[medium]']
+    
+    elif phase == "For_paper":
+        if version == 0:  
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v']
+        elif version == 1:
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_Value_diff'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Value_diff']
+            
+        elif version == 2:
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW']
+        elif version == 3:
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_Value_diff',
+                'v_DTA'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_Value_diff',
+                'v_DTA']
+        elif version == 4:
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S'
+                ]
+
+        elif version == 5:
+            params_of_interest = [    
+                'a(high)',
+                'a(low)',
+                'a(medium)',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a(high)',
+                'a(low)',
+                'a(medium)',          
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S'
+                ]
+        
         
     # diagnistics
     diag_dir = Path(fig_dir) / "diagnostics"
@@ -1869,7 +1973,7 @@ ensure_dir(model_dir)
 
 # this calls our ddm functions depending on whether we run or load models
 if run:
-    if phase == 'EE' or phase == 'ES' or phase == 'ES_VAL':
+    if phase == 'EE' or phase == 'ES' or phase == 'ES_VAL' or phase == 'For_paper':
         print(f'Running DDM... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,
@@ -1927,7 +2031,7 @@ if run:
             phase=phase,  
         )
 else:
-    if phase == 'EE' or phase == 'ES' or phase == 'ES_VAL':
+    if phase == 'EE' or phase == 'ES' or phase == 'ES_VAL' or phase == 'For_paper':
         print(f'loading DDM... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,
