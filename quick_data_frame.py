@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np 
 
 
-data = pd.read_csv("C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_OV/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv")
+data = pd.read_csv("C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv")
 
 data['chose_right'] = data['chose_right'].astype(int)
 data['chose_left']  = 1 - data['chose_right']          # 1 = left, 0 = right
@@ -238,11 +238,25 @@ data['Value_S_sub'] = np.where(E_is_opt & ~is_tie, data['p2'], 0.0)
 
 # For ties all masked values set to 0 
 data.loc[is_tie, ['Value_E_opt','Value_E_sub','Value_S_opt','Value_S_sub']] = np.nan
-# regressors
-data['AttentionW_E']   = data['Value_E_opt'] * data['DwellProp_E'] - data['Value_S_sub'] * data['DwellProp_S']
-data['AttentionW_S']   = data['Value_S_opt'] * data['DwellProp_S'] - data['Value_E_sub'] * data['DwellProp_E']
-data['InattentionW_E'] = data['Value_E_opt'] * data['DwellProp_S'] - data['Value_S_sub'] * data['DwellProp_E']
-data['InattentionW_S'] = data['Value_S_opt'] * data['DwellProp_E'] - data['Value_E_sub'] * data['DwellProp_S']
+
+
+
+###################################
+data['ES_AttentionW'] = (data['PropDwell_Right'] * data['p2']) - (data['PropDwell_Left'] * data['p1'])
+data['ES_InattentionW'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwell_Right'] * data['p1'])
+
+V_C = data['p2']          # chart EV
+V_I = data['p1']          # image EV
+# dummies which format has lower EV
+data['chart_is_sub']  = (V_C < V_I).astype(int)
+data['image_is_sub']  = (V_I < V_C).astype(int)
+
+#splitting InattentionW
+data['ES_IAW_chart'] = data['ES_InattentionW'] * data['chart_is_sub']
+data['ES_IAW_image'] = data['ES_InattentionW'] * data['image_is_sub']
+data['ES_IAW_chart'] = data['ES_IAW_chart'].round(3)
+data['ES_IAW_image'] = data['ES_IAW_image'].round(3)
+
 
 
 
@@ -307,7 +321,7 @@ data["Value_diff"] = data["V_E"] - data["V_S"]
 
 
 
-data.to_csv("C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_OV/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",index=False,)
+data.to_csv("C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",index=False,)
 
 
 
