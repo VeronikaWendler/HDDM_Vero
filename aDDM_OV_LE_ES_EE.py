@@ -56,7 +56,7 @@ from pathlib import Path
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2,low ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ β3 x (gazeS -gazeE)
 
 # params:
-version = 5     # set which version you want to run
+version = 6     # set which version you want to run
 run = False       # if True, the the models run, if False the models load
 
 phase = ['For_paper']  #['ES', 'EE']  #
@@ -1868,8 +1868,33 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_InattentionW_E',
                 'v_ES_InattentionW_S'
                 ]
-        
-        
+        elif version == 6:
+            params_of_interest = [    
+                'a',
+                't',
+                'v_Value_diff'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'v_Value_diff' 
+                ]
+        # z is included - aDDM without z
+        elif version == 7:
+            params_of_interest = [    
+                'a',
+                't',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW'
+                ]   
     # diagnistics
     diag_dir = Path(fig_dir) / "diagnostics"
     ensure_dir(diag_dir)
