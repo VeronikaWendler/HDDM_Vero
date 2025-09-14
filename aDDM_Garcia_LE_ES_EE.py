@@ -79,7 +79,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 17    # defining version #
+version = 16    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['For_paper']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -4712,7 +4712,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'z',
                 'v_ES_AttentionW',
                 'v_ES_IAW_chart',
-                'v_ES_IAW_chart']
+                'v_ES_IAW_image']
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
                 'a(high)',
@@ -4722,7 +4722,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'z',
                 'v_ES_AttentionW',
                 'v_ES_IAW_chart',
-                'v_ES_IAW_chart']
+                'v_ES_IAW_image']
         else:
             raise ValueError(f"Invalid version {version}")
         
