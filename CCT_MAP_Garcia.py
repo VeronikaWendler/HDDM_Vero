@@ -1582,7 +1582,7 @@ def run_version_36():
     import numpy as np
 
     PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
-    MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_garcia")
+    MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_OV")
 
     # ---------- Helpers ----------
     def load_idata(model_stem: str, chain_idxs=(0,1,2)):
