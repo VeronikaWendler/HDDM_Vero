@@ -151,7 +151,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "For_paper"
-start_version = 6
+start_version = 8
 started = False
 
 # dir
@@ -539,13 +539,16 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         elif version == 7:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            
-       
+        # with z
+        elif version == 8:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'a': 'OVcate'}
         
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     p_outlier=.05, 
-                                    include=['a', 't', 'v'],   #'z'
+                                    include=['a', 't', 'v', 'z'],   #'z'
                                     depends_on=depends_on,
                                     group_only_regressors=False,
                                     keep_regressor_trace=True
