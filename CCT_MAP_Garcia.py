@@ -1705,6 +1705,9 @@ def run_version_36():
     compare_group("group1_first4_OV", group1_stems, chain_idxs=(0,1,2))
     compare_group("group2_rest_OV",   group2_stems, chain_idxs=(0,1,2))
     
+    idata_8 = load_idata("OV_replication_For_paper_8", chain_idxs=(0,1,2))
+    az.loo(idata_8)
+
     
     
     
