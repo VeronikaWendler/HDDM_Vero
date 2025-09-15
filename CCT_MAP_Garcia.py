@@ -1582,7 +1582,7 @@ def run_version_36():
     import numpy as np
 
     PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
-    MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_OV")
+    MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_garcia")
 
     # ---------- Helpers ----------
     def load_idata(model_stem: str, chain_idxs=(0,1,2)):
@@ -1690,13 +1690,22 @@ def run_version_36():
     #     "garcia_replication_ES_VAL_7",   # aDDM + SP (z included)
     # ]
     
-    #for EXP2 (6000 samples)
+    #for EXP1 (6000 samples)
     group1_stems = [
-         "OV_replication_For_paper_7",  # pure DDM (z not included)
-         "OV_replication_For_paper_2",  # DDM + SP (z free)
-         "OV_replication_For_paper_8",  # pure aDDM (z not included)
-         "OV_replication_For_paper_3",   # aDDM + SP (z included)
+         "garcia_replication_For_paper_15",  # pure DDM (z not included)
+         "garcia_replication_For_paper_14",  # DDM + SP (z free)
+         "garcia_replication_For_paper_16",  # pure aDDM (z not included)
+         "garcia_replication_For_paper_2",   # aDDM + SP (z included)
      ]
+    
+    # #for EXP2 (6000 samples)
+    # group1_stems = [
+    #      "OV_replication_For_paper_7",  # pure DDM (z not included)
+    #      "OV_replication_For_paper_2",  # DDM + SP (z free)
+    #      "OV_replication_For_paper_8",  # pure aDDM (z not included)
+    #      "OV_replication_For_paper_3",   # aDDM + SP (z included)
+    #  ]
+    
     
     # # Group 2 (rest)
     # group2_stems = [
@@ -1707,19 +1716,28 @@ def run_version_36():
     #     "garcia_replication_ES_VAL_36",  # dual inattn, a ~ OV
     # ]
    # for EXP2 (6000 Samples) Group 2 (rest)
+#     group2_stems = [
+#         "OV_replication_For_paper_4",  # Value_diff + DTA (z free)
+#         "OV_replication_For_paper_3",  # aDDM + SP (z free)
+#         "OV_replication_For_paper_6",  # a ~ OV (z free), dual inattn
+#         "OV_replication_For_paper_5"  # dual inattn (no a~OV?)
+# #        "OV_replication_ES_VAL_36",    #  aDDM, a ~ OV
+#     ]
+    
+       # for EXP2 (6000 Samples) Group 2 (rest)
     group2_stems = [
-        "OV_replication_For_paper_4",  # Value_diff + DTA (z free)
-        "OV_replication_For_paper_3",  # aDDM + SP (z free)
-        "OV_replication_For_paper_6",  # a ~ OV (z free), dual inattn
-        "OV_replication_For_paper_5"  # dual inattn (no a~OV?)
-#        "OV_replication_ES_VAL_36",    #  aDDM, a ~ OV
+        "garcia_replication_ES_VAL_10",  # Value_diff + DTA (z free)
+        "garcia_replication_For_paper_3",  # aDDM + SP (z free)
+        "garcia_replication_For_paper_7",  # a ~ OV (z free), dual inattn
+        "garcia_replication_For_paper_6"  # dual inattn (no a~OV?)
+        "garcia_replication_For_paper_3",    #  aDDM, a ~ OV
     ]
     # ---------- Run ----------
-    compare_group("group1_first4_OV", group1_stems, chain_idxs=(0,1,2))
-    compare_group("group2_rest_OV",   group2_stems, chain_idxs=(0,1,2))
+    compare_group("group1_first4_garcia2", group1_stems, chain_idxs=(0,1,2))
+    compare_group("group2_rest_garcia2",   group2_stems, chain_idxs=(0,1,2))
     
-    idata_8 = load_idata("OV_replication_For_paper_8", chain_idxs=(0,1,2))
-    az.loo(idata_8)
+    # idata_8 = load_idata("OV_replication_For_paper_8", chain_idxs=(0,1,2))
+    # az.loo(idata_8)
 
     
     
