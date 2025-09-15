@@ -1586,9 +1586,22 @@ def run_version_36():
 
     # ---------- Helpers ----------
     def load_idata(model_stem: str, chain_idxs=(0,1,2)):
-        paths = [os.path.join(MODELS_DIR, f"{model_stem}_{i}.nc") for i in chain_idxs]
-        idatas = [az.from_netcdf(p) for p in paths]
+        idatas = []
+        for i in chain_idxs:
+            path = os.path.join(MODELS_DIR, f"{model_stem}_{i}.nc")
+            if os.path.exists(path):
+                try:
+                    idata = az.from_netcdf(path)
+                    idatas.append(idata)
+                except Exception as e:
+                    print(f"[WARN] Chain {i} for model '{model_stem}' failed to load: {e}")
+            else:
+                print(f"[WARN] Missing chain file: {path}")
+                
+        if len(idatas) == 0:
+            raise ValueError(f"No chains found for model '{model_stem}'")
         return az.concat(idatas, dim="chain")
+
 
     def short_label(stem: str) -> str:
         toks = stem.split("_")
