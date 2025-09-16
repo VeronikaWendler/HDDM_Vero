@@ -17,14 +17,14 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 # ---------------- configuration -----------------------------------------
 PROJECT_DIR    = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
-BASE_MODEL_DIR = PROJECT_DIR / "models_dir_OV"
-FIG_DIR        = PROJECT_DIR / "figures_dir_OV/OV_replication_For_paper_6/recovery_For_paper_m6"
+BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
+FIG_DIR        = PROJECT_DIR / "figures_dir_garcia/garcia_replication_For_paper_7/recovery_For_paper_m7"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 EMPIRICAL_POST_PATHS = [
-    BASE_MODEL_DIR / "OV_replication_For_paper_6_0.nc",
-    BASE_MODEL_DIR / "OV_replication_For_paper_6_1.nc",
-    BASE_MODEL_DIR / "OV_replication_For_paper_6_2.nc",
+    BASE_MODEL_DIR / "garcia_replication_For_paper_7_0.nc",
+    BASE_MODEL_DIR / "garcia_replication_For_paper_7_1.nc",
+    BASE_MODEL_DIR / "garcia_replication_For_paper_7_2.nc",
 ]
 
 N_REPS    = 10        # as in the paper
