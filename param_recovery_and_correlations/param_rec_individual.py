@@ -27,7 +27,7 @@ EMPIRICAL_POST_PATHS = [
     BASE_MODEL_DIR / "OV_replication_For_paper_6_2.nc",
 ]
 
-N_REPS    = 2        # as in the paper
+N_REPS    = 10        # as in the paper
 N_SAMPLES = 1000
 BURN      = 100
 
@@ -231,9 +231,9 @@ indiv_records = []
 true_draw_records = []  ### NEW: keep a running log of per-subject "true" draws
 
 # paths for partial saves
-GROUP_PARTIAL_CSV = FIG_DIR / "partial_group3.csv"
-INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual3.csv"
-TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws3.csv"  ### NEW
+GROUP_PARTIAL_CSV = FIG_DIR / "partial_group5.csv"
+INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual5.csv"
+TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws5.csv"  ### NEW
 
 expected_per_rep = len(PARAM_LIST)
 
@@ -305,9 +305,9 @@ for rep in trange(start_rep, N_REPS, desc="parameter-recovery", unit="rep"):
 
 
 # final CSVs
-pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group3.csv", index=False)
-pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual3.csv", index=False)
-pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all3.csv", index=False)  ### NEW
+pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group5.csv", index=False)
+pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual5.csv", index=False)
+pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all5.csv", index=False)  ### NEW
 
 # ---------- plotting ----------
 sns.set_style("white")
@@ -336,7 +336,7 @@ for ax in h.axes.ravel():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
 h.set_axis_labels("true value", "posterior mean (recovered)")
 h.tight_layout()
-h.savefig(FIG_DIR/"scatter_individual4.png", dpi=300)
+h.savefig(FIG_DIR/"scatter_individual5.png", dpi=300)
 
 print("Done.")
 
