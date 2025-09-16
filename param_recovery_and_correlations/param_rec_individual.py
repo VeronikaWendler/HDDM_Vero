@@ -27,7 +27,7 @@ EMPIRICAL_POST_PATHS = [
     BASE_MODEL_DIR / "OV_replication_For_paper_6_2.nc",
 ]
 
-N_REPS    = 10        # as in the paper
+N_REPS    = 2        # as in the paper
 N_SAMPLES = 1000
 BURN      = 100
 
@@ -187,37 +187,34 @@ import re
 def extract_individual_means(mdl):
     out = {}
     for node in mdl.nodes_db.index:
-        if "_subj." not in node:
+        if "_subj." not in node and "_subj(" not in node:
             continue
 
-        # Patterns to try, in order
-        # 1) base(level)_subj.N  -> param f"{base}({level})", subj N
-        m = re.match(r"^([A-Za-z_]+)\(([^)]+)\)_subj\.(\d+)$", node)
-        if m:
-            base, level, subj = m.groups()
-            param = f"{base}({level})"
+        # Try all match formats
+        for regex in [
+            r"^([A-Za-z_]+)\(([^)]+)\)_subj\.(\d+)$",       # a(high)_subj.1
+            r"^([A-Za-z_]+)_subj\(([^)]+)\)\.(\d+)$",       # a_subj(high).1
+            r"^([A-Za-z_]+)_subj\.(\d+)$"                   # z_subj.1, t_subj.1
+        ]:
+            m = re.match(regex, node)
+            if not m:
+                continue
+
+            if len(m.groups()) == 3:
+                base, level, subj = m.groups()
+                param = f"{base}({level})"
+            elif len(m.groups()) == 2:
+                base, subj = m.groups()
+                param = base
+            else:
+                continue
+
             if param in PARAM_LIST:
                 out[(int(subj), param)] = mdl.nodes_db.loc[node, 'node'].trace().mean()
-            continue
-
-        # 2) base_subj(level).N  -> param f"{base}({level})", subj N
-        m = re.match(r"^([A-Za-z_]+)_subj\(([^)]+)\)\.(\d+)$", node)
-        if m:
-            base, level, subj = m.groups()
-            param = f"{base}({level})"
-            if param in PARAM_LIST:
-                out[(int(subj), param)] = mdl.nodes_db.loc[node, 'node'].trace().mean()
-            continue
-
-        # 3) base_subj.N  -> param base, subj N (for t, z, v_* subject effects)
-        m = re.match(r"^([A-Za-z_]+)_subj\.(\d+)$", node)
-        if m:
-            base, subj = m.groups()
-            if base in PARAM_LIST:
-                out[(int(subj), base)] = mdl.nodes_db.loc[node, 'node'].trace().mean()
-            continue
+                break  # stop trying other regexes once matched
 
     return out
+
 
 
 # -----------------------------------------------------------------------
@@ -234,9 +231,9 @@ indiv_records = []
 true_draw_records = []  ### NEW: keep a running log of per-subject "true" draws
 
 # paths for partial saves
-GROUP_PARTIAL_CSV = FIG_DIR / "partial_group2.csv"
-INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual2.csv"
-TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws2.csv"  ### NEW
+GROUP_PARTIAL_CSV = FIG_DIR / "partial_group3.csv"
+INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual3.csv"
+TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws3.csv"  ### NEW
 
 expected_per_rep = len(PARAM_LIST)
 
@@ -308,9 +305,9 @@ for rep in trange(start_rep, N_REPS, desc="parameter-recovery", unit="rep"):
 
 
 # final CSVs
-pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group2.csv", index=False)
-pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual2.csv", index=False)
-pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all2.csv", index=False)  ### NEW
+pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group3.csv", index=False)
+pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual3.csv", index=False)
+pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all3.csv", index=False)  ### NEW
 
 # ---------- plotting ----------
 sns.set_style("white")
@@ -326,7 +323,7 @@ for ax in g.axes.ravel():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
 g.set_axis_labels("true value", "posterior mean (recovered)")
 g.tight_layout()
-g.savefig(FIG_DIR/"scatter_group3.png", dpi=300)
+g.savefig(FIG_DIR/"scatter_group4.png", dpi=300)
 
 # individual plot (means only, all reps & subs)
 ind = pd.DataFrame(indiv_records)
@@ -339,7 +336,7 @@ for ax in h.axes.ravel():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
 h.set_axis_labels("true value", "posterior mean (recovered)")
 h.tight_layout()
-h.savefig(FIG_DIR/"scatter_individual3.png", dpi=300)
+h.savefig(FIG_DIR/"scatter_individual4.png", dpi=300)
 
 print("Done.")
 
