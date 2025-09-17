@@ -10,7 +10,7 @@ from scipy import stats as st
 
 # ---------- paths ----------
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
-FIG_DIR     = PROJECT_DIR / "figures_dir_garcia/garcia_replication_ES_VAL_36/recovery_ES_VAL_m36"
+FIG_DIR     = PROJECT_DIR / "figures_dir_OV/OV_replication_For_paper_6/recovery_For_paper_m6"
 IN_CSV      = FIG_DIR / "true_vs_recovered_individual2.csv"
 OUT_PNG     = FIG_DIR / "scatter_individual_ALL_params_3.png"
 OUT_STATS   = FIG_DIR / "scatter_individual_ALL_params_3.csv"
