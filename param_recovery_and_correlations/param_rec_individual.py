@@ -27,8 +27,8 @@ EMPIRICAL_POST_PATHS = [
     BASE_MODEL_DIR / "garcia_replication_For_paper_7_2.nc",
 ]
 
-N_REPS    = 2        # as in the paper
-N_SAMPLES = 500
+N_REPS    = 10        # as in the paper
+N_SAMPLES = 1000
 BURN      = 100
 
 # group-level parameters (means)
@@ -98,28 +98,48 @@ def extract_group_sd(idata, *, seed=None):
             out[p] = float(idata.posterior[sd_name].isel(chain=chain, draw=draw))
         else:
             out[p] = 0.0
+
+    if "a_std" in idata.posterior:
+        out["a_std"] = float(idata.posterior["a_std"].isel(chain=chain, draw=draw))
+    else:
+        out["a_std"] = 0.0
+
     return out
 
+
 def sample_true_subjects(mu_dict, sd_dict, subjects, *, seed=None):
+    """Draw θ_i for each subject: Normal(mu, sd).
+    For a(high/low/medium), use the global a_std (if present) to ensure
+    subject-level variability even when condition-specific SDs are absent.
+    """
     rng = np.random.default_rng(seed)
     true_individuals = {}
-    
-    # Debug: print mu and sd for threshold parameters
-    print(f"Mu values: { {p: mu_dict[p] for p in ['a(high)', 'a(low)', 'a(medium)']} }")
-    print(f"SD values: { {p: sd_dict[p] for p in ['a(high)', 'a(low)', 'a(medium)']} }")
-    
-    for s in subjects:
-        true_individuals[s] = {}
-        for p in PARAM_LIST:
-            mu, sd = mu_dict[p], sd_dict[p]
-            true_individuals[s][p] = float(rng.normal(mu, sd)) if sd > 0 else float(mu)
-    
-    # Debug: print a few subject values to verify they're different
-    print(f"Subject 1: { {p: true_individuals[1][p] for p in ['a(high)', 'a(low)', 'a(medium)']} }")
-    print(f"Subject 3: { {p: true_individuals[3][p] for p in ['a(high)', 'a(low)', 'a(medium)']} }")
-    
-    return true_individuals
 
+    # SD to use for all a(level) draws
+    a_sd = sd_dict.get("a_std", 0.0)
+
+    for s in subjects:
+        pars = {}
+
+        for a_key in ['a(high)', 'a(low)', 'a(medium)']:
+            mu = mu_dict[a_key]
+            sd_use = a_sd if a_sd > 0 else sd_dict.get(a_key, 0.0)
+            if sd_use == 0:
+                sd_use = 0.1  
+            pars[a_key] = float(rng.normal(mu, sd_use))
+
+        for p in PARAM_LIST:
+            if p in {'a(high)', 'a(low)', 'a(medium)'}:
+                continue
+            mu, sd = mu_dict[p], sd_dict.get(p, 0.0)
+            pars[p] = float(rng.normal(mu, sd)) if sd > 0 else float(mu)
+
+        true_individuals[s] = pars
+
+    print("a_std used:", a_sd)
+    print("Subject 1 a's:", {k: true_individuals[subjects[0]][k] for k in ['a(high)','a(low)','a(medium)']})
+
+    return true_individuals
 
 
 ### NEW: helper to flatten per-subject 'true' draws (for saving)
@@ -134,7 +154,7 @@ def simulate_dataset(true_individuals, raw_df):
     """
     Simulate trials using subject-specific parameters.
     'a' varies by OV category (low/medium/high) via depends_on,
-    'v' is computed per trial from regressors, 't' and optional 'z' are subject constants.
+    'v' is computed per trial from regressors, 't' and  'z' are subject constants
     """
     sim_rows = []
 
@@ -242,9 +262,9 @@ indiv_records = []
 true_draw_records = []  ### NEW: keep a running log of per-subject "true" draws
 
 # paths for partial saves
-GROUP_PARTIAL_CSV = FIG_DIR / "partial_group6.csv"
-INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual6.csv"
-TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws6.csv"  ### NEW
+GROUP_PARTIAL_CSV = FIG_DIR / "partial_group7.csv"
+INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual7.csv"
+TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws7.csv"  ### NEW
 
 expected_per_rep = len(PARAM_LIST)
 
@@ -316,9 +336,9 @@ for rep in trange(start_rep, N_REPS, desc="parameter-recovery", unit="rep"):
 
 
 # final CSVs
-pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group6.csv", index=False)
-pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual6.csv", index=False)
-pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all6.csv", index=False)  ### NEW
+pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group7.csv", index=False)
+pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual7.csv", index=False)
+pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all7.csv", index=False)  ### NEW
 
 # ---------- plotting ----------
 sns.set_style("white")
@@ -334,7 +354,7 @@ for ax in g.axes.ravel():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
 g.set_axis_labels("true value", "posterior mean (recovered)")
 g.tight_layout()
-g.savefig(FIG_DIR/"scatter_group4.png", dpi=300)
+g.savefig(FIG_DIR/"scatter_group7.png", dpi=300)
 
 # individual plot (means only, all reps & subs)
 ind = pd.DataFrame(indiv_records)
@@ -347,7 +367,7 @@ for ax in h.axes.ravel():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
 h.set_axis_labels("true value", "posterior mean (recovered)")
 h.tight_layout()
-h.savefig(FIG_DIR/"scatter_individual6.png", dpi=300)
+h.savefig(FIG_DIR/"scatter_individual7.png", dpi=300)
 
 print("Done.")
 
