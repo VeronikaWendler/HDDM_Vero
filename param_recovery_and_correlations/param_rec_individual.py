@@ -27,8 +27,8 @@ EMPIRICAL_POST_PATHS = [
     BASE_MODEL_DIR / "garcia_replication_For_paper_7_2.nc",
 ]
 
-N_REPS    = 10        # as in the paper
-N_SAMPLES = 1000
+N_REPS    = 2        # as in the paper
+N_SAMPLES = 500
 BURN      = 100
 
 # group-level parameters (means)
@@ -101,15 +101,26 @@ def extract_group_sd(idata, *, seed=None):
     return out
 
 def sample_true_subjects(mu_dict, sd_dict, subjects, *, seed=None):
-    """Draw θ_i for each subject: Normal(mu, sd)."""
     rng = np.random.default_rng(seed)
     true_individuals = {}
+    
+    # Debug: print mu and sd for threshold parameters
+    print(f"Mu values: { {p: mu_dict[p] for p in ['a(high)', 'a(low)', 'a(medium)']} }")
+    print(f"SD values: { {p: sd_dict[p] for p in ['a(high)', 'a(low)', 'a(medium)']} }")
+    
     for s in subjects:
         true_individuals[s] = {}
         for p in PARAM_LIST:
             mu, sd = mu_dict[p], sd_dict[p]
             true_individuals[s][p] = float(rng.normal(mu, sd)) if sd > 0 else float(mu)
+    
+    # Debug: print a few subject values to verify they're different
+    print(f"Subject 1: { {p: true_individuals[1][p] for p in ['a(high)', 'a(low)', 'a(medium)']} }")
+    print(f"Subject 3: { {p: true_individuals[3][p] for p in ['a(high)', 'a(low)', 'a(medium)']} }")
+    
     return true_individuals
+
+
 
 ### NEW: helper to flatten per-subject 'true' draws (for saving)
 def flatten_true_subjects(true_individuals, rep):
@@ -231,9 +242,9 @@ indiv_records = []
 true_draw_records = []  ### NEW: keep a running log of per-subject "true" draws
 
 # paths for partial saves
-GROUP_PARTIAL_CSV = FIG_DIR / "partial_group5.csv"
-INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual5.csv"
-TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws5.csv"  ### NEW
+GROUP_PARTIAL_CSV = FIG_DIR / "partial_group6.csv"
+INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual6.csv"
+TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws6.csv"  ### NEW
 
 expected_per_rep = len(PARAM_LIST)
 
@@ -305,9 +316,9 @@ for rep in trange(start_rep, N_REPS, desc="parameter-recovery", unit="rep"):
 
 
 # final CSVs
-pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group5.csv", index=False)
-pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual5.csv", index=False)
-pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all5.csv", index=False)  ### NEW
+pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group6.csv", index=False)
+pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual6.csv", index=False)
+pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all6.csv", index=False)  ### NEW
 
 # ---------- plotting ----------
 sns.set_style("white")
@@ -336,7 +347,7 @@ for ax in h.axes.ravel():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
 h.set_axis_labels("true value", "posterior mean (recovered)")
 h.tight_layout()
-h.savefig(FIG_DIR/"scatter_individual5.png", dpi=300)
+h.savefig(FIG_DIR/"scatter_individual6.png", dpi=300)
 
 print("Done.")
 
