@@ -25,4 +25,4 @@ export MPLBACKEND=Agg
 singularity exec \
     --bind ${PROJECT}:/workspace \
     ${IMAGE} \
-    python /workspace/param_recovery_and_correlations/param_rec_individuals_plotting.py
+    python /workspace/param_recovery_and_correlations/param_rec_individual.py

@@ -17,14 +17,14 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 # ---------------- configuration -----------------------------------------
 PROJECT_DIR    = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
-BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
-FIG_DIR        = PROJECT_DIR / "figures_dir_garcia/garcia_replication_For_paper_7/recovery_For_paper_m7"
+BASE_MODEL_DIR = PROJECT_DIR / "models_dir_OV"
+FIG_DIR        = PROJECT_DIR / "figures_dir_OV/OV_replication_For_paper_6/recovery_For_paper_m6"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 EMPIRICAL_POST_PATHS = [
-    BASE_MODEL_DIR / "garcia_replication_For_paper_7_0.nc",
-    BASE_MODEL_DIR / "garcia_replication_For_paper_7_1.nc",
-    BASE_MODEL_DIR / "garcia_replication_For_paper_7_2.nc",
+    BASE_MODEL_DIR / "OV_replication_For_paper_6_0.nc",
+    BASE_MODEL_DIR / "OV_replication_For_paper_6_1.nc",
+    BASE_MODEL_DIR / "OV_replication_For_paper_6_2.nc",
 ]
 
 N_REPS    = 10        # as in the paper
@@ -262,9 +262,9 @@ indiv_records = []
 true_draw_records = []  ### NEW: keep a running log of per-subject "true" draws
 
 # paths for partial saves
-GROUP_PARTIAL_CSV = FIG_DIR / "partial_group7.csv"
-INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual7.csv"
-TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws7.csv"  ### NEW
+GROUP_PARTIAL_CSV = FIG_DIR / "partial_group6.csv"
+INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual6.csv"
+TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws6.csv"  ### NEW
 
 expected_per_rep = len(PARAM_LIST)
 
@@ -336,9 +336,9 @@ for rep in trange(start_rep, N_REPS, desc="parameter-recovery", unit="rep"):
 
 
 # final CSVs
-pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group7.csv", index=False)
-pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual7.csv", index=False)
-pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all7.csv", index=False)  ### NEW
+pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group6.csv", index=False)
+pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual6.csv", index=False)
+pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all6.csv", index=False)  ### NEW
 
 # ---------- plotting ----------
 sns.set_style("white")
@@ -367,7 +367,7 @@ for ax in h.axes.ravel():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
 h.set_axis_labels("true value", "posterior mean (recovered)")
 h.tight_layout()
-h.savefig(FIG_DIR/"scatter_individual7.png", dpi=300)
+h.savefig(FIG_DIR/"scatter_individual6.png", dpi=300)
 
 print("Done.")
 
