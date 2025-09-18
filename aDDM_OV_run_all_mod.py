@@ -524,10 +524,8 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on = {'a': 'OVcate'} 
-            
-         
         
-        
+       
         
         
         # # noch ned gesampled
