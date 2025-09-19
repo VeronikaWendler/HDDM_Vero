@@ -1913,7 +1913,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_AttentionW',
                 'v_ES_InattentionW'
                 ]   
-    # diagnistics
+    ## diagnistics 
     diag_dir = Path(fig_dir) / "diagnostics"
     ensure_dir(diag_dir)
     
