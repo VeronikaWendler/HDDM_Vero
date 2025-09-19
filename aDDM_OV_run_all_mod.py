@@ -29,7 +29,6 @@ cloudpickle.dump = dill.dump
 
 
 # -------------------------------------------------------------------------
-# patch: make a dummy _gdbm module so “import _gdbm” never fails
 import types, sys
 sys.modules.setdefault('winreg', types.ModuleType('winreg'))
 
@@ -506,6 +505,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             # this did not run because I still need to create the predictors ....
+        
         # z is included - aDDM + SP
         elif version == 2:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
