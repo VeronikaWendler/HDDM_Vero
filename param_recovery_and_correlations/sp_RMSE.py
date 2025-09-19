@@ -11,20 +11,17 @@ import matplotlib.pyplot as plt
 from scipy import stats
 
 
-# ------------------- CONFIG (sane defaults) -------------------
-PROJECT_DIR = Path(os.getenv("PROJECT_DIR", r"C:\Cluster_Github\HDDM_Vero")).resolve()
+PROJECT_DIR = Path(os.getenv("PROJECT_DIR", r"C:/Cluster_Github/HDDM_Vero")).resolve()
 OUT_DIR     = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "correlation" / "sp_phase_rmse"
 DEFAULT_EXCLUDE = [1, 4, 5, 6, 14, 99]
 
-# Defaults for results.csv
 M35_DEFAULT = PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garcia_replication_For_paper_7" / "diagnostics" / "results.csv"
 
-# Robust fallbacks for SP CSV (in priority order)
 SP_CSV_FALLBACKS = [
-    Path(r"D:\Aberdeen_Uni_June24\cap\THESIS\Garcia_Analysis\data\data_sets\GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
+    Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/data/data_sets/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
     PROJECT_DIR / "data" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
     PROJECT_DIR / "data_sets" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
-    Path(r"C:\Cluster_Github\HDDM_Vero\data_sets\data_sets_Garcia\GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
+    Path(r"C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
 ]
 
 
