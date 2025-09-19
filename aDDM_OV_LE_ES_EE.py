@@ -1913,6 +1913,24 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_AttentionW',
                 'v_ES_InattentionW'
                 ]   
+        elif version == 9:
+            params_of_interest = [    
+                'a(high)',
+                'a(low)',
+                'a(medium)',
+                't',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a(high)',
+                'a(low)',
+                'a(medium)',                
+                't',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW'
+                ]   
     ## diagnistics 
     diag_dir = Path(fig_dir) / "diagnostics"
     ensure_dir(diag_dir)

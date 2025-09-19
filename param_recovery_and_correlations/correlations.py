@@ -12,9 +12,9 @@ import math
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 
 # best fitting aDDM model 
-M35_DIAG = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_VAL_36" / "diagnostics"
+M35_DIAG = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "diagnostics"
 RL1_DIAG = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_LE_RL_1" / "diagnostics"
-OUT_DIR  = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_VAL_36" / "correlation"
+OUT_DIR  = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "correlation"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 def _read_results(path):
