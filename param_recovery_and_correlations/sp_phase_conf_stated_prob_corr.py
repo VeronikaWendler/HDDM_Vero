@@ -50,8 +50,8 @@ import matplotlib.pyplot as plt
 
 # ------------------------- config & paths -------------------------
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", r"C:/Cluster_Github/HDDM_Vero")).resolve()
-M35_DIAG    = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_VAL_36" / "diagnostics"
-OUT_DIR     = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_ES_VAL_36" / "correlation" / "sp_phase"
+M35_DIAG    = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "diagnostics"
+OUT_DIR     = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "correlation" / "sp_phase"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Input data for SP trials
@@ -68,7 +68,6 @@ if SP_DATA_CSV is None:
 else:
     SP_PATH = SP_DATA_CSV
 
-# Optional glob for per-subject confidence files (fallback)
 CONF_GLOB = os.getenv("CONF_GLOB") or r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/data/sub-*/beh/EXP4_Garcia_participant_*.csv"
 
 # Exclusion list
@@ -428,11 +427,11 @@ if __name__ == "__main__":
     else:
         candidates = [
             M35_DIAG / "results.csv",
-            PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garcia_replication_ES_VAL_36" / "diagnostics" / "results.csv",
-            Path(r"C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/garcia_replication_ES_VAL_36/diagnostics/results.csv"),
-            Path(r"C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/macleod_cluster_out/garcia_replication_ES_VAL_36/diagnostics/results.csv"),
-            Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/figures_dir_garcia/garcia_replication_ES_VAL_36/diagnostics/results.csv"),
-            Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/figures_dir_garcia/macleod_cluster_out/garcia_replication_ES_VAL_36/diagnostics/results.csv"),
+            PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garcia_replication_For_paper_7" / "diagnostics" / "results.csv",
+            Path(r"C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/garcia_replication_For_paper_7/diagnostics/results.csv"),
+            Path(r"C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/macleod_cluster_out/garcia_replication_For_paper_7/diagnostics/results.csv"),
+            Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/figures_dir_garcia/garcia_replication_For_paper_7/diagnostics/results.csv"),
+            Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/figures_dir_garcia/macleod_cluster_out/garcia_replication_For_paper_7/diagnostics/results.csv"),
         ]
         m35_in = next((p for p in candidates if p.exists()), None)
 
