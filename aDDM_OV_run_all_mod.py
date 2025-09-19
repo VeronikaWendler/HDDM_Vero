@@ -117,7 +117,7 @@ def make_z_link(full_stimulus_vector):
 ##
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
-nr_samples      = 2000       # samples per chain - do 11000 but for now for a quick one we do 600
+nr_samples      = 6000       # samples per chain - do 11000 but for now for a quick one we do 600
 parallel        = True      # parallel
 model_base_name = "OV_replication_"
 model_versions  = {
@@ -213,7 +213,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=2000, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=6000, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -565,7 +565,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=200
             m = hddm.models.HDDMrl(data, include=['a', 't', 'v', 'alpha'])
             m.find_starting_values()
             infdata = m.sample(samples,
-                               burn=300,
+                               burn=1000,
                                dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                                db='pickle',
                                return_infdata=True, loglike=True, ppc=False)
@@ -677,7 +677,7 @@ from joblib import Parallel, delayed
 
 def drift_diffusion_hddmRL(
     data,
-    samples=2000,
+    samples=6000,
     n_jobs=3,
     run=True,
     parallel=True,
