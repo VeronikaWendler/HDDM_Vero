@@ -1,41 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Correlate subject-level aDDM parameters with SP-phase ratings.
-
-This script builds SIX correlation panels (each with a CSV summary):
-  1) Stated probability ratings (SP) for E options vs aDDM params
-  2) Stated probability ratings (SP) for S options vs aDDM params
-  3) Stated probability ratings (SP) for ALL options vs aDDM params
-  4) Confidence ratings (SP) for E options vs aDDM params
-  5) Confidence ratings (SP) for S options vs aDDM params
-  6) Confidence ratings (SP) for ALL options vs aDDM params
-
-Output: one PDF grid per target and one CSV summary per target in OUT_DIR.
-
-Paths are controlled via environment variables when available.
-- PROJECT_DIR: base project directory (default: /workspace)
-- SP_DATA_CSV: path to combined CSV with SP trials (should include: phase, sub_id, op1, cho, and ideally confidence)
-- CONF_GLOB  : optional glob for per-subject files with confidence (if not present in SP_DATA_CSV),
-               default: {PROJECT_DIR}/data/sub-*/beh/EXP4_Garcia_participant_*.csv
-- EXCLUDE_SUBJECTS: comma-separated subject IDs to exclude (default: 6,99)
-
-Assumptions about columns:
-- aDDM results at: {PROJECT_DIR}/figures_dir_garcia/garcia_replication_ES_VAL_36/diagnostics/results.csv
-- SP combined CSV has: 'phase' (expects 'SP'), 'sub_id', 'op1' (E/S), 'cho' (stated probability rating).
-  If confidence is present, it may be named one of: ['confidence','conf','confidenceLevelsArrayEXP','confidence_level','confidenceLevels']
-- If confidence isn't in SP combined CSV, we fall back to CONF_GLOB files, where we expect columns:
-  'SubID', 'confidenceLevelsArrayEXP', and 'selectedImageNamesArrayEXP' used to infer option type:
-  contains 'Pie' => S, otherwise E.
-
-The script also augments aDDM results with theta parameters:
-  theta_InatWS = v_ES_InattentionW_S / v_ES_AttentionW
-  theta_InatWE = v_ES_InattentionW_E / v_ES_AttentionW
-
-Author: ChatGPT (for Veronika)
-Date: 2025-08-31
-"""
-
 from __future__ import annotations
 from pathlib import Path
 import os
@@ -48,16 +10,15 @@ import pandas as pd
 from scipy import stats
 import matplotlib.pyplot as plt
 
-# ------------------------- config & paths -------------------------
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", r"C:/Cluster_Github/HDDM_Vero")).resolve()
 M35_DIAG    = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "diagnostics"
 OUT_DIR     = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "correlation" / "sp_phase"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Input data for SP trials
-SP_DATA_CSV = os.getenv("SP_DATA_CSV")  # recommended to set
+SP_DATA_CSV = os.getenv("SP_DATA_CSV")
 if SP_DATA_CSV is None:
-    # try a few common locations
+    # paths that both work
     CANDIDATES = [
         PROJECT_DIR / "data" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
         PROJECT_DIR / "data_sets" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
@@ -395,9 +356,7 @@ def correlate_and_plot(target_map: dict[int, float],
 if __name__ == "__main__":
     args = _parse_args()
 
-    # ---- exclusions & cross-folder data locations ----
-    global EXCLUDE_SUBJECTS, CONF_GLOB, SP_PATH
-
+    
     # exclusions
     _excl = (args.exclude or "").strip()
     EXCLUDE_SUBJECTS = [] if _excl == "" else [int(x) for x in _excl.split(",") if x.strip().isdigit()]

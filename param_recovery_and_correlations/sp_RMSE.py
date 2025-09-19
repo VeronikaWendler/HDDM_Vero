@@ -1,22 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-SP-phase accuracy (RMSE) vs aDDM parameters — strict same-subjects, no flags required.
-
-What it does
-- Loads aDDM subject-level parameters from results.csv (plus theta_InatWS/WE ratios if available).
-- Loads SP-phase trials from your combined CSV (auto-fallback to your D: path).
-- Excludes subjects: 1,4,5,6,14,99.
-- Computes per-subject RMSE between stated probability `cho` and true `p1` for:
-  E-only, S-only, and ALL trials.
-- Correlates each RMSE vector with every aDDM parameter.
-- Saves three grid PDFs (E/S/ALL) + three CSV summaries here:
-  C:\Cluster_Github\HDDM_Vero\figures_dir_garcia\garcia_replication_ES_VAL_36\correlation\sp_phase_rmse
-
-How to run
-    python sp_RMSE.py
-(You can still override with --results / --sp-csv if you want, but not required.)
-"""
 
 from __future__ import annotations
 import argparse
