@@ -117,7 +117,7 @@ def make_z_link(full_stimulus_vector):
 ##
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
-nr_samples      = 6000       # samples per chain - do 11000 but for now for a quick one we do 600
+nr_samples      = 2000       # samples per chain - do 11000 but for now for a quick one we do 600
 parallel        = True      # parallel
 model_base_name = "OV_replication_"
 model_versions  = {
@@ -128,7 +128,7 @@ model_versions  = {
     "LEESEE": ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
     "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3","ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8", "ES_VAL_8", "ES_VAL_9", "ES_VAL_10", "ES_VAL_11"],
     "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", "For_paper_15", "For_paper_16"],
-
+    "LE_RL": ["LE_RL_1", "LE_RL_2"],
 }
 
 # ------------------------------------------------------------------
@@ -144,13 +144,13 @@ PHASE_TO_SOURCE = {
 
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["For_paper"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","ES","EE","ES_VAL","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
+PHASE_RUN_ORDER = ["LE_RL"]                                         # order
+SKIP_PHASES     = {"LE","ES_ZBIAS","ES","EE","ES_VAL","ES_quad", "ESEE", "LEESEE", "For_paper"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "For_paper"
-start_version = 8
+start_phase = "LE_RL"
+start_version = 0
 started = False
 
 # dir
@@ -213,7 +213,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=6000, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=2000, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -560,14 +560,50 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
 
         return m, infdata
         
+    elif phase == 'LE_RL':
+        if version == 0:
+            m = hddm.models.HDDMrl(data, include=['a', 't', 'v', 'alpha'])
+            m.find_starting_values()
+            infdata = m.sample(samples,
+                               burn=300,
+                               dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                               db='pickle',
+                               return_infdata=True, loglike=True, ppc=False)
 
+            return m, infdata
+        else:
+            raise ValueError(f"Invalid version {version}")
         
         
 ###############################################################################################################    
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 # Main function for running/loading models
+# Main function for running/loading models
 
+#
+## ONLY FOR RL ##-------------------------------------------------------------------------------------------
+def run_and_save(trace_id, data, model_dir, model_name, version, phase, samples):
+    # 1) instantiate + sample exactly as you do in run_model()
+    model, infdata = run_model(
+        trace_id=trace_id,
+        data=data,
+        model_dir=model_dir,
+        model_name=model_name,
+        version=version,
+        phase=phase,
+        samples=samples,
+    )
+    # 2) save *inside* the worker
+    fname = f"{model_name}_{trace_id}"
+    model.save(os.path.join(model_dir, fname + ".hddm"))
+    with open(os.path.join(model_dir, fname + ".pkl"), "wb") as f:
+        pickle.dump(model, f)
+    infdata = sanitize_infdata(infdata)
+    az.to_netcdf(infdata, os.path.join(model_dir, fname + ".nc"))
+
+    # 3) return something small
+    return fname
 
 import dill as pickle  # to create the pkl object
 
@@ -637,63 +673,69 @@ def drift_diffusion_hddm(data,
 # for the RL models (if used)
 import dill as pickle
 
-def drift_diffusion_hddmRL(data, 
-                         samples=1200, 
-                         n_jobs=3,
-                         run=True,
-                         parallel=True,
-                         model_name='model',
-                         model_dir='.', 
-                         version=None,       
-                         accuracy_coding=True):
+from joblib import Parallel, delayed
 
-    if run:
-        if parallel:
-            start_time = time.time()
-            results = Parallel(n_jobs=n_jobs)(
-                delayed(run_model)(
-                    trace_id=trace_id,
-                    data=data,
-                    model_dir=model_dir,
-                    model_name=model_name,
-                    version=version,
-                    phase=phase,
-                    samples=samples,
-                    accuracy_coding=accuracy_coding
+def drift_diffusion_hddmRL(
+    data,
+    samples=2000,
+    n_jobs=3,
+    run=True,
+    parallel=True,
+    model_name='model',
+    model_dir='.',
+    version=None,
+    phase=None,
+):
+    if not run:
+        print('Loading existing RL models')
+        return [
+            hddm.load(os.path.join(model_dir, f"{model_name}_{i}.hddm"))
+            for i in range(n_jobs)
+        ]
+
+    start_time = time.time()
+    if parallel:
+        results = Parallel(n_jobs=n_jobs, backend="threading")(
+            delayed(run_model)(
+                trace_id=i,
+                data=data,
+                model_dir=model_dir,
+                model_name=model_name,
+                version=version,
+                phase=phase,
+                samples=samples,
             )
-    for trace_id in range(n_jobs)
-)
-            print("Time elapsed:", time.time() - start_time, "s")
-            
-            for i in range(n_jobs):
-                model = results[i]
-                
-                # Save in HDDM format
-                model.save(os.path.join(model_dir, f"{model_name}_{i}.hddm"))
+            for i in range(n_jobs)
+        )
+        for i, (model, infdata) in enumerate(results):
+            fname = f"{model_name}_{i}"
+            # model.save(os.path.join(model_dir, fname + ".hddm"))
+            # with open(os.path.join(model_dir, fname + ".pkl"), "wb") as f:
+            #     pickle.dump(model, f)
+            infdata = sanitize_infdata(infdata)
+            az.to_netcdf(infdata, os.path.join(model_dir, fname + ".nc"))
 
-                with open(os.path.join(model_dir, f"{model_name}_{i}.pkl"), "wb") as f:
-                    model = pickle.load(f)
-
-        else:
-            model = run_model(1,
-                              data,
-                              model_dir,
-                              model_name,
-                              version, 
-                              samples,
-                              accuracy_coding 
-                              )
-            
-            model.save(os.path.join(model_dir, model_name + ".hddm"))
-
-            with open(os.path.join(model_dir, model_name + ".pkl"), 'wb') as f:
-                pickle.dump(model, f)
-
+        print(f"RL chains finished and saved: {[f'{model_name}_{i}' for i in range(n_jobs)]}")
     else:
-        print('Loading existing models')
-        models = [hddm.load(os.path.join(model_dir, f"{model_name}_{i}.hddm")) for i in range(n_jobs)]
-        return models
+        # single‐threaded sampling + save
+        model, infdata = run_model(
+            trace_id=0,
+            data=data,
+            model_dir=model_dir,
+            model_name=model_name,
+            version=version,
+            phase=phase,
+            samples=samples,
+        )
+        fname = f"{model_name}_0"
+        model.save(os.path.join(model_dir, fname + ".hddm"))
+        with open(os.path.join(model_dir, fname + ".pkl"), "wb") as f:
+            pickle.dump(model, f)
+        infdata = sanitize_infdata(infdata)
+        az.to_netcdf(infdata, os.path.join(model_dir, fname + ".nc"))
+        print(f"RL chain finished and saved: {fname}")
 
+    print("Time elapsed:", time.time() - start_time, "s")
 #########################################################################################################################################################
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1693,8 +1735,21 @@ if __name__ == "__main__":
             fig_dir = FIG_DIR_ROOT / full_model_name
             ensure_dir(fig_dir / "diagnostics")
 
-            # # run hddm function 
-            drift_diffusion_hddm(
+            # # # run hddm function 
+            # drift_diffusion_hddm(
+            #     data=data,
+            #     samples=nr_samples,
+            #     n_jobs=nr_models,
+            #     run=RUN_ALL_MODELS,
+            #     parallel=parallel,
+            #     model_name=full_model_name,
+            #     model_dir=BASE_MODEL_DIR,        
+            #     version=version,
+            #     phase=phase,
+            #     accuracy_coding=True
+            # )
+            #only when running RL in the LE phase
+            drift_diffusion_hddmRL(
                 data=data,
                 samples=nr_samples,
                 n_jobs=nr_models,
@@ -1704,5 +1759,4 @@ if __name__ == "__main__":
                 model_dir=BASE_MODEL_DIR,        
                 version=version,
                 phase=phase,
-                accuracy_coding=True
             )
