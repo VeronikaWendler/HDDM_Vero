@@ -12,16 +12,16 @@ from scipy import stats
 
 
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", r"C:/Cluster_Github/HDDM_Vero")).resolve()
-OUT_DIR     = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "correlation" / "sp_phase_rmse"
-DEFAULT_EXCLUDE = [1, 4, 5, 6, 14, 99]
+OUT_DIR     = PROJECT_DIR / "figures_dir_OV" / "OV_replication_For_paper_6" / "correlation" / "sp_phase_rmse"
+DEFAULT_EXCLUDE = [6, 14, 20, 26, 2, 9, 18]
 
-M35_DEFAULT = PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garcia_replication_For_paper_7" / "diagnostics" / "results.csv"
+M35_DEFAULT = PROJECT_DIR / "figures_dir_OV" / "macleod_cluster_out" / "OV_replication_For_paper_6" / "diagnostics" / "results.csv"
 
 SP_CSV_FALLBACKS = [
-    Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/data/data_sets/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
-    PROJECT_DIR / "data" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
-    PROJECT_DIR / "data_sets" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
-    Path(r"C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
+    Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/OV_Analysis/data/data_sets/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
+    PROJECT_DIR / "data" / "OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
+    PROJECT_DIR / "data_sets" / "OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
+    Path(r"C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_OV/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
 ]
 
 
@@ -181,7 +181,7 @@ if __name__ == "__main__":
     # Project dir override (optional)
     if args.project_dir:
         PROJECT_DIR = Path(args.project_dir).resolve()
-        OUT_DIR     = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "correlation" / "sp_phase_rmse"
+        OUT_DIR     = PROJECT_DIR / "figures_dir_OV" / "OV_replication_For_paper_6" / "correlation" / "sp_phase_rmse"
 
     # Exclusions
     exclude_ids = [int(s) for s in (args.exclude or "").split(",") if s.strip().isdigit()] or DEFAULT_EXCLUDE
@@ -192,9 +192,9 @@ if __name__ == "__main__":
     else:
         candidates = [
             M35_DEFAULT,
-            PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "diagnostics" / "results.csv",
-            PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garcia_replication_For_paper_7" / "diagnostics" / "results.csv",
-            Path(r"C:\Cluster_Github\HDDM_Vero\figures_dir_garcia\macleod_cluster_out\garcia_replication_For_paper_7\diagnostics\results.csv"),
+            PROJECT_DIR / "figures_dir_OV" / "OV_replication_For_paper_6" / "diagnostics" / "results.csv",
+            PROJECT_DIR / "figures_dir_OV" / "macleod_cluster_out" / "OV_replication_For_paper_6" / "diagnostics" / "results.csv",
+            Path(r"C:\Cluster_Github\HDDM_Vero\figures_dir_OV\macleod_cluster_out\OV_replication_For_paper_6\diagnostics\results.csv"),
         ]
         results_csv = next((p for p in candidates if p.exists()), M35_DEFAULT)
     print(f"[INFO] Using aDDM results: {results_csv}")
