@@ -1,7 +1,6 @@
 # Veronika Wendler
 # 22.01.25
 # code for the attentional drift diffusion model - originally, I used this in summer 2024 in Quebec and is a very broad modification of code from Dr Jan WIllem De Gee, but by now I'd call it my code
- 
 # import libraries
 import pandas as pd
 import numpy as np
@@ -19,7 +18,7 @@ import glob
 import itertools
 #import pp
 import joblib
-from IPython import embed as shell
+from IPython import embed as shells
 import hddm
 import kabuki
 import statsmodels.formula.api as sm
@@ -48,6 +47,16 @@ def ensure_dir(path):
 # sanitizing the saving function:
 import re
 from pathlib import Path
+
+import arviz as az
+
+import os
+# disable _all_ Numba JIT caching & compilation
+os.environ["NUMBA_DISABLE_JIT"] = "1"
+
+import numba
+numba.config.CACHE_ENABLE = False
+
 #------------------------------------------------------------------------------------------------------------------
 
 # addm regression formula: this is how v is influenced by the value, behavioural data and gaze
@@ -190,7 +199,7 @@ print(f"Data Shape After Filtering: {data.shape}")
 #Flipping Errors only for EE and ES phases the RL model does not work on this
 # data = hddm.utils.flip_errors(data)
     
-# RT distributions plot
+# Plotting RT distributions
 fig = plt.figure(figsize=(12, 8))
 ax  = fig.add_subplot(111, xlabel='RT', ylabel='count', title='RT distributions')
 for _, subj_data in data.groupby('subj_idx'):
@@ -209,19 +218,17 @@ def ensure_dir(directory):
 model_dir = BASE_MODEL_DIR
 ensure_dir(model_dir)
 
-# make data genuinely numeric (so that nans are also detected)
 def sanitize_infdata(infdata):
-    """Convert pd.NA values to np.nan in all groups of the InferenceData object."""
+    """Convert pd.NA values to np.nan in all groups of the InferenceData object (important for if you have columns which you don't use, for example)."""
     for group in infdata._groups_all:
         if hasattr(infdata, group):
             dataset = getattr(infdata, group)
             for var in dataset.data_vars:
                 values = dataset[var].values
                 if isinstance(values, np.ndarray) and values.dtype == "object":
-                    # pd.NA --> np.nan
                     mask = pd.isna(values)
                     if mask.any():
-                        print(f"{var} in group '{group}' (contains pd.NA)")
+                        print(f"Sanitizing variable '{var}' in group '{group}' (contains pd.NA)")
                         values[mask] = np.nan
                         dataset[var].values = values
     return infdata
@@ -255,7 +262,16 @@ def _summ_from_samples(arr_1d):
 fig_dir = FIG_DIR_ROOT / f"{model_base_name}{model_name}"
 ensure_dir(fig_dir / "diagnostics")
 
-# subjects:
+# try:
+#     os.system('mkdir {}'.format(fig_dir))
+#     os.system('mkdir {}'.format(os.path.join(fig_dir, 'diagnostics')))
+# except:
+#     pass
+
+# fig_dir = FIG_DIR_ROOT / full_model_name
+# ensure_dir(fig_dir / "diagnostics")
+
+## subjects
 subjects = np.unique(data.subj_idx)
 nr_subjects = subjects.shape[0]
 print(nr_subjects)
@@ -544,11 +560,12 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=11000, acc
 
 ###############################################################################################################
 
+
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=11000,
-                         n_jobs=5,
+                         samples=600,
+                         n_jobs=3,
                          run=True,
                          parallel=True,
                          model_name='model',
@@ -587,7 +604,7 @@ def drift_diffusion_hddm(data,
                 model.save(os.path.join(model_dir, f"{model_name}_{i}.hddm"))
                 with open(os.path.join(model_dir, f"{model_name}_{i}.pkl"), "wb") as f:
                     pickle.dump(model, f)
-                infdata = sanitize_infdata(infdata) 
+                infdata = sanitize_infdata(infdata)  #clean
                 az.to_netcdf(infdata, os.path.join(model_dir, f"{model_name}_{i}.nc"))
 
 
@@ -627,10 +644,11 @@ def drift_diffusion_hddm(data,
     
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
+# for the RL models (if used)
 import dill as pickle
 
 def drift_diffusion_hddmRL(data, 
-                         samples=11000, #5000
+                         samples=11000, #6000
                          n_jobs=5,
                          run=True,
                          parallel=True,
@@ -658,8 +676,10 @@ def drift_diffusion_hddmRL(data,
             
             for i in range(n_jobs):
                 model = results[i]
-                # save in HDDM format
+                
+                # Save in HDDM format
                 model.save(os.path.join(model_dir, f"{model_name}_{i}.hddm"))
+
                 with open(os.path.join(model_dir, f"{model_name}_{i}.pkl"), "wb") as f:
                     model = pickle.load(f)
 
@@ -674,13 +694,22 @@ def drift_diffusion_hddmRL(data,
                               )
             
             model.save(os.path.join(model_dir, model_name + ".hddm"))
+
             with open(os.path.join(model_dir, model_name + ".pkl"), 'wb') as f:
                 pickle.dump(model, f)
 
     else:
         print('Loading existing models')
-        models = [hddm.load(os.path.join(model_dir, f"{model_name}_{i}.hddm")) for i in range(n_jobs)]
-        return models
+        # models = [hddm.load(os.path.join(model_dir, f"{model_name}_{i}.hddm")) for i in range(n_jobs)]
+        # return models
+      
+        infdatas = []
+        for i in range(n_jobs):
+            nc_path = os.path.join(model_dir, f"{model_name}_{i}.nc")
+            infdatas.append(az.from_netcdf(nc_path))
+        return infdatas
+
+    
 
 ######################################################################################################################################
 # analyzing the models   
