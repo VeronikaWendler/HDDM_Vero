@@ -79,10 +79,10 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 17    # defining version #
+version = 0    # defining version #
 run = False        # if True, the the models run, if False the models load
 
-phase = ['For_paper']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
+phase = ['LE_RL']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
 
 # Determines whether to use a single phase or the combined ESEE model
 if set(phase) == {'ES', 'EE'}:
@@ -4974,9 +4974,11 @@ def analyze_rl(infdatas, fig_dir, version):
         sns.kdeplot(y=arr, fill=True, ax=ax)
 
         ax.set_title(p)
-        ax.set_xlim(left=0)
+        ax.set_xlim(0, 15)      # x-axis from 0 to 15
+        ax.set_ylim(0, 0.5)     # y-axis (density) from 0 to 0.5
         ax.set_ylabel("Density")
         ax.set_xlabel("Value")
+
     
     plt.tight_layout()
     plt.savefig(diag_dir / "posteriors.pdf", bbox_inches="tight")

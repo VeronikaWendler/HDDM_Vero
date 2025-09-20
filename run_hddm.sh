@@ -25,5 +25,5 @@ export MPLBACKEND=Agg
 singularity exec \
     --bind ${PROJECT}:/workspace \
     ${IMAGE} \
-    python /workspace/param_recovery_and_correlations/sp_RMSE.py
+    python /workspace/aDDM_Garcia_LE_ES_EE.py
 

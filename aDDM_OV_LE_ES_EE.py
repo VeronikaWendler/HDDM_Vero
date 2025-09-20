@@ -2225,10 +2225,11 @@ def analyze_rl(infdatas, fig_dir, version):
         sns.kdeplot(y=arr, fill=True, ax=ax)
 
         ax.set_title(p)
-        ax.set_xlim(left=0)
+        ax.set_xlim(0, 15)      # x-axis from 0 to 15
+        ax.set_ylim(0, 0.5)     # y-axis (density) from 0 to 0.5
         ax.set_ylabel("Density")
         ax.set_xlabel("Value")
-    
+
     plt.tight_layout()
     plt.savefig(diag_dir / "posteriors.pdf", bbox_inches="tight")
     plt.close(fig)
