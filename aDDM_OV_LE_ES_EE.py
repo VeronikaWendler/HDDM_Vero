@@ -2253,8 +2253,115 @@ def analyze_rl(infdatas, fig_dir, version):
     
     
     
+
+    
 model_dir = BASE_MODEL_DIR
 ensure_dir(model_dir)
+
+
+
+# # this calls ddm functions depending on whether we run or load models
+# for version_idx, model_name in enumerate(model_versions[phase], start=0):
+#     full_model_name = model_base_name + model_name
+#     fig_dir        = FIG_DIR_ROOT / full_model_name
+#     ensure_dir(fig_dir)
+
+#     print(f"\n=== Phase={phase}, Version={version_idx} ({model_name}) ===")
+#     if run:
+#         # for ES/EE you call drift_diffusion_hddm
+#         if phase in ('ES', 'EE'):
+#             print(f'Running DDM {full_model_name}')
+#             models = drift_diffusion_hddm(
+#                 data=data,
+#                 samples=nr_samples,
+#                 n_jobs=nr_models,
+#                 run=run,
+#                 parallel=parallel,
+#                 model_name=full_model_name,
+#                 model_dir=model_dir,
+#                 version=version_idx,
+#                 phase=phase,
+#                 accuracy_coding=True
+#             )
+#         # …and similarly for ESEE/LEESEE or RL…
+#         elif phase in ('ESEE','LEESEE'):
+#             print(f'Running combined {full_model_name}')
+#             models = drift_diffusion_hddm(
+#                 data=data,
+#                 samples=nr_samples,
+#                 n_jobs=nr_models,
+#                 run=run,
+#                 parallel=parallel,
+#                 model_name=full_model_name,
+#                 model_dir=model_dir,
+#                 version=version_idx,
+#                 phase=phase,
+#                 accuracy_coding=True
+#             )
+#         else:
+#             print(f'Running HDDMRL {full_model_name}')
+#             models = drift_diffusion_hddmRL(
+#                 data=data,
+#                 samples=nr_samples,
+#                 n_jobs=nr_models,
+#                 run=run,
+#                 parallel=parallel,
+#                 model_name=full_model_name,
+#                 model_dir=model_dir,
+#                 version=version_idx,
+#                 phase=phase,
+#             )
+
+#     else:
+#         # loading + analysis
+#         if phase in ('ES', 'EE'):
+#             print(f'Loading DDM {full_model_name}')
+#             models = drift_diffusion_hddm(
+#                 data=data,
+#                 samples=nr_samples,
+#                 n_jobs=nr_models,
+#                 run=run,
+#                 parallel=parallel,
+#                 model_name=full_model_name,
+#                 model_dir=model_dir,
+#                 version=version_idx,
+#                 phase=phase,
+#                 accuracy_coding=True
+#             )
+#             analyze_model(models, fig_dir, nr_models, version_idx, phase)
+
+#         elif phase in ('ESEE','LEESEE'):
+#             print(f'Loading combined {full_model_name}')
+#             models = drift_diffusion_hddm(
+#                 data=data,
+#                 samples=nr_samples,
+#                 n_jobs=nr_models,
+#                 run=run,
+#                 parallel=parallel,
+#                 model_name=full_model_name,
+#                 model_dir=model_dir,
+#                 version=version_idx,
+#                 phase=phase,
+#                 accuracy_coding=True
+#             )
+#             analyze_model(models, fig_dir, nr_models, version_idx, phase)
+
+#         else:
+#             print(f'Loading HDDMRL {full_model_name}')
+#             models = drift_diffusion_hddmRL(
+#                 data=data,
+#                 samples=nr_samples,
+#                 n_jobs=nr_models,
+#                 run=run,
+#                 parallel=parallel,
+#                 model_name=full_model_name,
+#                 model_dir=model_dir,
+#                 version=version_idx,
+#                 phase=phase,
+#             )
+#             analyze_model(models, fig_dir, nr_models, version_idx, phase)
+
+
 
 
 
@@ -2423,4 +2530,72 @@ else:
         )
         analyze_model(models, fig_dir, nr_models, version, phase)
     
+
+
+
+
+# Very old - don't use 
+
+# if run:
+#     if phase == 'EE' or phase == 'ES':
+#         print('Running DDM...{}'.format(model_base_name + model_name))
+#         models = drift_diffusion_hddm(
+#             data=data,
+#             samples=nr_samples,
+#             n_jobs=nr_models,
+#             run=run,
+#             parallel=parallel,
+#             model_name=model_base_name + model_name,
+#             model_dir=model_dir,
+#             version=version,
+#             phase = phase,
+#             accuracy_coding=True
+#             )
+#     else:
+#         print('Running HDDMRL...{}'.format(model_base_name + model_name))
+#         models = drift_diffusion_hddmRL(
+#             data=data,
+#             samples=nr_samples,
+#             n_jobs=nr_models,
+#             run=run,
+#             parallel=parallel,
+#             model_name=model_base_name + model_name,
+#             model_dir=model_dir,
+#             version=version,
+#             phase = phase,
+#             )
+# else:
+#     if phase == 'EE' or phase == 'ES':
+#         print('loading DDM... {}'.format(model_base_name + model_name))
+#         models = drift_diffusion_hddm(
+#             data=data,
+#             samples=nr_samples,
+#             n_jobs=nr_models,
+#             run=run,
+#             parallel=parallel,
+#             model_name=model_base_name + model_name,
+#             model_dir=model_dir,
+#             version=version,
+#             phase = phase,
+#             accuracy_coding=True
+#             )
+#         analyze_model(models, fig_dir, nr_models, version, phase)
+
+#     else:
+#         print('loading HDDMRL ... {}'.format(model_base_name + model_name))
+#         models = drift_diffusion_hddmRL(
+#             data=data,
+#             samples=nr_samples,
+#             n_jobs=nr_models,
+#             run=run,
+#             parallel=parallel,
+#             model_name=model_base_name + model_name,
+#             model_dir=model_dir,
+#             version=version,
+#             phase = phase,
+#             )
+        
+#         analyze_model(models, fig_dir, nr_models, version, phase)
+#       
+
 
