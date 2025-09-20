@@ -25,5 +25,5 @@ export MPLBACKEND=Agg
 singularity exec \
     --bind ${PROJECT}:/workspace \
     ${IMAGE} \
-    python /workspace/param_recovery_and_correlations/correlations.py
+    python /workspace/param_recovery_and_correlations/sp_phase_conf_stated_prob_corr.py
 

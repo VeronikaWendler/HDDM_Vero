@@ -11,8 +11,8 @@ from scipy import stats
 import matplotlib.pyplot as plt
 
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", r"C:/Cluster_Github/HDDM_Vero")).resolve()
-M35_DIAG    = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "diagnostics"
-OUT_DIR     = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "correlation" / "sp_phase"
+M35_DIAG    = PROJECT_DIR / "figures_dir_OV" / "OV_replication_For_paper_6" / "diagnostics"
+OUT_DIR     = PROJECT_DIR / "figures_dir_OV" / "ov_replication_For_paper_6" / "correlation" / "sp_phase"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Input data for SP trials
@@ -20,19 +20,19 @@ SP_DATA_CSV = os.getenv("SP_DATA_CSV")
 if SP_DATA_CSV is None:
     # paths that both work
     CANDIDATES = [
-        PROJECT_DIR / "data" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
-        PROJECT_DIR / "data_sets" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
-        Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/data/data_sets/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
-        Path(r"C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
+        PROJECT_DIR / "data" / "OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
+        PROJECT_DIR / "data_sets" / "OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
+        Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/OV_Analysis/data/data_sets/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
+        Path(r"C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_OV/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
     ]
     SP_PATH = next((str(p) for p in CANDIDATES if Path(p).exists()), None)
 else:
     SP_PATH = SP_DATA_CSV
 
-CONF_GLOB = os.getenv("CONF_GLOB") or r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/data/sub-*/beh/EXP4_Garcia_participant_*.csv"
+CONF_GLOB = os.getenv("CONF_GLOB") or r"D:/Aberdeen_Uni_June24/cap/THESIS/OV_Analysis/data/sub-*/beh/EXP4_OV_participant_*.csv"
 
 # Exclusion list
-_excl = os.getenv("EXCLUDE_SUBJECTS", "1,4,5,6,14,99").strip()
+_excl = os.getenv("EXCLUDE_SUBJECTS", "6, 14, 20, 26, 2, 9, 18").strip()
 EXCLUDE_SUBJECTS = [] if _excl == "" else [int(x) for x in _excl.split(",") if x.strip().isdigit()]
 
 # ------------------------- helpers -------------------------
@@ -138,7 +138,7 @@ def _parse_args(argv=None):
                    help="Path to combined SP CSV (phase=subset 'SP', with sub_id, op1, cho, and optionally confidence).")
     p.add_argument("--conf-glob", type=str, default=os.getenv("CONF_GLOB"),
                    help="Glob for per-subject SP files if confidence isn't in the combined CSV.")
-    p.add_argument("--exclude", type=str, default=os.getenv("EXCLUDE_SUBJECTS", "1,4,5,6,14,99"),
+    p.add_argument("--exclude", type=str, default=os.getenv("EXCLUDE_SUBJECTS", "6, 14, 20, 26, 2, 9, 18"),
                    help="Comma-separated subject IDs to exclude.")
     args, _ = p.parse_known_args(argv)
     return args
@@ -363,7 +363,7 @@ if __name__ == "__main__":
 
     # confidence files glob
     CONF_GLOB = args.conf_glob or os.getenv("CONF_GLOB") or \
-        r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/data/sub-*/beh/EXP4_Garcia_participant_*.csv"
+        r"D:/Aberdeen_Uni_June24/cap/THESIS/OV_Analysis/data/sub-*/beh/EXP4_OV_participant_*.csv"
 
     # SP combined CSV (stated probabilities & maybe confidence)
     if args.sp_csv:
@@ -372,9 +372,9 @@ if __name__ == "__main__":
         SP_PATH = os.getenv("SP_DATA_CSV")
     else:
         sp_candidates = [
-            Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/data/data_sets/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
-            PROJECT_DIR / "data" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
-            PROJECT_DIR / "data_sets" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
+            Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/OV_Analysis/data/data_sets/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
+            PROJECT_DIR / "data" / "OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
+            PROJECT_DIR / "data_sets" / "OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
         ]
         SP_PATH = next((str(p) for p in sp_candidates if Path(p).exists()), None)
 
@@ -386,11 +386,11 @@ if __name__ == "__main__":
     else:
         candidates = [
             M35_DIAG / "results.csv",
-            PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garcia_replication_For_paper_7" / "diagnostics" / "results.csv",
-            Path(r"C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/garcia_replication_For_paper_7/diagnostics/results.csv"),
-            Path(r"C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/macleod_cluster_out/garcia_replication_For_paper_7/diagnostics/results.csv"),
-            Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/figures_dir_garcia/garcia_replication_For_paper_7/diagnostics/results.csv"),
-            Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/figures_dir_garcia/macleod_cluster_out/garcia_replication_For_paper_7/diagnostics/results.csv"),
+            PROJECT_DIR / "figures_dir_OV" / "macleod_cluster_out" / "OV_replication_For_paper_6" / "diagnostics" / "results.csv",
+            Path(r"C:/Cluster_Github/HDDM_Vero/figures_dir_OV/OV_replication_For_paper_6/diagnostics/results.csv"),
+            Path(r"C:/Cluster_Github/HDDM_Vero/figures_dir_OV/macleod_cluster_out/OV_replication_For_paper_6/diagnostics/results.csv"),
+            Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/OV_Analysis/figures_dir_OV/OV_replication_For_paper_6/diagnostics/results.csv"),
+            Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/OV_Analysis/figures_dir_OV/macleod_cluster_out/OV_replication_For_paper_6/diagnostics/results.csv"),
         ]
         m35_in = next((p for p in candidates if p.exists()), None)
 
