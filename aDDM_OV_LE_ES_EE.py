@@ -56,10 +56,10 @@ from pathlib import Path
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2,low ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ β3 x (gazeS -gazeE)
 
 # params:
-version = 8     # set which version you want to run
+version = 0     # set which version you want to run
 run = False       # if True, the the models run, if False the models load
 
-phase = ['For_paper']  #['ES', 'EE']  #
+phase = ['LE_RL']  #['ES', 'EE']  #
 
 # determine whether to use a single phase or the combined ESEE model or LEESEE
 if set(phase) == {'ES', 'EE'}:
@@ -95,7 +95,7 @@ model_versions = {
     'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5'],
     'ES_VAL': ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3","ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8", "ES_VAL_8", "ES_VAL_9", "ES_VAL_10", "ES_VAL_11"],
     "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13" ],
-
+    "LE_RL": ["LE_RL_1", "LE_RL_2"],
 }
 
 if phase not in model_versions:
@@ -106,7 +106,6 @@ model_name = model_versions[phase][version]
 data = pd.read_csv((PROJECT_DIR / "data_sets" / "data_sets_OV" / "OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix(), sep=",")
 
 
-
 PHASE_TO_SOURCE = {
     "ES_ZBIAS": "ES", 
     "ES_quad": "ES",    
@@ -114,9 +113,6 @@ PHASE_TO_SOURCE = {
     "ES_VAL": "ES",
     "For_paper": "ES",
 }
-
-
-
 
 
 #data filtering
@@ -238,10 +234,26 @@ def _sanitize_filename(fname):
     safe = re.sub(r'_+', '_', safe)
     return safe
 
+def _inv_logit(x):
+    return 1.0 / (1.0 + np.exp(-x))
+
+def _summ_from_samples(arr_1d):
+    arr = np.asarray(arr_1d).ravel()
+    qs = np.percentile(arr, [2.5, 25, 50, 75, 97.5])
+    return {
+        "mean": float(np.mean(arr)),
+        "std":  float(np.std(arr, ddof=1)),
+        "2.5q": qs[0],
+        "25q":  qs[1],
+        "50q":  qs[2],
+        "75q":  qs[3],
+        "97.5q":qs[4],
+    }
+
+
 
 fig_dir = FIG_DIR_ROOT / f"{model_base_name}{model_name}"
 ensure_dir(fig_dir / "diagnostics")
-
 
 # subjects:
 subjects = np.unique(data.subj_idx)
@@ -672,7 +684,14 @@ def drift_diffusion_hddmRL(data,
 
 ######################################################################################################################################
 # analyzing the models   
-        
+
+
+full_model_name = model_base_name + model_name
+fig_dir        = FIG_DIR_ROOT / full_model_name
+ensure_dir(fig_dir)
+ensure_dir(fig_dir/"diagnostics")
+
+
 def analyze_model(models, fig_dir, nr_models, version, phase):
     # 'sns.set_theme(style='darkgrid', font='sans-serif', font_scale=0.5)
     # # combine the 3 modles with kabuki utils
@@ -1931,7 +1950,23 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_AttentionW',
                 'v_ES_InattentionW'
                 ]   
-    ## diagnistics 
+            
+    elif phase == "LE_RL":
+        if version == 0:
+            params_of_interest = [
+                "a",
+                "t",
+                "v",
+                "alpha"
+            ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                "a",
+                "t",
+                "v",
+                "alpha",]
+    
+    # diagnistics
     diag_dir = Path(fig_dir) / "diagnostics"
     ensure_dir(diag_dir)
     
@@ -2025,13 +2060,176 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         if safe != f:
             os.rename(diag_dir / f, diag_dir / safe)
 
- 
+    
 
+def analyze_rl(infdatas, fig_dir, version):
+    """
+    infdatas : list of arviz.InferenceData, one per chain
+    fig_dir  : Path or str, root directory for figures / diagnostics
+    version  : int, model version index (used only for labeling)
+    """
+    fig_dir = Path(fig_dir)
+    diag_dir = fig_dir / "diagnostics"
+    diag_dir.mkdir(parents=True, exist_ok=True)
+
+    # concatenate chains
+    idata = az.concat(infdatas, dim="chain")
+    print(idata)
+    print(idata.posterior)
+    print("Data variables in posterior:", list(idata.posterior.data_vars))
+
+            
+    rhat = az.rhat(idata)
+    with open(diag_dir / "gelman_rubin.txt", "w") as f:
+        for var in rhat.data_vars:
+            val = float(rhat[var].values)  # extract scalar
+            f.write(f"{var}: {val:.3f}\n")
+
+    # optional other scores
+    # waic_res = az.waic(idata)
+    # dic_df = pd.DataFrame({
+    #     "metric": ["DIC", "DIC_se"],
+    #     "value":  [waic_res.waic, waic_res.waic_se]
+    # })
+    # dic_df.to_csv(diag_dir/"dic.csv", index=False)
+
+    # Posterior predictive check
+    # az.plot_ppc(idata)  
+    # plt.savefig(diag_dir / "posterior_predictive.pdf")
+    # plt.close()
+
+    #Summary stats table
+    summary = az.summary(idata)
+    summary.to_csv(diag_dir / "results.csv")
+
+    # Collect posterior arrays
+    if "alpha" not in idata.posterior.data_vars:
+        print("[alpha-transform] No 'alpha' in posterior; skipping transformed CSV.")
+        return
+
+    # Transform group-level alpha
+    alpha_draws = idata.posterior["alpha"].values.reshape(-1)  # (chains*draws,)
+    alpha_prob  = _inv_logit(alpha_draws)
+    alpha_summ  = _summ_from_samples(alpha_prob)
+
+    # Transform subject-level alphas (if present)
+    subj_vars = [v for v in idata.posterior.data_vars if v.startswith("alpha_subj.")]
+    subj_summ_rows = {}
+    subj_prob_matrix = []  # will become shape (n_draws, n_subj) for SD on prob-scale
+
+    if subj_vars:
+        # build matrix: columns = subjects, rows = draws (all chains collapsed)
+        for v in sorted(subj_vars, key=lambda x: int(x.split("alpha_subj.")[-1])):
+            arr = idata.posterior[v].values.reshape(-1)
+            arr_prob = _inv_logit(arr)
+            subj_prob_matrix.append(arr_prob)
+            subj_summ_rows[v] = _summ_from_samples(arr_prob)
+
+        subj_prob_matrix = np.vstack(subj_prob_matrix).T  # (draws, subj)
+        # group SD on probability scale, computed correctly across subjects per draw
+        sd_draws = np.std(subj_prob_matrix, axis=1, ddof=1)
+        alpha_std_summ = _summ_from_samples(sd_draws)
+    else:
+        alpha_std_summ = None
+
+    # Make a transformed copy of the ArviZ summary and replace alpha rows 
+    summary_t = summary.copy()
+
+    # Replace group alpha row (if present)
+    if "alpha" in summary_t.index:
+        for k, v in alpha_summ.items():
+            summary_t.loc["alpha", k] = v
+
+    # Replace alpha_std row (if present & we could compute it) #
+    if ("alpha_std" in summary_t.index) and (alpha_std_summ is not None):
+        for k, v in alpha_std_summ.items():
+            summary_t.loc["alpha_std", k] = v
+
+    # Replace subject rows
+    for v, stats in subj_summ_rows.items():
+        if v in summary_t.index:
+            for k, val in stats.items():
+                summary_t.loc[v, k] = val
+
+    # Save the transformed results next to the original
+    out_csv = diag_dir / "results_alpha_transformed.csv"
+    summary_t.to_csv(out_csv)
+
+    # Also write per-subject means (prob. scale) for convenience
+    if subj_vars:
+        means = []
+        for v in sorted(subj_vars, key=lambda x: int(x.split("alpha_subj.")[-1])):
+            arr = idata.posterior[v].values.reshape(-1)
+            arr_prob = _inv_logit(arr)
+            means.append({"param": v, "mean_prob": float(np.mean(arr_prob))})
+        pd.DataFrame(means).to_csv(diag_dir / "params_of_interest_s_alpha_transformed.csv", index=False)
+
+    print(f"[alpha-transform] Wrote:\n  - {out_csv}")
+    if subj_vars:
+        print(f"  - {diag_dir / 'params_of_interest_s_alpha_transformed.csv'}")
+
+
+
+    #Posterior‐trace + KDE plots (one PDF each)
+    var_names = ["alpha"]
+    titles = ["alpha"]
+    # Trace
+    az.plot_trace(idata, var_names=var_names)
+    plt.tight_layout()
+    plt.savefig(diag_dir / "trace_plots.pdf")
+    plt.close()
+
+    # Posterior KDEs
+    matplotlib.rcParams.update({"font.size": 6})
+    
+    # create a figure with one column per variable
+    fig, axes = plt.subplots(1, len(var_names), figsize=(len(var_names) * 2, 4))
+    
+    # flatten into a 1-d array no matter what matplotlib gives you
+    axes_flat = np.atleast_1d(axes).flatten()
+    
+    for i, p in enumerate(var_names):
+        ax = axes_flat[i]
+        arr = idata.posterior[p].values.reshape(-1)
+        if p == "alpha":
+            arr = np.exp(arr) / (1 + np.exp(arr))
+        sns.kdeplot(y=arr, fill=True, ax=ax)
+
+        ax.set_title(p)
+        ax.set_xlim(left=0)
+        ax.set_ylabel("Density")
+        ax.set_xlabel("Value")
+    
+    plt.tight_layout()
+    plt.savefig(diag_dir / "posteriors.pdf", bbox_inches="tight")
+    plt.close(fig)
+        # Per-subject parameter CSV
+        # Per-subject parameter CSV
+    subj_vars = [v for v in idata.posterior.data_vars if v.startswith("alpha_subj.")]
+    if subj_vars:
+        subj_means = {}
+        for var in subj_vars:
+            subj = int(var.split("alpha_subj.")[-1])
+            arr  = idata.posterior[var].values  # (chain, draw)
+            subj_means[subj] = arr.reshape(-1).mean()
+        df = pd.DataFrame.from_dict(
+            subj_means, orient="index", columns=["alpha_subj"]
+        )
+        df.index.name = "subj_idx"
+        df.reset_index(inplace=True)
+        df.to_csv(diag_dir/"params_of_interest_s.csv", index=False)
+    else:
+        print("ERROR")
+    
+    
+    
     
 model_dir = BASE_MODEL_DIR
 ensure_dir(model_dir)
 
 
+
+#ingle model running version - use for manual
 # this calls our ddm functions depending on whether we run or load models
 if run:
     if phase == 'EE' or phase == 'ES' or phase == 'ES_VAL' or phase == 'For_paper':
@@ -2049,8 +2247,7 @@ if run:
             accuracy_coding=True
         )
     
-    
-    elif phase == 'ESEE':  # Ensure this condition runs only for the combined model
+    elif phase == 'ESEE': 
         print(f'Running Combined Model (ES+EE)... {model_base_name + model_name}')
         models = drift_diffusion_hddm(
             data=data,
@@ -2076,6 +2273,20 @@ if run:
             model_dir=model_dir,
             version=version,
             phase=phase,  
+            accuracy_coding=True
+        )
+    elif phase == 'ES_ZBIAS':
+        print(f'Running ES_ZBIAS DDM… {model_base_name + model_name}')
+        models = drift_diffusion_hddm(
+            data=data,
+            samples=nr_samples,
+            n_jobs=nr_models,
+            run=run,
+            parallel=parallel,
+            model_name=model_base_name + model_name,
+            model_dir=model_dir,
+            version=version,
+            phase=phase,
             accuracy_coding=True
         )
     else:
@@ -2138,8 +2349,36 @@ else:
             phase=phase,  
             accuracy_coding=True
         )
+    elif phase == 'ES_ZBIAS':  
+        print(f'loading DDM Model (ES_ZBIAS)... {model_base_name + model_name}')
+        models = drift_diffusion_hddm(
+            data=data,
+            samples=nr_samples,
+            n_jobs=nr_models,
+            run=run,
+            parallel=parallel,
+            model_name=model_base_name + model_name,
+            model_dir=model_dir,
+            version=version,
+            phase=phase,  
+            accuracy_coding=True
+        )
         analyze_model(models, fig_dir, nr_models, version, phase)
-        
+    
+    elif phase == 'LE_RL':
+        print(f'Loading RL chains for {full_model_name}…')
+        infdatas = drift_diffusion_hddmRL(
+            data=data,
+            samples=nr_samples,
+            n_jobs=nr_models,
+            run=run,
+            parallel=parallel,
+            model_name=full_model_name,
+            model_dir=model_dir,
+            version=version,
+            phase=phase,
+            )
+        analyze_rl(infdatas, fig_dir, version)
     else:
         print(f'Running HDDMRL... {model_base_name + model_name}')
         models = drift_diffusion_hddmRL(
@@ -2155,74 +2394,4 @@ else:
         )
         analyze_model(models, fig_dir, nr_models, version, phase)
     
-
-
-
-
-
-
-
-
-# if run:
-#     if phase == 'EE' or phase == 'ES':
-#         print('Running DDM...{}'.format(model_base_name + model_name))
-#         models = drift_diffusion_hddm(
-#             data=data,
-#             samples=nr_samples,
-#             n_jobs=nr_models,
-#             run=run,
-#             parallel=parallel,
-#             model_name=model_base_name + model_name,
-#             model_dir=model_dir,
-#             version=version,
-#             phase = phase,
-#             accuracy_coding=True
-#             )
-#     else:
-#         print('Running HDDMRL...{}'.format(model_base_name + model_name))
-#         models = drift_diffusion_hddmRL(
-#             data=data,
-#             samples=nr_samples,
-#             n_jobs=nr_models,
-#             run=run,
-#             parallel=parallel,
-#             model_name=model_base_name + model_name,
-#             model_dir=model_dir,
-#             version=version,
-#             phase = phase,
-#             )
-# else:
-#     if phase == 'EE' or phase == 'ES':
-#         print('loading DDM... {}'.format(model_base_name + model_name))
-#         models = drift_diffusion_hddm(
-#             data=data,
-#             samples=nr_samples,
-#             n_jobs=nr_models,
-#             run=run,
-#             parallel=parallel,
-#             model_name=model_base_name + model_name,
-#             model_dir=model_dir,
-#             version=version,
-#             phase = phase,
-#             accuracy_coding=True
-#             )
-#         analyze_model(models, fig_dir, nr_models, version, phase)
-
-#     else:
-#         print('loading HDDMRL ... {}'.format(model_base_name + model_name))
-#         models = drift_diffusion_hddmRL(
-#             data=data,
-#             samples=nr_samples,
-#             n_jobs=nr_models,
-#             run=run,
-#             parallel=parallel,
-#             model_name=model_base_name + model_name,
-#             model_dir=model_dir,
-#             version=version,
-#             phase = phase,
-#             )
-        
-#         analyze_model(models, fig_dir, nr_models, version, phase)
-        
-
 
