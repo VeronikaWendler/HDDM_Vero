@@ -297,42 +297,30 @@ def _summ_from_samples(arr_1d):
 
 # 1000 draws from the posterior for PPC instead of mean, SD (for For_model 7) #
 
-# def export_posterior_draws(model_name, model_dir, params_of_interest, n_jobs=3, S=1000):
-
-#     # get chains
-#     idatas = [az.from_netcdf(Path(model_dir) / f"{model_name}_{i}.nc") for i in range(n_jobs)]
-#     idata  = az.concat(idatas)
-#     post   = idata.posterior.stack(sample=("chain","draw"))
-
-def export_posterior_draws(model_name, model_dir, params_of_interest, n_jobs=3, S=1000):
-
+def export_posterior_draws(model_name, model_dir, n_jobs=3, S=1000):
+    # load and combine chains
     idatas = [az.from_netcdf(Path(model_dir) / f"{model_name}_{i}.nc") for i in range(n_jobs)]
     idata  = az.concat(idatas, dim="chain")
-    post   = idata.posterior.stack(sample=("chain","draw"))
+
+    # collapse chain+draw
+    post = idata.posterior.stack(sample=("chain","draw"))
+
+    # random sample of draws
     n_samps = post.sizes["sample"]
     idx = np.random.choice(n_samps, size=min(S, n_samps), replace=False)
     post_s = post.isel(sample=idx)
 
-    # dataframe
-    frames = []
-    for p in params_of_interest:
-        if p in post_s:
-            df = post_s[p].to_dataframe(name=p)   # no reset_index()
-            frames.append(df)
-        elif p + "_subj" in post_s:
-            df = post_s[p + "_subj"].to_dataframe(name=p + "_subj")
-            frames.append(df)
-        else:
-            print(f"WARNING: {p} not found in posterior")
+    # select *all* parameters (group- and subj-level)
+    all_params = list(post_s.data_vars)
 
-    df_all = pd.concat(frames, axis=1)
-    df_all = df_all.reset_index()
+    # turn into dataframe
+    df_all = post_s[all_params].to_dataframe().reset_index()
+
     out_csv = Path(model_dir) / f"{model_name}_posterior_draws.csv"
     df_all.to_csv(out_csv, index=False)
     print(f"Saved {df_all.shape[0]} draws × {df_all.shape[1]} columns to {out_csv}")
 
     return out_csv
-
 
 
 fig_dir = FIG_DIR_ROOT / f"{model_base_name}{model_name}"
