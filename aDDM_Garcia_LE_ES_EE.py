@@ -295,7 +295,7 @@ def _summ_from_samples(arr_1d):
     }
 
 
-# 1000 draws from the posterior for PPC instead of mean, SD (for For_model 7)
+# 1000 draws from the posterior for PPC instead of mean, SD (for For_model 7) #
 
 # def export_posterior_draws(model_name, model_dir, params_of_interest, n_jobs=3, S=1000):
 
