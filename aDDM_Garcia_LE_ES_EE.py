@@ -4591,10 +4591,10 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             export_posterior_draws(
                 model_name="garcia_replication_For_paper_7",
                 model_dir=BASE_MODEL_DIR,
-                params_of_interest=params_of_interest,
                 n_jobs=nr_models,
                 S=1000
-                )
+            )
+
             
         elif version == 7:
             params_of_interest = [    
