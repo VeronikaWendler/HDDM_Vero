@@ -243,6 +243,9 @@ fig.savefig((FIG_DIR_ROOT / f"{model_base_name}{model_name}" / "diagnostics" / "
             bbox_inches="tight")
 plt.close(fig)
 
+
+# Functions 
+
 # ensure directory exists
 def ensure_dir(directory):
     if not os.path.exists(directory):
@@ -290,6 +293,43 @@ def _summ_from_samples(arr_1d):
         "75q":  qs[3],
         "97.5q":qs[4],
     }
+
+
+# 1000 draws from the posterior for PPC instead of mean, SD (for For_model 7)
+
+def export_posterior_draws(model_name, model_dir, params_of_interest, n_jobs=3, S=1000):
+
+    # get chains
+    idatas = [az.from_netcdf(Path(model_dir) / f"{model_name}_{i}.nc") for i in range(n_jobs)]
+    idata  = az.concat(idatas)
+    post   = idata.posterior.stack(sample=("chain","draw"))
+    print("Posterior vars:", list(post.data_vars))
+    
+    # random subset of draws
+    n_samps = post.sizes["sample"]
+    idx = np.random.choice(n_samps, size=min(S, n_samps), replace=False)
+    post_s = post.isel(sample=idx)
+    
+    # Frame
+    frames = []
+    for p in params_of_interest:
+        if p in post_s:
+            df = post_s[p].to_dataframe(name=p).reset_index()
+            frames.append(df)
+        elif p+"_subj" in post_s:
+            df = post_s[p+"_subj"].to_dataframe(name=p+"_subj").reset_index()
+            frames.append(df)
+        else:
+            print(f"WARNING: {p} not found in posterior")
+    
+    df_all = pd.concat(frames, axis=1)
+    # could be that duplicate draws exsit they need to be dropped
+    df_all = df_all.loc[:,~df_all.columns.duplicated()]
+    
+    out_csv = Path(model_dir) / f"{model_name}_posterior_draws.csv"
+    df_all.to_csv(out_csv, index=False)
+    print(f"Saved {len(df_all)} rows by {len(df_all.columns)} cols to {out_csv}")
+    return out_csv
 
 
 
@@ -4557,6 +4597,14 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_AttentionW',
                 'v_ES_InattentionW_E',
                 'v_ES_InattentionW_S']
+            
+            export_posterior_draws(
+                model_name="garcia_replication_For_paper_7",
+                model_dir=BASE_MODEL_DIR,
+                params_of_interest=params_of_interest,
+                n_jobs=nr_models,
+                S=1000
+                )
             
         elif version == 7:
             params_of_interest = [    
