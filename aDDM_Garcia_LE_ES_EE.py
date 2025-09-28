@@ -314,7 +314,7 @@ def export_posterior_draws(model_name, model_dir, n_jobs=3, S=1000):
     all_params = list(post_s.data_vars)
 
     # turn into dataframe
-    df_all = post_s[all_params].to_dataframe().reset_index()
+    df_all = post_s[all_params].to_dataframe().reset_index(drop=True)
 
     out_csv = Path(model_dir) / f"{model_name}_posterior_draws.csv"
     df_all.to_csv(out_csv, index=False)
