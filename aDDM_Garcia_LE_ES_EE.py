@@ -305,36 +305,32 @@ def _summ_from_samples(arr_1d):
 #     post   = idata.posterior.stack(sample=("chain","draw"))
 
 def export_posterior_draws(model_name, model_dir, params_of_interest, n_jobs=3, S=1000):
-    idatas = [az.from_netcdf(Path(model_dir) / f"{model_name}_{i}.nc") for i in range(n_jobs)]
-    idata  = az.concat(idatas, dim="chain")   
-    post   = idata.posterior.stack(sample=("chain","draw"))
 
-    print("Posterior vars:", list(post.data_vars))
-    
-    # random subset of draws
+    idatas = [az.from_netcdf(Path(model_dir) / f"{model_name}_{i}.nc") for i in range(n_jobs)]
+    idata  = az.concat(idatas, dim="chain")
+    post   = idata.posterior.stack(sample=("chain","draw"))
     n_samps = post.sizes["sample"]
     idx = np.random.choice(n_samps, size=min(S, n_samps), replace=False)
     post_s = post.isel(sample=idx)
-    
-    # Frame
+
+    # dataframe
     frames = []
     for p in params_of_interest:
         if p in post_s:
-            df = post_s[p].to_dataframe(name=p).reset_index()
+            df = post_s[p].to_dataframe(name=p)   # no reset_index()
             frames.append(df)
-        elif p+"_subj" in post_s:
-            df = post_s[p+"_subj"].to_dataframe(name=p+"_subj").reset_index()
+        elif p + "_subj" in post_s:
+            df = post_s[p + "_subj"].to_dataframe(name=p + "_subj")
             frames.append(df)
         else:
             print(f"WARNING: {p} not found in posterior")
-    
+
     df_all = pd.concat(frames, axis=1)
-    # could be that duplicate draws exsit they need to be dropped
-    df_all = df_all.loc[:,~df_all.columns.duplicated()]
-    
+    df_all = df_all.reset_index()
     out_csv = Path(model_dir) / f"{model_name}_posterior_draws.csv"
     df_all.to_csv(out_csv, index=False)
-    print(f"Saved {len(df_all)} rows by {len(df_all.columns)} cols to {out_csv}")
+    print(f"Saved {df_all.shape[0]} draws × {df_all.shape[1]} columns to {out_csv}")
+
     return out_csv
 
 
