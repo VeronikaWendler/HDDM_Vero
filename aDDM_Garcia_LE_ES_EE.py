@@ -297,12 +297,18 @@ def _summ_from_samples(arr_1d):
 
 # 1000 draws from the posterior for PPC instead of mean, SD (for For_model 7)
 
-def export_posterior_draws(model_name, model_dir, params_of_interest, n_jobs=3, S=1000):
+# def export_posterior_draws(model_name, model_dir, params_of_interest, n_jobs=3, S=1000):
 
-    # get chains
+#     # get chains
+#     idatas = [az.from_netcdf(Path(model_dir) / f"{model_name}_{i}.nc") for i in range(n_jobs)]
+#     idata  = az.concat(idatas)
+#     post   = idata.posterior.stack(sample=("chain","draw"))
+
+def export_posterior_draws(model_name, model_dir, params_of_interest, n_jobs=3, S=1000):
     idatas = [az.from_netcdf(Path(model_dir) / f"{model_name}_{i}.nc") for i in range(n_jobs)]
-    idata  = az.concat(idatas)
+    idata  = az.concat(idatas, dim="chain")   
     post   = idata.posterior.stack(sample=("chain","draw"))
+
     print("Posterior vars:", list(post.data_vars))
     
     # random subset of draws
