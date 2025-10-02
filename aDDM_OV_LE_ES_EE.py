@@ -65,10 +65,10 @@ numba.config.CACHE_ENABLE = False
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2,low ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ β3 x (gazeS -gazeE)
 
 # params:
-version = 0     # set which version you want to run
+version = 5     # set which version you want to run
 run = False       # if True, the the models run, if False the models load
 
-phase = ['LE_RL']  #['ES', 'EE']  #
+phase = ['For_paper']  #['ES', 'EE']  #
 
 # determine whether to use a single phase or the combined ESEE model or LEESEE
 if set(phase) == {'ES', 'EE'}:
@@ -258,6 +258,26 @@ def _summ_from_samples(arr_1d):
     }
 
 
+# 1000 draws from the posterior for PPC instead of mean, SD (for For_model 7) 
+
+def export_posterior_draws(model_name, model_dir, n_jobs=3, S=1000):
+    # load and combine chains
+    idatas = [az.from_netcdf(Path(model_dir) / f"{model_name}_{i}.nc") for i in range(n_jobs)]
+    idata  = az.concat(idatas, dim="chain")
+    post = idata.posterior.stack(sample=("chain","draw"))
+
+    n_samps = post.sizes["sample"]
+    idx = np.random.choice(n_samps, size=min(S, n_samps), replace=False)
+    post_s = post.isel(sample=idx)
+    
+    # data frame
+    all_params = list(post_s.data_vars)
+    df_all = post_s[all_params].to_dataframe().reset_index(drop=True)
+    out_csv = Path(model_dir) / f"{model_name}_posterior_draws.csv"
+    df_all.to_csv(out_csv, index=False)
+    print(f"Saved {df_all.shape[0]} draws × {df_all.shape[1]} columns to {out_csv}")
+
+    return out_csv
 
 fig_dir = FIG_DIR_ROOT / f"{model_base_name}{model_name}"
 ensure_dir(fig_dir / "diagnostics")
@@ -1903,19 +1923,24 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'z',
                 'v_ES_AttentionW',
                 'v_ES_InattentionW_E',
-                'v_ES_InattentionW_S'
-                ]
+                'v_ES_InattentionW_S']
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
                 'a(high)',
                 'a(low)',
-                'a(medium)',          
+                'a(medium)',
                 't',
                 'z',
                 'v_ES_AttentionW',
                 'v_ES_InattentionW_E',
-                'v_ES_InattentionW_S'
-                ]
+                'v_ES_InattentionW_S']
+            
+            export_posterior_draws(
+                model_name="OV_replication_For_paper_6",
+                model_dir=BASE_MODEL_DIR,
+                n_jobs=nr_models,
+                S=1000
+            )
         elif version == 6:
             params_of_interest = [    
                 'a',
