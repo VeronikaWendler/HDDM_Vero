@@ -4861,6 +4861,45 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     param_df.columns = params_of_interest_s
     param_df.to_csv(diag_dir / "params_of_interest_s.csv", index=False)
     
+    # === Vertical KDE plots for GROUP-LEVEL parameters (z, v_ES_*) ===
+    
+    # Load the group-level stats table
+    results_csv = diag_dir / "results.csv"
+    results_df = pd.read_csv(results_csv, index_col=0)
+    
+    # Group-level parameters to plot — update based on model version
+    group_params_to_plot = [
+        "z",
+        "v_ES_AttentionW",
+        "v_ES_InattentionW_E",
+        "v_ES_InattentionW_S"
+    ]
+    
+    # Directory for vertical KDE plots
+    group_vplot_dir = diag_dir / "group_param_vertical_kdes"
+    group_vplot_dir.mkdir(parents=True, exist_ok=True)
+    
+    for param in group_params_to_plot:
+        if param not in results_df.index:
+            print(f"[Group-KDE] Skipping missing parameter: {param}")
+            continue
+    
+        trace = combined_model.nodes_db.loc[param, "node"].trace()
+        fig, ax = plt.subplots(figsize=(3, 6))
+        sns.kdeplot(y=trace, fill=True, ax=ax, color="darkorchid")
+    
+        ax.set_title(param, fontsize=10)
+        ax.set_xlabel("Value")
+        ax.set_ylabel("Density")
+    
+        # Optional: constrain z to [0, 1] if desired
+        if param == "z":
+            ax.set_xlim(0, 1)
+    
+        # y-axis: no manual limits → auto-scale
+        plt.tight_layout()
+        fig.savefig(group_vplot_dir / f"{param}_vertical_kde.pdf", bbox_inches="tight")
+        plt.close(fig)
     
     
     for f in os.listdir(diag_dir):
