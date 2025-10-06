@@ -4936,8 +4936,8 @@ def plot_inatt_forest(
 
     # --- read subject-level rows from results.csv to get subject IDs
     df = pd.read_csv(results_csv, index_col=0)
-    patE = rf"^{re.escape(param_E)}\.(\d+)$"
-    patS = rf"^{re.escape(param_S)}\.(\d+)$"
+    patE = rf"^{param_E}\.(\d+)$"
+    patS = rf"^{param_S}\.(\d+)$"
 
     E_subj = df[df.index.str.match(patE)].copy()
     S_subj = df[df.index.str.match(patS)].copy()
@@ -5401,9 +5401,12 @@ else:
             results_csv=diag_dir / "results.csv",
             fig_dir=fig_dir,
             model_dir=model_dir,
-            model_base=model_base_name + model_name,  
-            hdi_prob=0.95
+            model_base=model_base_name + model_name,
+            hdi_prob=0.95,
+            param_E="v_ES_InattentionW_E_subj",
+            param_S="v_ES_InattentionW_S_subj"
             )
+
 
 
     elif phase == 'ESEE':  
