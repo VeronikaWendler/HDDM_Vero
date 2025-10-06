@@ -4800,7 +4800,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     results = combined_model.gen_stats()
     results.to_csv(diag_dir / "results.csv")
     
-    plot_inatt_forest(results_csv=diag_dir / "results.csv", fig_dir=fig_dir)
     
     
     # Posterior‐trace KDEs
@@ -4989,9 +4988,10 @@ def plot_inatt_forest(
 
     # HDI (proper way of doing it)
     nc_files = []
-    if model_dir and version is not None:
-        for c in range(3): 
-            candidate = Path(model_dir) / f"{model_base}_{version}_{c}.nc"
+    if model_dir:
+        for c in range(3):
+            candidate = Path(model_dir) / f"{model_base}_{c}.nc"
+
             if candidate.exists():
                 nc_files.append(candidate)
 
@@ -5408,10 +5408,9 @@ else:
         plot_inatt_forest(
             results_csv=diag_dir / "results.csv",
             fig_dir=fig_dir,
-            model_dir=model_dir,                   
-            model_base=model_base_name + model_name,  
-            version=version
-        )
+            model_dir=model_dir,
+            model_base=model_base_name + model_name,
+            version=None)
 
 
     elif phase == 'ESEE':  
