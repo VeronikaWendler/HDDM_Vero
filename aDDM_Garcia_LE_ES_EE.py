@@ -4824,9 +4824,9 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     
     if panel_traces:
         # big fonts
-        big_title_size = 25
-        big_label_size = 23
-        big_tick_size  = 19
+        big_title_size = 27
+        big_label_size = 25
+        big_tick_size  = 21
     
         n = len(panel_traces)
         fig, axes = plt.subplots(
@@ -4865,9 +4865,9 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     group_vplot_dir.mkdir(parents=True, exist_ok=True)
     
     # bigger, readable fonts
-    vz_title = 25
-    vz_label = 23
-    vz_tick  = 19
+    vz_title = 27
+    vz_label = 25
+    vz_tick  = 21
     
     for param in group_params_to_plot:
         tr = _get_trace(combined_model, param)
