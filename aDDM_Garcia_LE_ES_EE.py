@@ -4879,8 +4879,15 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         sns.kdeplot(y=tr, fill=True, ax=ax)
         ax.set_facecolor("white")
     
-        if param == "z":
-            ax.axhline(0.5, color="red", linestyle="--", linewidth=8)
+       if param == "z":
+           ax.axhline(
+               0.5,
+               color="red",
+               linestyle="--",
+               linewidth=6, 
+               alpha=1.0,
+               zorder=999     
+               )
     
             # Two-sided posterior probability that z != 0.5
             tr_arr = np.asarray(tr)
