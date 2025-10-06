@@ -4927,8 +4927,11 @@ def plot_inatt_forest(
     ):
     """
     HDI-only forest plot from .nc posterior samples.
-    Δ = |S| - |E|
+    Also computes Bayes factor (Savage-Dickey) for group-level Δ = |S| - |E|.
     """
+
+    from scipy.stats import gaussian_kde, norm
+
     out_dir = Path(fig_dir) / "diagnostics"
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -4950,7 +4953,6 @@ def plot_inatt_forest(
     subj_E = [v for v in post.data_vars if v.startswith(param_E)]
     subj_S = [v for v in post.data_vars if v.startswith(param_S)]
 
-    # extract subj IDs from the suffix after the dot
     ids_E = {int(v.split(".")[-1]) for v in subj_E}
     ids_S = {int(v.split(".")[-1]) for v in subj_S}
     subj_ids = sorted(ids_E & ids_S)
@@ -4960,12 +4962,14 @@ def plot_inatt_forest(
         return
 
     rows = []
+    all_deltas = []
     for subj in subj_ids:
         keyE = f"{param_E}.{subj}"
         keyS = f"{param_S}.{subj}"
-        E = np.abs(np.asarray(post[keyE]))  # (samples,)
+        E = np.abs(np.asarray(post[keyE]))
         S = np.abs(np.asarray(post[keyS]))
         delta = S - E
+        all_deltas.append(delta)
 
         hdi_bounds = np.asarray(az.hdi(delta, hdi_prob=hdi_prob)).ravel()
         hdi_low, hdi_high = float(hdi_bounds[0]), float(hdi_bounds[-1])
@@ -4983,6 +4987,25 @@ def plot_inatt_forest(
     hdi_df.to_csv(hdi_csv, index=False)
     print(f"[HDI] Saved: {hdi_csv}")
 
+    # --- compute group-level Bayes factor
+    group_delta = np.concatenate(all_deltas)
+    kde = gaussian_kde(group_delta)
+    post_at_0 = kde.evaluate([0])[0]
+
+    # prior density at 0 (assuming N(0,1) prior on regression weights)
+    prior_at_0 = norm.pdf(0, loc=0, scale=1)
+
+    BF_01 = post_at_0 / prior_at_0
+    BF_10 = 1 / BF_01
+
+    bf_file = out_dir / "inatt_asymmetry_BayesFactor.txt"
+    with open(bf_file, "w") as f:
+        f.write(f"BF_01 (H0/H1): {BF_01:.3f}\n")
+        f.write(f"BF_10 (H1/H0): {BF_10:.3f}\n")
+
+    print(f"[BF] Saved Bayes factor results to {bf_file}")
+    print(f"  BF_01 = {BF_01:.3f}, BF_10 = {BF_10:.3f}")
+
     # --- forest plot
     fig, ax = plt.subplots(figsize=(6, 0.35 * len(hdi_df)))
     ax.set_facecolor("white")
@@ -4998,11 +5021,10 @@ def plot_inatt_forest(
     ax.set_yticklabels(hdi_df["subj"])
     ax.invert_yaxis()
     ax.set_xlabel(f"Δ inattentional weight (|S| − |E|), {int(hdi_prob*100)}% HDI")
-    ax.set_title("Subject-level inattentional asymmetry (HDI)")
+    ax.set_title(f"Subject-level inattentional asymmetry (HDI)\nGroup BF_10={BF_10:.2f}")
     fig.tight_layout()
     fig.savefig(out_dir / "forest_inatt_asymmetry_HDI.pdf", bbox_inches="tight")
     plt.close(fig)
-
 
     
 
