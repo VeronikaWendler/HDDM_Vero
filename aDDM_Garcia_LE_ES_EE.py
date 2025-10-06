@@ -4880,7 +4880,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         ax.set_facecolor("white")
     
         if param == "z":
-            ax.axhline(0.5, color="red", linestyle="--", linewidth=1.5)
+            ax.axhline(0.5, color="red", linestyle="--", linewidth=3)
     
             # Two-sided posterior probability that z != 0.5
             tr_arr = np.asarray(tr)
@@ -4916,7 +4916,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         fig.savefig(group_vplot_dir / f"{param}_vertical_kde_big.pdf", bbox_inches="tight")
         plt.close(fig)
     
-    # --- 3) Write a compact z-diagnostics text file, too
+    #  z-diagnostics text file
     z_trace = _get_trace(combined_model, "z")
     if z_trace is not None:
         z_arr = np.asarray(z_trace)
