@@ -4869,60 +4869,70 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     vz_label = 26
     vz_tick  = 24
     
-    for param in group_params_to_plot:
-        tr = _get_trace(combined_model, param)
-        if tr is None:
-            print(f"[Group-KDE] Skipping missing parameter: {param}")
-            continue
-    
-        fig, ax = plt.subplots(figsize=(5, 8))
-        sns.kdeplot(y=tr, fill=True, ax=ax)
-        ax.set_facecolor("white")
-    
-        if param == "z":
-            ax.axhline(
-                0.5,
-                color="red",
-                linestyle="--",
-                linewidth=6, 
-                alpha=1.0,
-                zorder=999     
-                )
-    
-            # Two-sided posterior probability that z != 0.5
-            tr_arr = np.asarray(tr)
-            p_gt = np.mean(tr_arr > 0.5)
-            p_lt = np.mean(tr_arr < 0.5)
-            p_two_sided = 2 * min(p_gt, p_lt)
-    
-            # HDI for delta = z - 0.5
-            delta = tr_arr - 0.5
-            hdi_lo, hdi_hi = az.hdi(delta, hdi_prob=0.95).ravel()
-            hdi_text = f"95% HDI(z-0.5)=[{hdi_lo:.3f}, {hdi_hi:.3f}]"
-    
-            # ROPE around 0.5 (±0.02 by default)
-            rope = 0.02
-            p_in_rope = np.mean((np.abs(delta) <= rope))
-    
-            ax.set_title(
-                f"{param}  |  P(z!=0.5)={1-p_two_sided:.3f}\n{hdi_text}  |  P(|z-0.5|<={rope:.2f})={p_in_rope:.3f}",
-                fontsize=vz_title, pad=12
-            )
-        else:
-            ax.set_title(param, fontsize=vz_title, pad=12)
-    
-        ax.set_xlabel("Density", fontsize=vz_label, labelpad=10)
-        ax.set_ylabel("Value", fontsize=vz_label)
-        ax.tick_params(axis="both", labelsize=vz_tick, width=1.2)
-        for side in ["top","right"]:
-            ax.spines[side].set_visible(False)
-        for side in ["left","bottom"]:
-            ax.spines[side].set_linewidth(1.2)
-    
-        plt.tight_layout()
-        fig.savefig(group_vplot_dir / f"{param}_vertical_kde_big.pdf", bbox_inches="tight")
-        plt.close(fig)
-    
+for param in group_params_to_plot:
+    tr = _get_trace(combined_model, param)
+    if tr is None:
+        print(f"[Group-KDE] Skipping missing parameter: {param}")
+        continue
+
+    # High-resolution figure (300 dpi)
+    fig, ax = plt.subplots(figsize=(5, 8), dpi=300)
+    sns.kdeplot(y=tr, fill=True, ax=ax, zorder=1)
+    ax.set_facecolor("white")
+
+    if param == "z":
+        #red reference line at z = 0.5
+        ax.axhline(
+            0.5, color="red", linestyle="--",
+            linewidth=8, alpha=1.0, zorder=999
+        )
+        # Extra overlay to guarantee visibility
+        ax.plot(
+            [ax.get_xlim()[0], ax.get_xlim()[1]], [0.5, 0.5],
+            color="red", linestyle="--", linewidth=8, zorder=1000
+        )
+        # Add annotation text
+        ax.text(
+            ax.get_xlim()[1], 0.5, " z = 0.5 (unbiased start)",
+            color="red", fontsize=22, va="center", ha="right", weight="bold"
+        )
+
+        # Two-sided posterior probability that z != 0.5
+        tr_arr = np.asarray(tr)
+        p_gt = np.mean(tr_arr > 0.5)
+        p_lt = np.mean(tr_arr < 0.5)
+        p_two_sided = 2 * min(p_gt, p_lt)
+
+        # HDI for delta = z - 0.5
+        delta = tr_arr - 0.5
+        hdi_lo, hdi_hi = az.hdi(delta, hdi_prob=0.95).ravel()
+        hdi_text = f"95% HDI(z-0.5)=[{hdi_lo:.3f}, {hdi_hi:.3f}]"
+
+        # ROPE around 0.5 (±0.02 by default)
+        rope = 0.02
+        p_in_rope = np.mean((np.abs(delta) <= rope))
+
+        ax.set_title(
+            f"{param}  |  P(z!=0.5)={1-p_two_sided:.3f}\n"
+            f"{hdi_text}  |  P(|z-0.5|<={rope:.2f})={p_in_rope:.3f}",
+            fontsize=vz_title, pad=12
+        )
+    else:
+        ax.set_title(param, fontsize=vz_title, pad=12)
+
+    ax.set_xlabel("Density", fontsize=vz_label, labelpad=10)
+    ax.set_ylabel("Value", fontsize=vz_label)
+    ax.tick_params(axis="both", labelsize=vz_tick, width=1.2)
+
+    for side in ["top", "right"]:
+        ax.spines[side].set_visible(False)
+    for side in ["left", "bottom"]:
+        ax.spines[side].set_linewidth(1.2)
+
+    plt.tight_layout()
+    fig.savefig(group_vplot_dir / f"{param}_vertical_kde_big.pdf", bbox_inches="tight")
+    plt.close(fig)
+
     #  z-diagnostics text file
     z_trace = _get_trace(combined_model, "z")
     if z_trace is not None:
