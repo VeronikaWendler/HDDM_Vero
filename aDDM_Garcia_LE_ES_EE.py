@@ -4876,46 +4876,29 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             continue
     
         fig, ax = plt.subplots(figsize=(5, 8))
+        sns.kdeplot(y=tr, fill=True, ax=ax)
         ax.set_facecolor("white")
     
-        from matplotlib.lines import Line2D
-    
-        # Plot the KDE first
-        sns.kdeplot(y=tr, fill=True, ax=ax, zorder=1)
-    
         if param == "z":
-            # fat red line at z = 0.5
-            line = Line2D(
-                ax.get_xlim(), [0.5, 0.5],
-                color="red",
-                linestyle=(0, (6, 6)),  # long dashes
-                linewidth=10,
-                zorder=1000
-            )
-            ax.add_line(line)
+            ax.axhline(0.5, color="red", linestyle="--", linewidth=5)
     
-            # annotation
-            ax.text(
-                ax.get_xlim()[1], 0.5, " z = 0.5",
-                color="red", fontsize=22, va="center", ha="left", weight="bold"
-            )
-    
-            # diagnostics
+            # Two-sided posterior probability that z != 0.5
             tr_arr = np.asarray(tr)
             p_gt = np.mean(tr_arr > 0.5)
             p_lt = np.mean(tr_arr < 0.5)
             p_two_sided = 2 * min(p_gt, p_lt)
     
+            # HDI for delta = z - 0.5
             delta = tr_arr - 0.5
             hdi_lo, hdi_hi = az.hdi(delta, hdi_prob=0.95).ravel()
             hdi_text = f"95% HDI(z-0.5)=[{hdi_lo:.3f}, {hdi_hi:.3f}]"
     
+            # ROPE around 0.5 (±0.02 by default)
             rope = 0.02
             p_in_rope = np.mean((np.abs(delta) <= rope))
     
             ax.set_title(
-                f"{param}  |  P(z!=0.5)={1-p_two_sided:.3f}\n"
-                f"{hdi_text}  |  P(|z-0.5|<={rope:.2f})={p_in_rope:.3f}",
+                f"{param}  |  P(z!=0.5)={1-p_two_sided:.3f}\n{hdi_text}  |  P(|z-0.5|<={rope:.2f})={p_in_rope:.3f}",
                 fontsize=vz_title, pad=12
             )
         else:
@@ -4924,7 +4907,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         ax.set_xlabel("Density", fontsize=vz_label, labelpad=10)
         ax.set_ylabel("Value", fontsize=vz_label)
         ax.tick_params(axis="both", labelsize=vz_tick, width=1.2)
-    
         for side in ["top","right"]:
             ax.spines[side].set_visible(False)
         for side in ["left","bottom"]:
