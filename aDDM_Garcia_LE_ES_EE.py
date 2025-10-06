@@ -4918,132 +4918,116 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
 
 
 def plot_inatt_forest(
-    results_csv,
     fig_dir,
-    model_dir=None,
-    model_base="garcia_replication_For_paper",
-    version=None,
+    model_dir,
+    model_base,
     param_E="v_ES_InattentionW_E_subj",
     param_S="v_ES_InattentionW_S_subj",
-    hdi_prob=0.95):
+    hdi_prob=0.95,
+    n_chains=3
+    ):
     """
-    Forest plots of inattentional weights differences
-    - saves CI version (CSV + PDF)
-    - saves HDI version
-    - Differnce is defined as |S| - |E|
+    HDI-only forest plot for inattentional asymmetry.
+    Computes delta = |S| - |E| per subject from posterior draws in .nc files.
+    Writes one CSV and one PDF into <fig_dir>/diagnostics.
     """
 
     out_dir = Path(fig_dir) / "diagnostics"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    df = pd.read_csv(results_csv, index_col=0)
-
-    patE = rf"^{re.escape(param_E)}\.(\d+)$"
-    patS = rf"^{re.escape(param_S)}\.(\d+)$"
-
-    E_subj = df[df.index.str.match(patE)].copy()
-    S_subj = df[df.index.str.match(patS)].copy()
-
-    E_subj["subj"] = E_subj.index.str.extract(patE)[0]
-    S_subj["subj"] = S_subj.index.str.extract(patS)[0]
-    
-    # Drop NaN subjects
-    E_subj = E_subj.dropna(subset=["subj"]).copy()
-    S_subj = S_subj.dropna(subset=["subj"]).copy()
-    
-    #  int
-    E_subj["subj"] = E_subj["subj"].astype(int)
-    S_subj["subj"] = S_subj["subj"].astype(int)
-    
-    merged = pd.merge(E_subj, S_subj, on="subj", suffixes=("_E", "_S")).sort_values("subj")
-
-    # compute CI 
-    merged["delta_mean_CI"] = merged["mean_S"].abs() - merged["mean_E"].abs()
-
-    if "sd_E" in merged and "sd_S" in merged:
-        se_delta = np.sqrt(merged["sd_S"]**2 + merged["sd_E"]**2)
-    else:
-        sE = (merged["97.5q_E"] - merged["2.5q_E"]) / 3.92
-        sS = (merged["97.5q_S"] - merged["2.5q_S"]) / 3.92
-        se_delta = np.sqrt(sE**2 + sS**2)
-
-    z = 1.96
-    merged["ci_low"] = merged["delta_mean_CI"] - z * se_delta
-    merged["ci_high"] = merged["delta_mean_CI"] + z * se_delta
-
-    ci_csv = out_dir / "inatt_asymmetry_CI.csv"
-    merged[["subj", "delta_mean_CI", "ci_low", "ci_high"]].to_csv(ci_csv, index=False)
-
-    fig, ax = plt.subplots(figsize=(6, 0.35 * len(merged)))
-    ax.set_facecolor("white")
-    ax.grid(False)
-    ypos = np.arange(len(merged))
-    for i, row in merged.iterrows():
-        ax.plot([row["ci_low"], row["ci_high"]], [ypos[i], ypos[i]], "k-", lw=1)
-        ax.plot(row["delta_mean_CI"], ypos[i], "o", color="purple")
-    ax.axvline(0, color="red", ls="--", lw=1)
-    ax.set_yticks(ypos)
-    ax.set_yticklabels(merged["subj"])
-    ax.invert_yaxis()
-    ax.set_xlabel("Difference inattentional weight  (|S| − |E|)")
-    ax.set_title("Subject-level inattentional asymmetry (Normal-approx CI)")
-    fig.tight_layout()
-    fig.savefig(out_dir / "forest_inatt_asymmetry_CI.pdf", bbox_inches="tight")
-    plt.close(fig)
-
-    print(f"[CI] Saved: {ci_csv}")
-
-    # HDI (proper way of doing it)
+    # 1) locate .nc files (garcia_replication_..._{chain}.nc)
     nc_files = []
-    if model_dir:
-        for c in range(3):
-            candidate = Path(model_dir) / f"{model_base}_{c}.nc"
+    for c in range(n_chains):
+        f = Path(model_dir) / f"{model_base}_{c}.nc"
+        if f.exists():
+            nc_files.append(f)
 
-            if candidate.exists():
-                nc_files.append(candidate)
+    if not nc_files:
+        print("[HDI] No .nc files found — nothing to do.")
+        return
 
-    if nc_files:
-        idatas = [az.from_netcdf(str(f)) for f in nc_files]
-        idata = az.concat(idatas, dim="chain")
-        post = idata.posterior.stack(sample=("chain", "draw"))
+    # 2) load & stack posterior
+    idatas = [az.from_netcdf(str(f)) for f in nc_files]
+    idata  = az.concat(idatas, dim="chain")
+    post   = idata.posterior.stack(sample=("chain", "draw"))
 
-        rows = []
-        for subj in merged["subj"]:
+    # helper to extract subject indices from variable names
+    def _subjects_for(prefix: str):
+        subs = []
+        for name in post.data_vars:
+            if name.startswith(prefix + "."):
+                try:
+                    subs.append(int(name.split(".")[-1]))
+                except Exception:
+                    pass
+        return sorted(set(subs))
+
+    subj_E = _subjects_for(param_E)
+    subj_S = _subjects_for(param_S)
+    subjects = sorted(set(subj_E) & set(subj_S))
+
+    if not subjects:
+        print(f"[HDI] No overlapping subjects for {param_E} and {param_S}.")
+        return
+
+    # 3) compute delta = |S| - |E|, HDI, etc.
+    rows = []
+    for subj in subjects:
+        # fetch draws; take absolute values as requested
+        try:
             E = np.abs(np.asarray(post[f"{param_E}.{subj}"]))
             S = np.abs(np.asarray(post[f"{param_S}.{subj}"]))
-            delta = S - E
-            hdi_low, hdi_high = az.hdi(delta, hdi_prob=hdi_prob).to_array().values
-            rows.append({
-                "subj": subj,
-                "delta_mean": float(delta.mean()),
-                "hdi_low": float(hdi_low),
-                "hdi_high": float(hdi_high),
-                "credible": int((hdi_low > 0) or (hdi_high < 0))
-            })
-        hdi_df = pd.DataFrame(rows)
-        hdi_csv = out_dir / "inatt_asymmetry_HDI.csv"
-        hdi_df.to_csv(hdi_csv, index=False)
+        except KeyError:
+            # skip if either variable missing for this subject
+            continue
 
-        fig, ax = plt.subplots(figsize=(6, 0.35 * len(hdi_df)))
-        ax.set_facecolor("white")
-        ax.grid(False)
-        ypos = np.arange(len(hdi_df))
-        for i, row in hdi_df.iterrows():
-            ax.plot([row["hdi_low"], row["hdi_high"]], [ypos[i], ypos[i]], "k-", lw=1)
-            ax.plot(row["delta_mean"], ypos[i], "o", color="purple")
-        ax.axvline(0, color="red", ls="--", lw=1)
-        ax.set_yticks(ypos)
-        ax.set_yticklabels(hdi_df["subj"])
-        ax.invert_yaxis()
-        ax.set_xlabel(f"Difference inattentional weight  (|S| − |E|), {int(hdi_prob*100)}% HDI")
-        ax.set_title("Subject-level inattentional asymmetry (HDI)")
+        delta = S - E
+        # ArviZ hdi returns an xarray; convert to simple (low, high)
+        hdi_arr = az.hdi(delta, hdi_prob=hdi_prob).to_array().values
+        hdi_low, hdi_high = float(hdi_arr[0]), float(hdi_arr[1])
+
+        rows.append({
+            "subj": int(subj),
+            "delta_mean": float(np.mean(delta)),
+            "hdi_low": hdi_low,
+            "hdi_high": hdi_high,
+            "credible": int((hdi_low > 0) or (hdi_high < 0))
+        })
+
+    if not rows:
+        print("[HDI] No rows computed (possibly missing variables).")
+        return
+
+    hdi_df  = pd.DataFrame(rows).sort_values("subj")
+    hdi_csv = out_dir / "inatt_asymmetry_HDI.csv"
+    hdi_df.to_csv(hdi_csv, index=False)
+    print(f"[HDI] Saved: {hdi_csv}")
+
+    # 4) forest plot
+    height = max(0.35 * len(hdi_df), 2.0)
+    fig, ax = plt.subplots(figsize=(6, height))
+    ax.set_facecolor("white")
+    ax.grid(False)
+
+    ypos = np.arange(len(hdi_df))
+    for i, row in enumerate(hdi_df.itertuples(index=False)):
+        ax.plot([row.hdi_low, row.hdi_high], [ypos[i], ypos[i]], "k-", lw=1)
+        ax.plot(row.delta_mean, ypos[i], "o")
+
+    ax.axvline(0, color="red", ls="--", lw=1)
+    ax.set_yticks(ypos)
+    ax.set_yticklabels(hdi_df["subj"])
+    ax.invert_yaxis()
+    ax.set_xlabel(f"Difference inattentional weight (|S| − |E|), {int(hdi_prob*100)}% HDI")
+    ax.set_title("Subject-level inattentional asymmetry (HDI)")
+
+    try:
         fig.tight_layout()
-        fig.savefig(out_dir / "forest_inatt_asymmetry_HDI.pdf", bbox_inches="tight")
-        plt.close(fig)
+    except Exception as e:
+        print(f"[HDI] tight_layout warning: {e}")
 
-        print(f"[HDI] Saved: {hdi_csv}")
-    else:
-        print("[HDI] No .nc files found")
+    fig.savefig(out_dir / "forest_inatt_asymmetry_HDI.pdf", bbox_inches="tight")
+    plt.close(fig)
 
 
     
@@ -5413,11 +5397,15 @@ else:
         analyze_model(models, fig_dir, nr_models, version, phase)
         diag_dir = Path(fig_dir) / "diagnostics"
         plot_inatt_forest(
-            results_csv=diag_dir / "results.csv",
             fig_dir=fig_dir,
             model_dir=model_dir,
-            model_base=model_base_name + model_name,
-            version=None)
+            model_base=model_base_name + model_name, 
+            param_E="v_ES_InattentionW_E_subj",
+            param_S="v_ES_InattentionW_S_subj",
+            hdi_prob=0.95,
+            n_chains=3
+        )
+        
 
 
     elif phase == 'ESEE':  
