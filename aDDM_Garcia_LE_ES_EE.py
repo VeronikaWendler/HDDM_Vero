@@ -4804,6 +4804,9 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     results = combined_model.gen_stats()
     results.to_csv(diag_dir / "results.csv")
     
+    plot_inatt_forest(results_csv=diag_dir / "results.csv", fig_dir=fig_dir)
+    
+    
     # Posterior‐trace KDEs
     traces = [combined_model.nodes_db.node[p].trace() for p in params_of_interest]
     # optional alpha‐transform if RL is used for instance
@@ -4861,7 +4864,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     param_df.columns = params_of_interest_s
     param_df.to_csv(diag_dir / "params_of_interest_s.csv", index=False)
     
-    # === Vertical KDE plots for GROUP-LEVEL parameters (z, v_ES_*) ===
+    # Vertical KDE plots
     
     # Load the group-level stats table
     results_csv = diag_dir / "results.csv"
@@ -4891,12 +4894,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         ax.set_title(param, fontsize=10)
         ax.set_xlabel("Value")
         ax.set_ylabel("Density")
-    
-        # Optional: constrain z to [0, 1] if desired
-        if param == "z":
-            ax.set_xlim(0, 1)
-    
-        # y-axis: no manual limits → auto-scale
+        
         plt.tight_layout()
         fig.savefig(group_vplot_dir / f"{param}_vertical_kde.pdf", bbox_inches="tight")
         plt.close(fig)
@@ -4908,6 +4906,47 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         safe = _sanitize_filename(f)
         if safe != f:
             os.rename(diag_dir / f, diag_dir / safe)
+
+
+def plot_inatt_forest(results_csv, fig_dir, param_E="v_ES_InattentionW_E", param_S="v_ES_InattentionW_S"):
+    """Creates a forest plot of subject-level inattentional asymmetries"""
+
+    # load results
+    df = pd.read_csv(results_csv, index_col=0)
+
+    E_subj = df[df.index.str.startswith(param_E + "_subj")]
+    S_subj = df[df.index.str.startswith(param_S + "_subj")]
+
+    # align by subject number
+    E_subj["subj"] = E_subj.index.str.extract(r"subj.(\d+)")
+    S_subj["subj"] = S_subj.index.str.extract(r"subj.(\d+)")
+    merged = pd.merge(E_subj, S_subj, on="subj", suffixes=("_E", "_S"))
+
+    # compute delta (absolute E vs S)
+    merged["delta_mean"] = merged["mean_S"] - merged["mean_E"].abs()
+
+    # forest plot
+    fig, ax = plt.subplots(figsize=(6, 0.3 * len(merged)))
+    ypos = np.arange(len(merged))
+
+    for i, row in merged.iterrows():
+        hdi_low = row["2.5q_S"] - abs(row["97.5q_E"])
+        hdi_high = row["97.5q_S"] - abs(row["2.5q_E"])
+        ax.plot([hdi_low, hdi_high], [ypos[i]]*2, 'k-', lw=1)
+        ax.plot(row["delta_mean"], ypos[i], "o", color="purple")
+
+    ax.axvline(0, color="red", linestyle="--")
+    ax.set_yticks(ypos)
+    ax.set_yticklabels(merged["subj"])
+    ax.set_xlabel("Δ inattentional weight (S - |E|)")
+    ax.set_title("Subject-level inattentional asymmetry")
+    ax.invert_yaxis()
+
+    out_path = Path(fig_dir) / "diagnostics" / "forest_inatt_asymmetry.pdf"
+    fig.tight_layout()
+    fig.savefig(out_path, bbox_inches="tight")
+    plt.close(fig)
+    print(f"Forst plot saved: {out_path}")
 
     
 
