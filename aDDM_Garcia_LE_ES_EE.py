@@ -4890,14 +4890,27 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         trace = combined_model.nodes_db.loc[param, "node"].trace()
         fig, ax = plt.subplots(figsize=(3, 6))
         sns.kdeplot(y=trace, fill=True, ax=ax, color="darkorchid")
+        ax.set_facecolor("white")
     
-        ax.set_title(param, fontsize=10)
-        ax.set_xlabel("Value")
-        ax.set_ylabel("Density")
-        
+        # Special handling for z
+        if param == "z":
+            ax.axhline(0.5, color="red", linestyle="--", linewidth=1)
+    
+            # Compute probability that z is different from 0.5
+            p_gt = np.mean(trace > 0.5)
+            p_lt = np.mean(trace < 0.5)
+            p_val = min(p_gt, p_lt) * 2  # 2-sided
+            ax.set_title(f"{param}\nP(!=0.5) ~ {1-p_val:.3f}", fontsize=10)
+        else:
+            ax.set_title(param, fontsize=10)
+    
+        ax.set_xlabel("Density")
+        ax.set_ylabel("Value")
+    
         plt.tight_layout()
         fig.savefig(group_vplot_dir / f"{param}_vertical_kde.pdf", bbox_inches="tight")
         plt.close(fig)
+
     
     
     for f in os.listdir(diag_dir):
@@ -4908,45 +4921,80 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             os.rename(diag_dir / f, diag_dir / safe)
 
 
-def plot_inatt_forest(results_csv, fig_dir, param_E="v_ES_InattentionW_E", param_S="v_ES_InattentionW_S"):
-    """Creates a forest plot of subject-level inattentional asymmetries"""
+def plot_inatt_forest(results_csv,fig_dir,nc_files=None,param_E="v_ES_InattentionW_E_subj",param_S="v_ES_InattentionW_S_subj",hdi_prob=0.95):
+    """Create a forest plot of subject-level inattentional asymmetries"""
 
-    # load results
+    out_dir = Path(fig_dir) / "diagnostics"
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+   
     df = pd.read_csv(results_csv, index_col=0)
-
-    E_subj = df[df.index.str.startswith(param_E + "_subj")]
-    S_subj = df[df.index.str.startswith(param_S + "_subj")]
-
-    # align by subject number
+    E_subj = df[df.index.str.startswith(param_E)]
+    S_subj = df[df.index.str.startswith(param_S)]
+    E_subj = E_subj.copy()
+    S_subj = S_subj.copy()
     E_subj["subj"] = E_subj.index.str.extract(r"subj.(\d+)")
     S_subj["subj"] = S_subj.index.str.extract(r"subj.(\d+)")
     merged = pd.merge(E_subj, S_subj, on="subj", suffixes=("_E", "_S"))
 
-    # compute delta (absolute E vs S)
-    merged["delta_mean"] = merged["mean_S"] - merged["mean_E"].abs()
+    merged["delta_mean_CI"] = merged["mean_S"] - merged["mean_E"].abs()
+    merged["ci_low"] = merged["2.5q_S"] - merged["97.5q_E"].abs()
+    merged["ci_high"] = merged["97.5q_S"] - merged["2.5q_E"].abs()
 
-    # forest plot
+  
+    if nc_files is not None:
+        import arviz as az
+        idatas = [az.from_netcdf(f) for f in nc_files]
+        idata = az.concat(idatas, dim="chain")
+        post = idata.posterior.stack(sample=("chain", "draw"))
+
+        hdi_rows = []
+        for subj in merged["subj"]:
+            E = np.abs(post[f"{param_E}.{subj}"].values)
+            S = post[f"{param_S}.{subj}"].values
+            delta = S - E
+            hdi = az.hdi(delta, hdi_prob=hdi_prob).to_array().values
+            mean = delta.mean()
+            cred_diff = (hdi[0] > 0) or (hdi[1] < 0)
+            hdi_rows.append({"subj": subj, "delta_mean": mean,
+                             "hdi_low": hdi[0], "hdi_high": hdi[1],
+                             "credible": int(cred_diff)})
+        hdi_df = pd.DataFrame(hdi_rows)
+        merged = pd.merge(merged, hdi_df, on="subj", how="left")
+
+        # save HDI CSV
+        hdi_out = out_dir / "inatt_asymmetry_HDI.csv"
+        hdi_df.to_csv(hdi_out, index=False)
+        print(f"[HDI] Saved per-subject HDI table: {hdi_out}")
+
+    # Forest plot
     fig, ax = plt.subplots(figsize=(6, 0.3 * len(merged)))
     ypos = np.arange(len(merged))
 
-    for i, row in merged.iterrows():
-        hdi_low = row["2.5q_S"] - abs(row["97.5q_E"])
-        hdi_high = row["97.5q_S"] - abs(row["2.5q_E"])
-        ax.plot([hdi_low, hdi_high], [ypos[i]]*2, 'k-', lw=1)
-        ax.plot(row["delta_mean"], ypos[i], "o", color="purple")
+    if "hdi_low" in merged:
+        # HDI version
+        for i, row in merged.iterrows():
+            ax.plot([row["hdi_low"], row["hdi_high"]], [ypos[i]] * 2, "k-", lw=1)
+            ax.plot(row["delta_mean"], ypos[i], "o", color="purple")
+    else:
+        # fallback CI version
+        for i, row in merged.iterrows():
+            ax.plot([row["ci_low"], row["ci_high"]], [ypos[i]] * 2, "k-", lw=1)
+            ax.plot(row["delta_mean_CI"], ypos[i], "o", color="purple")
 
     ax.axvline(0, color="red", linestyle="--")
     ax.set_yticks(ypos)
     ax.set_yticklabels(merged["subj"])
-    ax.set_xlabel("Δ inattentional weight (S - |E|)")
+    ax.set_xlabel("Delta inattentional weight (S - |E|)")
     ax.set_title("Subject-level inattentional asymmetry")
     ax.invert_yaxis()
 
-    out_path = Path(fig_dir) / "diagnostics" / "forest_inatt_asymmetry.pdf"
+    out_path = out_dir / "forest_inatt_asymmetry.pdf"
     fig.tight_layout()
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
-    print(f"Forst plot saved: {out_path}")
+    print(f"[forest] Saved: {out_path}")
+
 
     
 
