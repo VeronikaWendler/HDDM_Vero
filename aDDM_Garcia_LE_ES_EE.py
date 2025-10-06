@@ -4880,7 +4880,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         ax.set_facecolor("white")
     
         if param == "z":
-            ax.axhline(0.5, color="red", linestyle="--", linewidth=3)
+            ax.axhline(0.5, color="red", linestyle="--", linewidth=8)
     
             # Two-sided posterior probability that z != 0.5
             tr_arr = np.asarray(tr)
