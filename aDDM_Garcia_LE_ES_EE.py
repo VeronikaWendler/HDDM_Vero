@@ -3747,16 +3747,15 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                     'v_ES_InattentionW']
 
     elif phase == 'ES_quad':
-        if version == 0:          # v ~ 1 + DTA + DTA²
+        if version == 0:          
             params_of_interest = [
-            'a',              # boundary separation
-            't',              # non‑decision time
-            'z',              # starting point (stimulus‑coded)
-            'v_Intercept',    # drift intercept (β0)
-            'v_DTA',          # linear DTA weight (β1)
-            'v_DTA2',         # quadratic DTA weight (β2)
+            'a',              
+            't',            
+            'z',             
+            'v_Intercept',    
+            'v_DTA',          
+            'v_DTA2',         
             ]
-            
             params_of_interest_s = [
             'a_subj',
             't_subj',
@@ -4578,12 +4577,12 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_InattentionW_E',
                 'v_ES_InattentionW_S']
             
-            export_posterior_draws(
-                model_name="garcia_replication_For_paper_7",
-                model_dir=BASE_MODEL_DIR,
-                n_jobs=nr_models,
-                S=1000
-            )
+#            export_posterior_draws(
+#                model_name="garcia_replication_For_paper_7",
+#                model_dir=BASE_MODEL_DIR,
+#               n_jobs=nr_models,
+#                S=1000
+#            )
 
             
         elif version == 7:
@@ -4945,9 +4944,17 @@ def plot_inatt_forest(
     E_subj = df[df.index.str.match(patE)].copy()
     S_subj = df[df.index.str.match(patS)].copy()
 
-    E_subj["subj"] = E_subj.index.str.extract(patE)[0].astype(int)
-    S_subj["subj"] = S_subj.index.str.extract(patS)[0].astype(int)
-
+    E_subj["subj"] = E_subj.index.str.extract(patE)[0]
+    S_subj["subj"] = S_subj.index.str.extract(patS)[0]
+    
+    # Drop NaN subjects
+    E_subj = E_subj.dropna(subset=["subj"]).copy()
+    S_subj = S_subj.dropna(subset=["subj"]).copy()
+    
+    #  int
+    E_subj["subj"] = E_subj["subj"].astype(int)
+    S_subj["subj"] = S_subj["subj"].astype(int)
+    
     merged = pd.merge(E_subj, S_subj, on="subj", suffixes=("_E", "_S")).sort_values("subj")
 
     # compute CI 
