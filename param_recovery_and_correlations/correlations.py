@@ -214,11 +214,10 @@ def plot_alpha_correlations(
         # large annotation box
         txt = f"R² = {panel['r2']:.3f}\n{_p_text(panel['p'])}"
         ax.text(
-            0.02, 0.98, txt, transform=ax.transAxes,
+            0.03, 0.98, txt, transform=ax.transAxes,
             va="top", ha="left",
             bbox=dict(boxstyle="round,pad=0.35", fc="white", ec="none", alpha=0.9),
             fontsize=14, 
-            weight="bold"
         )
 
 
