@@ -187,27 +187,45 @@ def plot_alpha_correlations(
     fig, axes = plt.subplots(nrows, ncols, figsize=(4.2*ncols, 3.6*nrows))
     axes = np.atleast_1d(axes).ravel()
     
-    ACCENT = "darksalmon"  # change if different phase ..
+    ACCENT = "darksalmon"
     for ax, panel in zip(axes, panels):
         x = panel["x"]; y = panel["y"]
-        # points
-        ax.scatter(x, y, s=30, color=ACCENT, alpha=0.85, edgecolors="none")
-        ax.plot(panel["x_line"], panel["y_line"], color=ACCENT, lw=1.8)
+
+        # points + regression + CI
+        ax.scatter(x, y, s=60, color=ACCENT, alpha=0.85, edgecolors="none")
+        ax.plot(panel["x_line"], panel["y_line"], color=ACCENT, lw=2.5)
         ax.fill_between(panel["x_line"], panel["y_lo"], panel["y_hi"],
                         color=ACCENT, alpha=0.25, linewidth=0)
 
-        ax.set_xlabel("α (learning rate)")
-        ax.set_ylabel(panel["name"])
-        ax.set_title(panel["name"])
+        # bigger labels & title
+        ax.set_xlabel("α (learning rate)", fontsize=16, labelpad=8)
+        ax.set_ylabel(panel["name"], fontsize=16, labelpad=8)
+        ax.set_title(panel["name"], fontsize=18, pad=10)
 
+        # bigger tick labels
+        ax.tick_params(axis="both", which="major", labelsize=14, width=1.5)
+
+        # remove top/right spines, thicken bottom/left
+        for side in ["top", "right"]:
+            ax.spines[side].set_visible(False)
+        for side in ["bottom", "left"]:
+            ax.spines[side].set_linewidth(1.5)
+
+        # large annotation box
         txt = f"R² = {panel['r2']:.3f}\n{_p_text(panel['p'])}"
-        ax.text(0.02, 0.98, txt, transform=ax.transAxes, va="top", ha="left",
-                bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none", alpha=0.9), fontsize=9)
+        ax.text(
+            0.02, 0.98, txt, transform=ax.transAxes,
+            va="top", ha="left",
+            bbox=dict(boxstyle="round,pad=0.35", fc="white", ec="none", alpha=0.9),
+            fontsize=14, 
+            weight="bold"
+        )
+
 
     for j in range(len(panels), len(axes)):
         axes[j].axis("off")
 
-    fig.suptitle("Correlations: α vs subject-level parameters", y=0.995)
+    fig.suptitle("Correlations: α vs subject-level parameters", y=0.995, fontsize=23, weight="bold")
     fig.tight_layout(rect=(0, 0, 1, 0.98))
     fig.savefig(out_pdf, dpi=300, bbox_inches="tight")
     plt.close(fig)
