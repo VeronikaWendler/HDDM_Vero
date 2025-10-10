@@ -1743,54 +1743,50 @@ def run_version_36():
     
     
     
+    import os
+    import arviz as az
+    import numpy as np
+    import pandas as pd
+    
     PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
-    MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_OV")    
+    MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_OV")
+    
+    # Load .nc files and combine chains
     nc_paths = [
         os.path.join(MODELS_DIR,"OV_replication_For_paper_6_2.nc"),
         os.path.join(MODELS_DIR,"OV_replication_For_paper_6_1.nc"),
         os.path.join(MODELS_DIR,"OV_replication_For_paper_6_0.nc"),
     ]
     idatas = [az.from_netcdf(p) for p in nc_paths]
-
-    # 2. concatenate along a new “chain” axis
     idata = az.concat(idatas, dim="chain")
-
-    # shortcut to pull out a flattened array of draws for any var
+    
+    # shortcut to pull out flattened draws
     def draws(varname):
         da = idata.posterior[varname]
         return da.stack(sample=["chain","draw"]).values
-
-
-    import numpy as np
-
-    vIA_E = np.abs(draws("v_ES_InattentionW_E"))
-
-    # 3. extract everything you need
-    a    = draws("a")
-    t        = draws("t")
-    z        = draws("z")
-    #inter    = draws("v_Intercept")
-    vA   = draws("v_ES_AttentionW")
-    #vIA_E    = draws("v_ES_InattentionW_E")
-    vIA_S    = draws("v_ES_InattentionW_S")
-
-
-    # 4. compute the θ’s
-    thetaE  = vIA_E / vA
-    thetaS  = vIA_S / vA
     
-    # ----- Posterior contrasts, directional probabilities, ROPEs, and CSV -----
-    import numpy as np
-
-    d_theta_unsigned = thetaE - thetaS          
-    d_b2_unsigned    = vIA_E - vIA_S           
-
-    vIA_E_signed = draws("v_ES_InattentionW_E")   # no abs
+    # Extract parameters
+    a_L    = draws("a(low)")
+    a_M    = draws("a(medium)")
+    a_H    = draws("a(high)")
+    t      = draws("t")
+    z      = draws("z")
+    vA     = draws("v_ES_AttentionW")
+    vIA_E  = np.abs(draws("v_ES_InattentionW_E"))
+    vIA_S  = draws("v_ES_InattentionW_S")
+    
+    # Compute θ
+    thetaE = vIA_E / vA
+    thetaS = vIA_S / vA
+    
+    # Signed versions
+    vIA_E_signed = draws("v_ES_InattentionW_E")
     thetaE_signed = vIA_E_signed / vA
-    thetaS_signed = vIA_S / vA                    
+    thetaS_signed = vIA_S / vA
     d_theta_signed = thetaE_signed - thetaS_signed
-    d_b2_signed    = vIA_E_signed - vIA_S
-
+    d_b2_signed = vIA_E_signed - vIA_S
+    
+    # Helper summarizer
     def summarize_diff(arr, name, rope=None):
         m = arr.mean()
         lo, hi = az.hdi(arr, 0.95)
@@ -1801,41 +1797,53 @@ def run_version_36():
             out["ROPE_high"] = rope[1]
             out["ROPE_%"] = float(np.mean((arr >= rope[0]) & (arr <= rope[1])))
         return out
-
+    
+    # Define ROPEs
     rope_theta = (-0.02, 0.02)   # example for θ differences
     rope_b2    = (-0.002, 0.002) # example for raw weight differences
-
+    rope_a     = (-0.05, 0.05)   # example for boundary differences
+    
     summary_rows = []
-
-    # Unsigned (magnitude-oriented) estimands
+    
+    # ----- θ and b2 contrasts -----
+    d_theta_unsigned = thetaE - thetaS
+    d_b2_unsigned = vIA_E - vIA_S
+    
     summary_rows.append(summarize_diff(d_theta_unsigned, "Δθ (unsigned: |vIA_E|/vA − vIA_S/vA)", rope=rope_theta))
     summary_rows.append(summarize_diff(d_b2_unsigned,   "Δb2 (unsigned: |vIA_E| − vIA_S)",       rope=rope_b2))
-
-    # Signed estimands (as estimated)
-    summary_rows.append(summarize_diff(d_theta_signed, "Δθ (signed: vIA_E/vA − vIA_S/vA)", rope=rope_theta))
-    summary_rows.append(summarize_diff(d_b2_signed,   "Δb2 (signed: vIA_E − vIA_S)",       rope=rope_b2))
-
+    summary_rows.append(summarize_diff(d_theta_signed,  "Δθ (signed: vIA_E/vA − vIA_S/vA)",      rope=rope_theta))
+    summary_rows.append(summarize_diff(d_b2_signed,     "Δb2 (signed: vIA_E − vIA_S)",           rope=rope_b2))
+    
+    # ----- a parameter pairwise contrasts -----
+    contrasts_a = {
+        "Δa (high − low)": a_H - a_L,
+        "Δa (medium − low)": a_M - a_L,
+        "Δa (high − medium)": a_H - a_M,
+    }
+    
+    for name, arr in contrasts_a.items():
+        summary_rows.append(summarize_diff(arr, name, rope=rope_a))
+    
+    # Save combined contrasts table
     df_contrasts = pd.DataFrame(summary_rows)
-
     df_contrasts.to_csv(
         os.path.join(MODELS_DIR, "posterior_contrast_summary_For_paper_6.csv"),
         index=False
     )
-
+    
     print("\nPosterior contrast summary:")
     print(df_contrasts)
-# -------------------------------------------------------------------------
-
-
-    # helper for 95% HDI
+    
+    # ---------------- GROUP-LEVEL MAP / HDI ----------------
     def hdi(arr):
         lo, hi = az.hdi(arr, hdi_prob=0.95)
         return lo, hi
-
-    # 5A. build the group‐level MAP / HDI table
+    
     group = []
     for name, arr in [
-        ("a", a),
+        ("a(low)", a_L),
+        ("a(medium)", a_M),
+        ("a(high)", a_H),
         ("t", t),
         ("z", z),
         ("v_ES_AttentionW",  vA),
@@ -1847,35 +1855,38 @@ def run_version_36():
         m = arr.mean()
         lo, hi = hdi(arr)
         group.append({"Parameter": name, "MAP": m, "HDI_lower": lo, "HDI_upper": hi})
-
+    
     df_group = pd.DataFrame(group)
     df_group.to_csv(
         os.path.join(MODELS_DIR, "group_level_MAP_table_For_paper_6.csv"),
         index=False
-        )
+    )
     print("group‐level estimates:")
     print(df_group)
-
-    # 5B. build the paired‐difference table
+    
+    # ---------------- PAIRED COMPARISON TABLE ----------------
     rows = []
     def diff(x, y): 
         return x.mean() - y.mean(), *hdi(x - y)
-
+    
     for (label, xa, xb) in [
         ("θE-θS", thetaE, thetaS),
         ("E−S b2", vIA_E, vIA_S),
-
-        
+        ("a_H − a_L", a_H, a_L),
+        ("a_M − a_L", a_M, a_L),
+        ("a_H − a_M", a_H, a_M),
     ]:
         m, lo, hi = diff(xa, xb)
         rows.append({"Comparison": label, "MeanDiff": m, "HDI_lower": lo, "HDI_upper": hi})
-
+    
     df_comp = pd.DataFrame(rows)
     df_comp.to_csv(
         os.path.join(MODELS_DIR, "combined_parameter_comparison_table_For_paper_6.csv"),
         index=False
-        )
-    
+    )
+    print("pairwise comparisons:")
+    print(df_comp)
+
     
     # import os
     # import arviz as az
