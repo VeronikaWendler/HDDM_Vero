@@ -25,5 +25,5 @@ export MPLBACKEND=Agg
 singularity exec \
     --bind ${PROJECT}:/workspace \
     ${IMAGE} \
-    python /workspace/param_recovery_and_correlations/correlations.py
+    python /workspace/CCT_MAP_Garcia.py
 

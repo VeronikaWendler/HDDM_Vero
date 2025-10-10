@@ -1582,7 +1582,7 @@ def run_version_36():
     import numpy as np
 
     PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
-    MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_garcia")
+    MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_OV")
 
     # ---------- Helpers ----------
     def load_idata(model_stem: str, chain_idxs=(0,1,2)):
@@ -1725,16 +1725,16 @@ def run_version_36():
 #     ]
     
        # for EXP2 (6000 Samples) Group 2 (rest)
-    group2_stems = [
-        "garcia_replication_ES_VAL_10",  # Value_diff + DTA (z free)
-        "garcia_replication_For_paper_3",  # aDDM + SP (z free)
-        "garcia_replication_For_paper_7",  # a ~ OV (z free), dual inattn
-        "garcia_replication_For_paper_6"  # dual inattn (no a~OV?)
-        "garcia_replication_For_paper_3",    #  aDDM, a ~ OV
-    ]
-    # ---------- Run ----------
-    compare_group("group1_first4_garcia2", group1_stems, chain_idxs=(0,1,2))
-    compare_group("group2_rest_garcia2",   group2_stems, chain_idxs=(0,1,2))
+    # group2_stems = [
+    #     "garcia_replication_ES_VAL_10",  # Value_diff + DTA (z free)
+    #     "garcia_replication_For_paper_3",  # aDDM + SP (z free)
+    #     "garcia_replication_For_paper_7",  # a ~ OV (z free), dual inattn
+    #     "garcia_replication_For_paper_6"  # dual inattn (no a~OV?)
+    #     "garcia_replication_For_paper_3",    #  aDDM, a ~ OV
+    # ]
+    # # ---------- Run ----------
+    # compare_group("group1_first4_garcia2", group1_stems, chain_idxs=(0,1,2))
+    # compare_group("group2_rest_garcia2",   group2_stems, chain_idxs=(0,1,2))
     
     # idata_8 = load_idata("OV_replication_For_paper_8", chain_idxs=(0,1,2))
     # az.loo(idata_8)
@@ -1743,138 +1743,138 @@ def run_version_36():
     
     
     
-#     PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
-#     MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_garcia")    
-#     nc_paths = [
-#         os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_34_2.nc"),
-#         os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_34_1.nc"),
-#         os.path.join(MODELS_DIR,"garcia_replication_ES_VAL_34_0.nc"),
-#     ]
-#     idatas = [az.from_netcdf(p) for p in nc_paths]
+    PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
+    MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_OV")    
+    nc_paths = [
+        os.path.join(MODELS_DIR,"OV_replication_For_paper_6_2.nc"),
+        os.path.join(MODELS_DIR,"OV_replication_For_paper_6_1.nc"),
+        os.path.join(MODELS_DIR,"OV_replication_For_paper_6_0.nc"),
+    ]
+    idatas = [az.from_netcdf(p) for p in nc_paths]
 
-#     # 2. concatenate along a new “chain” axis
-#     idata = az.concat(idatas, dim="chain")
+    # 2. concatenate along a new “chain” axis
+    idata = az.concat(idatas, dim="chain")
 
-#     # shortcut to pull out a flattened array of draws for any var
-#     def draws(varname):
-#         da = idata.posterior[varname]
-#         return da.stack(sample=["chain","draw"]).values
-
-
-#     import numpy as np
-
-#     vIA_E = np.abs(draws("v_ES_InattentionW_E"))
-
-#     # 3. extract everything you need
-#     a    = draws("a")
-#     t        = draws("t")
-#     z        = draws("z")
-#     #inter    = draws("v_Intercept")
-#     vA   = draws("v_ES_AttentionW")
-#     #vIA_E    = draws("v_ES_InattentionW_E")
-#     vIA_S    = draws("v_ES_InattentionW_S")
+    # shortcut to pull out a flattened array of draws for any var
+    def draws(varname):
+        da = idata.posterior[varname]
+        return da.stack(sample=["chain","draw"]).values
 
 
-#     # 4. compute the θ’s
-#     thetaE  = vIA_E / vA
-#     thetaS  = vIA_S / vA
+    import numpy as np
+
+    vIA_E = np.abs(draws("v_ES_InattentionW_E"))
+
+    # 3. extract everything you need
+    a    = draws("a")
+    t        = draws("t")
+    z        = draws("z")
+    #inter    = draws("v_Intercept")
+    vA   = draws("v_ES_AttentionW")
+    #vIA_E    = draws("v_ES_InattentionW_E")
+    vIA_S    = draws("v_ES_InattentionW_S")
+
+
+    # 4. compute the θ’s
+    thetaE  = vIA_E / vA
+    thetaS  = vIA_S / vA
     
-#     # ----- Posterior contrasts, directional probabilities, ROPEs, and CSV -----
-#     import numpy as np
+    # ----- Posterior contrasts, directional probabilities, ROPEs, and CSV -----
+    import numpy as np
 
-#     d_theta_unsigned = thetaE - thetaS          
-#     d_b2_unsigned    = vIA_E - vIA_S           
+    d_theta_unsigned = thetaE - thetaS          
+    d_b2_unsigned    = vIA_E - vIA_S           
 
-#     vIA_E_signed = draws("v_ES_InattentionW_E")   # no abs
-#     thetaE_signed = vIA_E_signed / vA
-#     thetaS_signed = vIA_S / vA                    
-#     d_theta_signed = thetaE_signed - thetaS_signed
-#     d_b2_signed    = vIA_E_signed - vIA_S
+    vIA_E_signed = draws("v_ES_InattentionW_E")   # no abs
+    thetaE_signed = vIA_E_signed / vA
+    thetaS_signed = vIA_S / vA                    
+    d_theta_signed = thetaE_signed - thetaS_signed
+    d_b2_signed    = vIA_E_signed - vIA_S
 
-#     def summarize_diff(arr, name, rope=None):
-#         m = arr.mean()
-#         lo, hi = az.hdi(arr, 0.95)
-#         p_pos = float(np.mean(arr > 0))
-#         out = {"Contrast": name, "Mean": m, "HDI_lower": lo, "HDI_upper": hi, "P(>0)": p_pos}
-#         if rope is not None:
-#             out["ROPE_low"] = rope[0]
-#             out["ROPE_high"] = rope[1]
-#             out["ROPE_%"] = float(np.mean((arr >= rope[0]) & (arr <= rope[1])))
-#         return out
+    def summarize_diff(arr, name, rope=None):
+        m = arr.mean()
+        lo, hi = az.hdi(arr, 0.95)
+        p_pos = float(np.mean(arr > 0))
+        out = {"Contrast": name, "Mean": m, "HDI_lower": lo, "HDI_upper": hi, "P(>0)": p_pos}
+        if rope is not None:
+            out["ROPE_low"] = rope[0]
+            out["ROPE_high"] = rope[1]
+            out["ROPE_%"] = float(np.mean((arr >= rope[0]) & (arr <= rope[1])))
+        return out
 
-#     rope_theta = (-0.02, 0.02)   # example for θ differences
-#     rope_b2    = (-0.002, 0.002) # example for raw weight differences
+    rope_theta = (-0.02, 0.02)   # example for θ differences
+    rope_b2    = (-0.002, 0.002) # example for raw weight differences
 
-#     summary_rows = []
+    summary_rows = []
 
-#     # Unsigned (magnitude-oriented) estimands
-#     summary_rows.append(summarize_diff(d_theta_unsigned, "Δθ (unsigned: |vIA_E|/vA − vIA_S/vA)", rope=rope_theta))
-#     summary_rows.append(summarize_diff(d_b2_unsigned,   "Δb2 (unsigned: |vIA_E| − vIA_S)",       rope=rope_b2))
+    # Unsigned (magnitude-oriented) estimands
+    summary_rows.append(summarize_diff(d_theta_unsigned, "Δθ (unsigned: |vIA_E|/vA − vIA_S/vA)", rope=rope_theta))
+    summary_rows.append(summarize_diff(d_b2_unsigned,   "Δb2 (unsigned: |vIA_E| − vIA_S)",       rope=rope_b2))
 
-#     # Signed estimands (as estimated)
-#     summary_rows.append(summarize_diff(d_theta_signed, "Δθ (signed: vIA_E/vA − vIA_S/vA)", rope=rope_theta))
-#     summary_rows.append(summarize_diff(d_b2_signed,   "Δb2 (signed: vIA_E − vIA_S)",       rope=rope_b2))
+    # Signed estimands (as estimated)
+    summary_rows.append(summarize_diff(d_theta_signed, "Δθ (signed: vIA_E/vA − vIA_S/vA)", rope=rope_theta))
+    summary_rows.append(summarize_diff(d_b2_signed,   "Δb2 (signed: vIA_E − vIA_S)",       rope=rope_b2))
 
-#     df_contrasts = pd.DataFrame(summary_rows)
+    df_contrasts = pd.DataFrame(summary_rows)
 
-#     df_contrasts.to_csv(
-#         os.path.join(MODELS_DIR, "posterior_contrast_summary_ES_VAL_34.csv"),
-#         index=False
-#     )
+    df_contrasts.to_csv(
+        os.path.join(MODELS_DIR, "posterior_contrast_summary_For_paper_6.csv"),
+        index=False
+    )
 
-#     print("\nPosterior contrast summary:")
-#     print(df_contrasts)
-# # -------------------------------------------------------------------------
+    print("\nPosterior contrast summary:")
+    print(df_contrasts)
+# -------------------------------------------------------------------------
 
 
-#     # helper for 95% HDI
-#     def hdi(arr):
-#         lo, hi = az.hdi(arr, hdi_prob=0.95)
-#         return lo, hi
+    # helper for 95% HDI
+    def hdi(arr):
+        lo, hi = az.hdi(arr, hdi_prob=0.95)
+        return lo, hi
 
-#     # 5A. build the group‐level MAP / HDI table
-#     group = []
-#     for name, arr in [
-#         ("a", a),
-#         ("t", t),
-#         ("z", z),
-#         ("v_ES_AttentionW",  vA),
-#         ("v_ES_InattentionW_E",  vIA_E),
-#         ("v_ES_InattentionW_S", vIA_S),
-#         ("θE", thetaE),
-#         ("θS", thetaS),
-#     ]:
-#         m = arr.mean()
-#         lo, hi = hdi(arr)
-#         group.append({"Parameter": name, "MAP": m, "HDI_lower": lo, "HDI_upper": hi})
+    # 5A. build the group‐level MAP / HDI table
+    group = []
+    for name, arr in [
+        ("a", a),
+        ("t", t),
+        ("z", z),
+        ("v_ES_AttentionW",  vA),
+        ("v_ES_InattentionW_E",  vIA_E),
+        ("v_ES_InattentionW_S", vIA_S),
+        ("θE", thetaE),
+        ("θS", thetaS),
+    ]:
+        m = arr.mean()
+        lo, hi = hdi(arr)
+        group.append({"Parameter": name, "MAP": m, "HDI_lower": lo, "HDI_upper": hi})
 
-#     df_group = pd.DataFrame(group)
-#     df_group.to_csv(
-#         os.path.join(MODELS_DIR, "group_level_MAP_table_ES_VAL_34.csv"),
-#         index=False
-#         )
-#     print("group‐level estimates:")
-#     print(df_group)
+    df_group = pd.DataFrame(group)
+    df_group.to_csv(
+        os.path.join(MODELS_DIR, "group_level_MAP_table_For_paper_6.csv"),
+        index=False
+        )
+    print("group‐level estimates:")
+    print(df_group)
 
-#     # 5B. build the paired‐difference table
-#     rows = []
-#     def diff(x, y): 
-#         return x.mean() - y.mean(), *hdi(x - y)
+    # 5B. build the paired‐difference table
+    rows = []
+    def diff(x, y): 
+        return x.mean() - y.mean(), *hdi(x - y)
 
-#     for (label, xa, xb) in [
-#         ("θE-θS", thetaE, thetaS),
-#         ("E−S b2", vIA_E, vIA_S),
+    for (label, xa, xb) in [
+        ("θE-θS", thetaE, thetaS),
+        ("E−S b2", vIA_E, vIA_S),
 
         
-#     ]:
-#         m, lo, hi = diff(xa, xb)
-#         rows.append({"Comparison": label, "MeanDiff": m, "HDI_lower": lo, "HDI_upper": hi})
+    ]:
+        m, lo, hi = diff(xa, xb)
+        rows.append({"Comparison": label, "MeanDiff": m, "HDI_lower": lo, "HDI_upper": hi})
 
-#     df_comp = pd.DataFrame(rows)
-#     df_comp.to_csv(
-#         os.path.join(MODELS_DIR, "combined_parameter_comparison_table_ES_VAL_34.csv"),
-#         index=False
-#         )
+    df_comp = pd.DataFrame(rows)
+    df_comp.to_csv(
+        os.path.join(MODELS_DIR, "combined_parameter_comparison_table_For_paper_6.csv"),
+        index=False
+        )
     
     
     # import os
