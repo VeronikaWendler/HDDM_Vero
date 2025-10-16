@@ -1,6 +1,7 @@
 # Veronika Wendler
 # 22.01.25
-# code for the attentional drift diffusion model - originally, I used a very basic version of this in summer 2024 in Quebec and was inspired by Jan Willem De Gee's code found somewhere on his GitHub - but this version is pretty much mine
+# code for the attentional drift diffusion model
+# - originally, I used a very basic version of this in summer 2024 in Quebec and was inspired by Jan Willem De Gee's Python2 code found somewhere on his GitHub - but this version is pretty much mine
  
 # import libraries
 import pandas as pd
@@ -129,6 +130,7 @@ model_versions = {
 }
 
 # debugging, tip, python starts at 0, unlike Matlab
+# honestly, for whoever wants to run this I am really sorry because it's still quite messy, essentially, if you want to run a model e.g. model 1, you load the data from 0 (because of the indexing mismatch)
 if phase not in model_versions:
     raise ValueError(f"Invalid phase '{phase}'. Choose from: {list(model_versions.keys())}")
 
@@ -148,8 +150,7 @@ model_name = model_versions[phase][version]
 #data = pd.read_csv(data_path1, sep=',')
 
 data = pd.read_csv((PROJECT_DIR / "data_sets"  / "data_sets_Garcia/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix(), sep=",")
-
-source_phase = PHASE_TO_SOURCE.get(phase, phase)   #assignes ES_ZBIAS
+source_phase = PHASE_TO_SOURCE.get(phase, phase)  
 
 
 # correct data filtering
@@ -165,10 +166,7 @@ data["phase"] = data["phase"].astype("category")
 
 # preparing the data 
 data["rt"] = pd.to_numeric(data['rtime'], errors='coerce')  
-
-# Exclude RTs below 0.250 immediately
 data = data[data["rt"] > 0.250]
-
 print("Min RT after filtering:", data['rt'].min())
 print("Max RT after filtering:", data['rt'].max())
 
@@ -241,6 +239,7 @@ plt.close(fig)
 
 
 # Functions 
+#-------------------------------------------------------------------------------------------------------------------
 
 # ensure directory exists
 def ensure_dir(directory):
@@ -291,7 +290,7 @@ def _summ_from_samples(arr_1d):
     }
 
 
-# 1000 draws from the posterior for PPC instead of mean, SD (for For_model 7) 
+# here, I am drawing 1000 posterior samples for PPC instead of mean, SD (for For_model 7) 
 
 def export_posterior_draws(model_name, model_dir, n_jobs=3, S=1000):
     # load and combine chains
@@ -907,12 +906,9 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
 
     sns.set_theme(style='darkgrid', font='sans-serif', font_scale=0.5)
 
-    # Check if models are valid
     if not models or models[0] is None:
         print("ERROR: Models are empty or invalid.")
         return
-
-    # Try combining models
     try:
         combined_model = kabuki.utils.concat_models(models)
         print("Models combined successfully.")
@@ -4800,15 +4796,14 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     results.to_csv(diag_dir / "results.csv")
     
     
-    
-    # --- helper to safely get a trace from combined_model
+    #  helper to get the trace 
     def _get_trace(model, name):
         try:
             return model.nodes_db.loc[name, "node"].trace()
         except Exception:
             return None
     
-    # --- 1) HORIZONTAL KDE PANEL FOR ATTENTION/INATTENTION WEIGHTS
+    # HORIZONTAL KDE PANEL FOR ATTENTION/INATTENTION WEIGHTS
     panel_params = [
         ("v_ES_AttentionW",   "Attention weight (β_att)"),
         ("v_ES_InattentionW_E", "Inattention to E (β_IAW-E)"),
@@ -4854,7 +4849,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     else:
         print("[KDE] No traces found for attention/inattention weights; skipping panel.")
     
-    # --- 2) LARGER VERTICAL KDEs FOR GROUP-LEVEL PARAMETERS (esp. z)
+    
     group_params_to_plot = [
         "z",
         "v_ES_AttentionW",
@@ -4872,7 +4867,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     for param in group_params_to_plot:
         tr = _get_trace(combined_model, param)
         if tr is None:
-            print(f"[Group-KDE] Skipping missing parameter: {param}")
+            print(f"Skipping missing parameter: {param}")
             continue
     
         fig, ax = plt.subplots(figsize=(5, 8))
@@ -4888,17 +4883,17 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             p_lt = np.mean(tr_arr < 0.5)
             p_two_sided = 2 * min(p_gt, p_lt)
     
-            # HDI for delta = z - 0.5
+            # HDI for delta = z - 0.5 ( to check whether it's sig. differnet from 50%)
             delta = tr_arr - 0.5
             hdi_lo, hdi_hi = az.hdi(delta, hdi_prob=0.95).ravel()
             hdi_text = f"95% HDI(z-0.5)=[{hdi_lo:.3f}, {hdi_hi:.3f}]"
     
-            # ROPE around 0.5 (±0.02 by default)
+            # ROPE around 0.5 (0.02 by default similar to the tutorials by Pan et al., 2025)
             rope = 0.02
             p_in_rope = np.mean((np.abs(delta) <= rope))
     
             ax.set_title(
-                f"{param}  |  P(z!=0.5)={1-p_two_sided:.3f}\n{hdi_text}  |  P(|z-0.5|<={rope:.2f})={p_in_rope:.3f}",
+                f"{param}  |P(z!=0.5)={1-p_two_sided:.3f}\n{hdi_text} | P(|z-0.5|<={rope:.2f})={p_in_rope:.3f}",
                 fontsize=vz_title, pad=12
             )
         else:
@@ -4940,7 +4935,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             f.write(f"95% HDI(z-0.5) = [{hdi_lo:.4f}, {hdi_hi:.4f}]  (excludes 0? {'YES' if (hdi_lo>0 or hdi_hi<0) else 'NO'})\n")
             f.write(f"ROPE +- {rope:.2f}: P(|z-0.5| <= ROPE) = {p_in_rope:.4f}\n")
     else:
-        print("[z] No group-level z trace found; skipping z_diagnostics.")
+        print("No group-level z trace found; skipping z_diagnostics.")
     
     
     for f in os.listdir(diag_dir):
@@ -4949,6 +4944,8 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         safe = _sanitize_filename(f)
         if safe != f:
             os.rename(diag_dir / f, diag_dir / safe)
+
+# you can use this function in case you are interestd inseeign whether, at the individual level, parameter differences include 0 in HDI. THis is important because the group level estimate might hide lots of individual varibaility
 
 def plot_inatt_forest(
     fig_dir,
@@ -4960,7 +4957,7 @@ def plot_inatt_forest(
     n_chains=3
     ):
     """
-    HDI-only forest plot from .nc posterior samples.
+    HDI forest plot from .nc posterior samples.
     Also computes Bayes factor (Savage-Dickey) for group-level Δ = |S| - |E|.
     """
 
@@ -4969,7 +4966,7 @@ def plot_inatt_forest(
     out_dir = Path(fig_dir) / "diagnostics"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # --- load nc files
+    # load nc files
     nc_files = []
     for c in range(n_chains):
         candidate = Path(model_dir) / f"{model_base}_{c}.nc"
@@ -4983,7 +4980,7 @@ def plot_inatt_forest(
     idata  = az.concat(idatas, dim="chain")
     post   = idata.posterior.stack(sample=("chain", "draw"))
 
-    # --- find all subject-level vars
+    # find all subject-level vars
     subj_E = [v for v in post.data_vars if v.startswith(param_E)]
     subj_S = [v for v in post.data_vars if v.startswith(param_S)]
 
@@ -4992,7 +4989,7 @@ def plot_inatt_forest(
     subj_ids = sorted(ids_E & ids_S)
 
     if not subj_ids:
-        print("[HDI] No overlapping subjects in .nc posterior")
+        print("No overlapping subjects in .nc posterior")
         return
 
     rows = []
@@ -5021,12 +5018,12 @@ def plot_inatt_forest(
     hdi_df.to_csv(hdi_csv, index=False)
     print(f"[HDI] Saved: {hdi_csv}")
 
-    # --- compute group-level Bayes factor
+    # group-level Bayes factor
     group_delta = np.concatenate(all_deltas)
     kde = gaussian_kde(group_delta)
     post_at_0 = kde.evaluate([0])[0]
 
-    # prior density at 0 (assuming N(0,1) prior on regression weights)
+    # prior density at 0
     prior_at_0 = norm.pdf(0, loc=0, scale=1)
 
     BF_01 = post_at_0 / prior_at_0
@@ -5037,10 +5034,10 @@ def plot_inatt_forest(
         f.write(f"BF_01 (H0/H1): {BF_01:.3f}\n")
         f.write(f"BF_10 (H1/H0): {BF_10:.3f}\n")
 
-    print(f"[BF] Saved Bayes factor results to {bf_file}")
+    print(f"Saved Bayes factor results to {bf_file}")
     print(f"  BF_01 = {BF_01:.3f}, BF_10 = {BF_10:.3f}")
 
-    # --- forest plot
+    # forest plot
     fig, ax = plt.subplots(figsize=(6, 0.35 * len(hdi_df)))
     ax.set_facecolor("white")
     ax.grid(False)
@@ -5063,15 +5060,10 @@ def plot_inatt_forest(
     
 
 def analyze_rl(infdatas, fig_dir, version):
-    """
-    infdatas : list of arviz.InferenceData, one per chain
-    fig_dir  : Path or str, root directory for figures / diagnostics
-    version  : int, model version index (used only for labeling)
-    """
     fig_dir = Path(fig_dir)
     diag_dir = fig_dir / "diagnostics"
     diag_dir.mkdir(parents=True, exist_ok=True)
-
+    # infdata is an arviz specific object
     # concatenate chains
     idata = az.concat(infdatas, dim="chain")
     print(idata)
@@ -5098,7 +5090,7 @@ def analyze_rl(infdatas, fig_dir, version):
     # plt.savefig(diag_dir / "posterior_predictive.pdf")
     # plt.close()
 
-    #Summary stats table
+    # stats table
     summary = az.summary(idata)
     summary.to_csv(diag_dir / "results.csv")
 
@@ -5107,7 +5099,7 @@ def analyze_rl(infdatas, fig_dir, version):
         print("[alpha-transform] No 'alpha' in posterior; skipping transformed CSV.")
         return
 
-    # Transform group-level alpha
+    # Transforming group-level alpha
     alpha_draws = idata.posterior["alpha"].values.reshape(-1)  # (chains*draws,)
     alpha_prob  = _inv_logit(alpha_draws)
     alpha_summ  = _summ_from_samples(alpha_prob)
@@ -5132,10 +5124,9 @@ def analyze_rl(infdatas, fig_dir, version):
     else:
         alpha_std_summ = None
 
-    # Make a transformed copy of the ArviZ summary and replace alpha rows 
+    # transformed copy of the ArviZ summary --> replace alpha rows 
     summary_t = summary.copy()
 
-    # Replace group alpha row (if present)
     if "alpha" in summary_t.index:
         for k, v in alpha_summ.items():
             summary_t.loc["alpha", k] = v
@@ -5151,11 +5142,10 @@ def analyze_rl(infdatas, fig_dir, version):
             for k, val in stats.items():
                 summary_t.loc[v, k] = val
 
-    # Save the transformed results next to the original
     out_csv = diag_dir / "results_alpha_transformed.csv"
     summary_t.to_csv(out_csv)
 
-    # Also write per-subject means (prob. scale) for convenience
+    # write per-subject means (prob. scale) for convenience
     if subj_vars:
         means = []
         for v in sorted(subj_vars, key=lambda x: int(x.split("alpha_subj.")[-1])):
@@ -5169,7 +5159,6 @@ def analyze_rl(infdatas, fig_dir, version):
         print(f"  - {diag_dir / 'params_of_interest_s_alpha_transformed.csv'}")
 
 
-
     #Posterior‐trace + KDE plots (one PDF each)
     var_names = ["alpha"]
     titles = ["alpha"]
@@ -5178,14 +5167,9 @@ def analyze_rl(infdatas, fig_dir, version):
     plt.tight_layout()
     plt.savefig(diag_dir / "trace_plots.pdf")
     plt.close()
-
     # Posterior KDEs
     matplotlib.rcParams.update({"font.size": 6})
-    
-    # create a figure with one column per variable
     fig, axes = plt.subplots(1, len(var_names), figsize=(len(var_names) * 2, 4))
-    
-    # flatten into a 1-d array no matter what matplotlib gives you
     axes_flat = np.atleast_1d(axes).flatten()
     
     for i, p in enumerate(var_names):
@@ -5212,7 +5196,7 @@ def analyze_rl(infdatas, fig_dir, version):
         subj_means = {}
         for var in subj_vars:
             subj = int(var.split("alpha_subj.")[-1])
-            arr  = idata.posterior[var].values  # (chain, draw)
+            arr  = idata.posterior[var].values  
             subj_means[subj] = arr.reshape(-1).mean()
         df = pd.DataFrame.from_dict(
             subj_means, orient="index", columns=["alpha_subj"]

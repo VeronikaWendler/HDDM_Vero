@@ -2037,27 +2037,22 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     size_plot = len(combined_model.data.subj_idx.unique()) / 3.0 * 1.5
     combined_model.plot_posterior_predictive(samples=10, bins=100, figsize=(6, size_plot), save=True, path=str(diag_dir), format="pdf")
     
-    # shrink font for the next set of plots
     matplotlib.rcParams.update({"font.size": 6})
     combined_model.plot_posteriors(save=True,
                                    path=str(diag_dir),
                                    format="pdf")
     matplotlib.rcParams.update({"font.size": 12})
 
-    # stats table
     results = combined_model.gen_stats()
     results.to_csv(diag_dir / "results.csv")
     
-    
-    
-    # --- helper to safely get a trace from combined_model
+    # get the posterior traces (helper)
     def _get_trace(model, name):
         try:
             return model.nodes_db.loc[name, "node"].trace()
         except Exception:
             return None
     
-    # --- 1) HORIZONTAL KDE PANEL FOR ATTENTION/INATTENTION WEIGHTS
     panel_params = [
         ("v_ES_AttentionW",   "Attention weight (β_att)"),
         ("v_ES_InattentionW_E", "Inattention to E (β_IAW-E)"),
@@ -2072,10 +2067,10 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             panel_labels.append(label)
     
     if panel_traces:
-        # big fonts
-        big_title_size = 27
-        big_label_size = 26
-        big_tick_size  = 24
+        # fonts
+        title_size = 27
+        label_size = 26
+        tick_size  = 24
     
         n = len(panel_traces)
         fig, axes = plt.subplots(
@@ -2088,22 +2083,21 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             # horizontal KDE
             sns.kdeplot(x=tr, fill=True, ax=ax)
             ax.axvline(0.0, ls="--", lw=1, color="grey")
-            ax.set_title(label, fontsize=big_title_size, pad=12)
-            ax.set_xlabel("Parameter value", fontsize=big_label_size, labelpad=6)
-            ax.set_ylabel("Density", fontsize=big_label_size)
-            ax.tick_params(axis="both", labelsize=big_tick_size, width=1.2)
+            ax.set_title(label, fontsize=title_size, pad=12)
+            ax.set_xlabel("Parameter value", fontsize=label_size, labelpad=6)
+            ax.set_ylabel("Density", fontsize=label_size)
+            ax.tick_params(axis="both", labelsize=tick_size, width=1.2)
             for side in ["top","right"]:
                 ax.spines[side].set_visible(False)
             for side in ["left","bottom"]:
                 ax.spines[side].set_linewidth(1.2)
     
-        fig.suptitle("Posterior densities (horizontal)", fontsize=big_title_size+2)
+        fig.suptitle("Posterior densities (horizontal)", fontsize=title_size+2)
         fig.savefig(diag_dir / "kde_attention_inattention_horizontal.pdf", bbox_inches="tight")
         plt.close(fig)
     else:
-        print("[KDE] No traces found for attention/inattention weights; skipping panel.")
+        print("No traces found for attention/inattention weights; skipping panel.")
     
-    # --- 2) LARGER VERTICAL KDEs FOR GROUP-LEVEL PARAMETERS (esp. z)
     group_params_to_plot = [
         "z",
         "v_ES_AttentionW",
@@ -2113,7 +2107,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     group_vplot_dir = diag_dir / "group_param_vertical_kdes"
     group_vplot_dir.mkdir(parents=True, exist_ok=True)
     
-    # bigger, readable fonts
     vz_title = 27
     vz_label = 26
     vz_tick  = 24
@@ -2142,12 +2135,12 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             hdi_lo, hdi_hi = az.hdi(delta, hdi_prob=0.95).ravel()
             hdi_text = f"95% HDI(z-0.5)=[{hdi_lo:.3f}, {hdi_hi:.3f}]"
     
-            # ROPE around 0.5 (±0.02 by default)
+            # ROPE around 0.5 
             rope = 0.02
             p_in_rope = np.mean((np.abs(delta) <= rope))
     
             ax.set_title(
-                f"{param}  |  P(z!=0.5)={1-p_two_sided:.3f}\n{hdi_text}  |  P(|z-0.5|<={rope:.2f})={p_in_rope:.3f}",
+                f"{param}  |  P(z!=0.5)={1-p_two_sided:.3f}\n{hdi_text} | P(|z-0.5|<={rope:.2f})={p_in_rope:.3f}",
                 fontsize=vz_title, pad=12
             )
         else:
@@ -2165,7 +2158,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         fig.savefig(group_vplot_dir / f"{param}_vertical_kde_big.pdf", bbox_inches="tight")
         plt.close(fig)
     
-    # --- 3) Write a compact z-diagnostics text file, too
+    # z-diagnostics text file
     z_trace = _get_trace(combined_model, "z")
     if z_trace is not None:
         z_arr = np.asarray(z_trace)
@@ -2188,7 +2181,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             f.write(f"95% HDI(z-0.5) = [{hdi_lo:.4f}, {hdi_hi:.4f}]  (excludes 0? {'YES' if (hdi_lo>0 or hdi_hi<0) else 'NO'})\n")
             f.write(f"ROPE +- {rope:.2f}: P(|z-0.5| <= ROPE) = {p_in_rope:.4f}\n")
     else:
-        print("[z] No group-level z trace found; skipping z_diagnostics.")
+        print("No group-level z trace found; skipping z_diagnostics.")
     
     
     for f in os.listdir(diag_dir):
@@ -2207,17 +2200,9 @@ def plot_inatt_forest(
     param_S="v_ES_InattentionW_S_subj",
     n_chains=3
     ):
-    """
-    HDI-only forest plot from .nc posterior samples.
-    Also computes Bayes factor (Savage-Dickey) for group-level Δ = |S| - |E|.
-    """
-
     from scipy.stats import gaussian_kde, norm
-
     out_dir = Path(fig_dir) / "diagnostics"
     out_dir.mkdir(parents=True, exist_ok=True)
-
-    # --- load nc files
     nc_files = []
     for c in range(n_chains):
         candidate = Path(model_dir) / f"{model_base}_{c}.nc"
@@ -2231,7 +2216,7 @@ def plot_inatt_forest(
     idata  = az.concat(idatas, dim="chain")
     post   = idata.posterior.stack(sample=("chain", "draw"))
 
-    # --- find all subject-level vars
+    # find all subject-level vars
     subj_E = [v for v in post.data_vars if v.startswith(param_E)]
     subj_S = [v for v in post.data_vars if v.startswith(param_S)]
 
@@ -2240,7 +2225,7 @@ def plot_inatt_forest(
     subj_ids = sorted(ids_E & ids_S)
 
     if not subj_ids:
-        print("[HDI] No overlapping subjects in .nc posterior")
+        print("No overlapping subjects in nc posterior")
         return
 
     rows = []
@@ -2269,17 +2254,13 @@ def plot_inatt_forest(
     hdi_df.to_csv(hdi_csv, index=False)
     print(f"[HDI] Saved: {hdi_csv}")
 
-    # --- compute group-level Bayes factor
+    # group-level Bayes factor
     group_delta = np.concatenate(all_deltas)
     kde = gaussian_kde(group_delta)
     post_at_0 = kde.evaluate([0])[0]
-
-    # prior density at 0 (assuming N(0,1) prior on regression weights)
     prior_at_0 = norm.pdf(0, loc=0, scale=1)
-
     BF_01 = post_at_0 / prior_at_0
     BF_10 = 1 / BF_01
-
     bf_file = out_dir / "inatt_asymmetry_BayesFactor.txt"
     with open(bf_file, "w") as f:
         f.write(f"BF_01 (H0/H1): {BF_01:.3f}\n")
@@ -2288,7 +2269,7 @@ def plot_inatt_forest(
     print(f"[BF] Saved Bayes factor results to {bf_file}")
     print(f"  BF_01 = {BF_01:.3f}, BF_10 = {BF_10:.3f}")
 
-    # --- forest plot
+    # forest plot
     fig, ax = plt.subplots(figsize=(6, 0.35 * len(hdi_df)))
     ax.set_facecolor("white")
     ax.grid(False)
@@ -2308,13 +2289,8 @@ def plot_inatt_forest(
     fig.savefig(out_dir / "forest_inatt_asymmetry_HDI.pdf", bbox_inches="tight")
     plt.close(fig)
 
-
+# this is being called when the RL model is analyzed 
 def analyze_rl(infdatas, fig_dir, version):
-    """
-    infdatas : list of arviz.InferenceData, one per chain
-    fig_dir  : Path or str, root directory for figures / diagnostics
-    version  : int, model version index (used only for labeling)
-    """
     fig_dir = Path(fig_dir)
     diag_dir = fig_dir / "diagnostics"
     diag_dir.mkdir(parents=True, exist_ok=True)
@@ -2324,8 +2300,6 @@ def analyze_rl(infdatas, fig_dir, version):
     print(idata)
     print(idata.posterior)
     print("Data variables in posterior:", list(idata.posterior.data_vars))
-
-            
     rhat = az.rhat(idata)
     with open(diag_dir / "gelman_rubin.txt", "w") as f:
         for var in rhat.data_vars:
@@ -2339,17 +2313,14 @@ def analyze_rl(infdatas, fig_dir, version):
     #     "value":  [waic_res.waic, waic_res.waic_se]
     # })
     # dic_df.to_csv(diag_dir/"dic.csv", index=False)
-
-    # Posterior predictive check
     # az.plot_ppc(idata)  
     # plt.savefig(diag_dir / "posterior_predictive.pdf")
     # plt.close()
 
-    #Summary stats table
+    # stats table
     summary = az.summary(idata)
     summary.to_csv(diag_dir / "results.csv")
 
-    # Collect posterior arrays
     if "alpha" not in idata.posterior.data_vars:
         print("[alpha-transform] No 'alpha' in posterior; skipping transformed CSV.")
         return
@@ -2373,13 +2344,12 @@ def analyze_rl(infdatas, fig_dir, version):
             subj_summ_rows[v] = _summ_from_samples(arr_prob)
 
         subj_prob_matrix = np.vstack(subj_prob_matrix).T  # (draws, subj)
-        # group SD on probability scale, computed correctly across subjects per draw
         sd_draws = np.std(subj_prob_matrix, axis=1, ddof=1)
         alpha_std_summ = _summ_from_samples(sd_draws)
     else:
         alpha_std_summ = None
 
-    # Make a transformed copy of the ArviZ summary and replace alpha rows 
+    # transformed copy of the ArviZ summary and replace alpha rows 
     summary_t = summary.copy()
 
     # Replace group alpha row (if present)
@@ -2398,11 +2368,9 @@ def analyze_rl(infdatas, fig_dir, version):
             for k, val in stats.items():
                 summary_t.loc[v, k] = val
 
-    # Save the transformed results next to the original
     out_csv = diag_dir / "results_alpha_transformed.csv"
     summary_t.to_csv(out_csv)
 
-    # Also write per-subject means (prob. scale) for convenience
     if subj_vars:
         means = []
         for v in sorted(subj_vars, key=lambda x: int(x.split("alpha_subj.")[-1])):
@@ -2417,34 +2385,28 @@ def analyze_rl(infdatas, fig_dir, version):
 
 
 
-    #Posterior‐trace + KDE plots (one PDF each)
+    #Posterior‐trace + KDE plot
     var_names = ["alpha"]
     titles = ["alpha"]
-    # Trace
     az.plot_trace(idata, var_names=var_names)
     plt.tight_layout()
     plt.savefig(diag_dir / "trace_plots.pdf")
     plt.close()
-
     # Posterior KDEs
     matplotlib.rcParams.update({"font.size": 6})
     
-    # create a figure with one column per variable
+    # figure with one column per variable
     fig, axes = plt.subplots(1, len(var_names), figsize=(len(var_names) * 2, 4))
-    
-    # flatten into a 1-d array no matter what matplotlib gives you
     axes_flat = np.atleast_1d(axes).flatten()
-    
     for i, p in enumerate(var_names):
         ax = axes_flat[i]
         arr = idata.posterior[p].values.reshape(-1)
         if p == "alpha":
             arr = np.exp(arr) / (1 + np.exp(arr))
         sns.kdeplot(y=arr, fill=True, ax=ax)
-
         ax.set_title(p)
-        ax.set_xlim(0, 15)      # x-axis from 0 to 15
-        ax.set_ylim(0, 0.5)     # y-axis (density) from 0 to 0.5
+        ax.set_xlim(0, 15)      
+        ax.set_ylim(0, 0.5)    
         ax.set_ylabel("Density")
         ax.set_xlabel("Value")
 
@@ -2468,12 +2430,7 @@ def analyze_rl(infdatas, fig_dir, version):
         df.to_csv(diag_dir/"params_of_interest_s.csv", index=False)
     else:
         print("ERROR")
-    
-    
-    
-    
-
-    
+     
 model_dir = BASE_MODEL_DIR
 ensure_dir(model_dir)
 

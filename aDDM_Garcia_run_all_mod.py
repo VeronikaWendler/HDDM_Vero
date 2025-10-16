@@ -1,6 +1,7 @@
 # Veronika Wendler
 # 22.01.25
-# code for the attentional drift diffusion model - originally, I used this in summer 2024 in Quebec and was inspired by Jan WIllem De Gee's code somewhere on GitHub - but this version is pretty much my creation
+# code for the attentional drift diffusion model
+# originally, I used this in summer 2024 in Quebec and was inspired by Jan WIllem De Gee's framework somewhere on his GitHub; but this version is pretty much my creation
 
 # import libraries  
 import pandas as pd
@@ -31,15 +32,12 @@ from joblib import Parallel, delayed
 import cloudpickle, dill
 cloudpickle.dump = dill.dump
 
-
-# -------------------------------------------------------------------------
-# patch: make a dummy _gdbm module so “import _gdbm” never fails
+# for running on the cluster
+#dummy _gdbm module so “import _gdbm” never fails
 import types, sys
 sys.modules.setdefault('winreg', types.ModuleType('winreg'))
-
 sys.modules.setdefault('_gdbm', types.ModuleType('_gdbm'))
 # -------------------------------------------------------------------------
-
 
 import dill as pickle
 from copy import deepcopy   # for modfiying z to be 0.55 (like in Sebastian's Matlab)
@@ -68,18 +66,14 @@ def ensure_dir(path):
 #import compact_models
 
 # for Z bias coding
-from scipy.special import expit   # for inverse‑logit treans
+from scipy.special import expit   # for inverse‑logit 
 
 
+# This was an attempt to code a z-link function
 def make_z_link(full_stimulus_vector):
     stim = np.asarray(full_stimulus_vector, dtype=int)
 
     def _link(x):
-        """
-        x can be a NumPy array *or* a pandas Series coming from HDDM.
-        We return the *same* type HDDM gave us so later code still works.
-        """
-        # --- make sure stim is at least as long as x ---
         if stim.size < len(x):
             reps = (len(x) // stim.size) + 1
             stim_aligned = np.tile(stim, reps)[:len(x)]
@@ -87,13 +81,12 @@ def make_z_link(full_stimulus_vector):
             stim_aligned = stim[:len(x)]
 
         z = np.where(stim_aligned == 0,
-                     1.0 - expit(x),   # flip for stimulus==0
-                     expit(x))         # usual inverse‑logit
+                     1.0 - expit(x),  
+                     expit(x)) 
 
-        # preserve the incoming container type
-        if hasattr(x, "index"):            # it's a pandas Series
+        if hasattr(x, "index"):            
             return pd.Series(z, index=x.index, name="z")
-        return z                           # plain NumPy array
+        return z                       
 
     return _link
 
@@ -113,16 +106,12 @@ def make_z_link(full_stimulus_vector):
 # V_opt​ = value if the better option
 # V_sub = value of the worse option
 
-
-# created these new columns
 #data['ES_AttentionW'] = (data['PropDwell_Right'] * data['p2']) - (data['PropDwell_Left'] * data['p1'])
 #data['ES_InattentionW'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwell_Right'] * data['p1'])
-#data['ES_AttentionW'] = data['ES_AttentionW'].round(3)
-#data['ES_InattentionW'] = data['ES_InattentionW'].round(3)
-##
-# hard-coded 
+
+
 nr_models       = 3         # number of MCMC chains
-nr_samples      = 6000       # samples per chain - do 11000 but for now for a quick one we do 600
+nr_samples      = 6000      # samples per chain - do 6000 (+1000 for burn-in) but for now for a quick one we do 600
 parallel        = True      # parallel
 model_base_name = "garcia_replication_"
 model_versions  = {
@@ -157,31 +146,25 @@ PHASE_TO_SOURCE = {
     "For_paper": "ES",
 }
 
-
-
 # BATCH-RUN CONTROL
 PHASE_RUN_ORDER = ["For_paper"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","ES","ES_VAL","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}                 # ignored this phase
-RUN_ALL_MODELS  = True                                           # False = just load existing fits
+SKIP_PHASES     = {"LE","ES_ZBIAS","ES","ES_VAL","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}  # ignored this phase
+RUN_ALL_MODELS  = True                                           # False = just load existing fits (but loading is done in the aDDM_Garcia_LE_ES_EE.py file)
 
 # selectivity
 start_phase = "For_paper"
 start_version = 16
 started = False
-#
+
 # dir
 PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
-
 BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
 FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia"
 
-# ------------------------------------------------------------------
-
-##
 
 # reporting function
+# can be seen in the cluster output
 def quick_report(data, phase, version, model_name, phase_key):
-    """Lightweight console & plotting diagnostics per (phase,version)."""
     print(f"\n Phase = {phase}   Version = {version}")
     print(f"Model name          : {model_name}")
     print(f"Selected phase_key  : {phase_key}")
@@ -206,9 +189,8 @@ def quick_report(data, phase, version, model_name, phase_key):
 #        os.makedirs(directory)
 
 
-
+# function to clean bits of the data that have not been cleaned yet, for instance remaining NAN's and so on
 def sanitize_infdata(infdata):
-    """Convert pd.NA values to np.nan in all groups of the InferenceData object (important for if you have columns which we don't use, for example, particular RL cols)."""
     for group in infdata._groups_all:
         if hasattr(infdata, group):
             dataset = getattr(infdata, group)
@@ -223,7 +205,7 @@ def sanitize_infdata(infdata):
     return infdata
 
 
-###################################################################################################################
+#####################################################################################################################################################################
 # drift diffusion models
 #------------------------------------------------------------------------------------------------------------------
 #------------------------------------------------------------------------------------------------------------------
@@ -1331,7 +1313,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
 # Main function for running/loading models
 
 #
-### ONLY FOR RL ##-------------------------------------------------------------------------------------------
+### ONLY FOR RUNIING RL MODELS ##-------------------------------------------------------------------------------------------
 # def run_and_save(trace_id, data, model_dir, model_name, version, phase, samples):
 #     # 1) instantiate + sample exactly as you do in run_model()
 #     model, infdata = run_model(
@@ -1485,6 +1467,7 @@ def drift_diffusion_hddmRL(
         print(f"RL chain finished and saved: {fname}")
 
     print("Time elapsed:", time.time() - start_time, "s")
+    
 #########################################################################################################################################################
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
 #---------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -1500,7 +1483,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
 
     sns.set_theme(style='darkgrid', font='sans-serif', font_scale=0.5)
 
-    # Check if models are valid
     if not models or models[0] is None:
         print("ERROR: Models are empty or invalid.")
         return
@@ -2279,7 +2261,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Drift InattentionW:C(phase)[EE]',
             ]
             
-    # diagnistics
+    # diagnostics
     diag_dir = Path(fig_dir) / "diagnostics"
     ensure_dir(diag_dir)
     
@@ -2288,15 +2270,13 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     with open(diag_dir / "gelman_rubin.txt", "w") as f:
         for param, val in gr.items():
             f.write(f"{param}: {val}\n")
-
     # DIC
     dic = combined_model.dic
     (diag_dir / "DIC.txt").write_text(f"DIC: {dic}\n")
-
     size_plot = len(combined_model.data.subj_idx.unique()) / 3.0 * 1.5
     combined_model.plot_posterior_predictive(samples=10, bins=100, figsize=(6, size_plot), save=True, path=str(diag_dir), format="pdf")
     
-    # shrink font for the next set of plots
+    # shrink font 
     matplotlib.rcParams.update({"font.size": 6})
     combined_model.plot_posteriors(save=True,
                                    path=str(diag_dir),
@@ -2332,7 +2312,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             axes[i].spines[side].set_linewidth(0.5)
             axes[i].tick_params(width=0.5, labelsize=6)   
             
-    # drop extra axes
     for ax in axes[len(traces):]:
         fig.delaxes(ax)
     sns.despine(offset=10, trim=True)
@@ -2341,7 +2320,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     plt.close(fig) 
     
     
-    # save per‐subject parameters
+    # save inidviudal parameters
     parameters = []
     for p in params_of_interest_s:
         param_values = []
@@ -2352,14 +2331,14 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 if len(val):
                     v = val[0]
                     if 'alpha' in p:
-                        # inverse‐logit transform for any alpha‐params
+                        # inverse‐logit transform for alpha‐params
                         v = np.exp(v) / (1 + np.exp(v))
                     param_values.append(v)
             except KeyError:
                 print(f"Param {param_name} missing. Skipping…")
         parameters.append(param_values)
 
-    # turn into DataFrame, transpose so each subj is a row, then save
+    # turn into DataFrame, transpose so each subj is a row
     param_df = pd.DataFrame(parameters).T
     param_df.columns = params_of_interest_s
     param_df.to_csv(diag_dir / "params_of_interest_s.csv", index=False)
@@ -2373,7 +2352,7 @@ model_dir = BASE_MODEL_DIR
 
 
 # ==================================================================
-# BATCH DRIVER – runs every (phase, version) - pairing
+# BATCH DRIVER – runs every (phase, version) pairing
 # ==================================================================
 
 if __name__ == "__main__":
@@ -2388,22 +2367,18 @@ if __name__ == "__main__":
 
 
         for version, model_name in enumerate(model_versions[phase]):
-            
-            # ------------- Start Control -----------------------------
             if not started:
                 if phase == start_phase and version >= start_version:
                     started = True
                 elif PHASE_RUN_ORDER.index(phase) > PHASE_RUN_ORDER.index(start_phase):
                     started = True
                 else:
-                    continue #skip
-
-            # ----------------------------------------------------------
+                    continue 
             
             full_model_name = model_base_name + model_name
             print(f"\n===  PHASE {phase} : {model_name}  ===")
 
-            # --------------- filter data for this phase ---------------
+            # filter data for this phase
             source_phase = PHASE_TO_SOURCE.get(phase, phase)   #assignes ES_ZBIAS
 
             if phase == "ESEE":
@@ -2417,7 +2392,7 @@ if __name__ == "__main__":
                 raise ValueError(f"No rows left after filtering for phase '{phase}' "
                                  f"(source = '{source_phase}')")
 
-            # ---------------- preprocessing ---------------
+            # preprocessing 
             data["gazeCI"]  = pd.to_numeric(data["gazeCI"],  errors="coerce")
             data["gazeSE"]= pd.to_numeric(data["gazeSE"],errors="coerce")
             data["phase"]       = data["phase"].astype("category")
@@ -2427,7 +2402,8 @@ if __name__ == "__main__":
 
             data                = data[data["rt"] > 0.250]
             # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
-            # ------------------------------------------------------------------
+
+            # here, it's important to be selctive depending on whether chose_right or chose_left is the upper bound
             if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL", "For_paper"):
 
                 data["response"] = pd.to_numeric(data["chose_right"], errors="coerce")
@@ -2444,7 +2420,6 @@ if __name__ == "__main__":
             
             print(f"[DEBUG] phase={phase}  response counts:\n",
             data["response"].value_counts(dropna=False).head())
-            
             data["OVcate"]      = data["OVcate_2"].astype("category")
             data["Abscate"]     = data["Abscate_2"].astype("category")
             data["cond"]     = data["cond"].fillna(-1)
@@ -2457,28 +2432,21 @@ if __name__ == "__main__":
             #data["stimulus"] = pd.to_numeric(data["stimulus"], errors="coerce")
             data["DTA"] = pd.to_numeric(data["DTA"],errors="coerce")
             data["DwellPropAdvantage"] = pd.to_numeric(data["DwellPropAdvantage"],errors="coerce")
-            
             data["DwellLeft"]  = pd.to_numeric(data["DwellLeft"],  errors="coerce")
             data["DwellRight"] = pd.to_numeric(data["DwellRight"], errors="coerce")
-     
             data["AttentionW_E"]  = pd.to_numeric(data["AttentionW_E"],  errors="coerce")
             data["AttentionW_S"] = pd.to_numeric(data["AttentionW_S"], errors="coerce")
             data["InattentionW_E"] = pd.to_numeric(data["InattentionW_E"], errors="coerce")
             data["InattentionW_S"] = pd.to_numeric(data["InattentionW_S"], errors="coerce")
-            
             data["ES_AttentionW_E"]  = pd.to_numeric(data["ES_AttentionW_E"],  errors="coerce")
             data["ES_AttentionW_S"] = pd.to_numeric(data["ES_AttentionW_S"], errors="coerce")
             data["ES_InattentionW_E"] = pd.to_numeric(data["ES_InattentionW_E"], errors="coerce")
             data["ES_InattentionW_S"] = pd.to_numeric(data["ES_InattentionW_S"], errors="coerce")
             data["ES_AttentionW"]  = pd.to_numeric(data["ES_AttentionW"],  errors="coerce")
             data["ES_InattentionW"]  = pd.to_numeric(data["ES_InattentionW"],  errors="coerce")
-
-  
             data["V_E"] = pd.to_numeric(data["V_E"], errors="coerce")
             data["V_S"] = pd.to_numeric(data["V_S"], errors="coerce")
             data["Value_diff"] = pd.to_numeric(data["Value_diff"], errors="coerce")
-
-            
             data["ES_AttentionW_S_dwell"] = pd.to_numeric(data["ES_AttentionW_S_dwell"], errors="coerce")
             data["ES_InattentionW_E_dwell"] = pd.to_numeric(data["ES_InattentionW_E_dwell"], errors="coerce")
             data["ES_InattentionW_S_dwell"] = pd.to_numeric(data["ES_InattentionW_S_dwell"], errors="coerce")
@@ -2519,8 +2487,6 @@ if __name__ == "__main__":
                                        "ES_InattentionW_E_dwell",
                                        "ES_InattentionW_S_dwell",
                                        ])   
-            
-            
             
             # quick report at the start
             quick_report(data, phase, version, model_name, phase_key)
