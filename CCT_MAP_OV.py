@@ -18,8 +18,6 @@ import kabuki
 
 def run_version_1_a():
     #---------------------------------------------------------------------------------------------------------------
-    # Version 1: OV-modulated models (high, medium, low)
-    # load and combine OV model files (set which model)
     model_paths_OV = [
         "/home/jovyan/OfficialTutorials/For_Linux/models_dir_OV/OV_replication_EE_5_4.pkl",
         "/home/jovyan/OfficialTutorials/For_Linux/models_dir_OV/OV_replication_EE_5_3.pkl",
@@ -501,7 +499,7 @@ def run_version_1_c():
         "High-Low": "",
         "High-Med": ""
     })
-    # a differences across OVcate:
+    # a differences across OVcate
     rows_OV.append({
         "Parameter": "t",
         "Group-level": "",
@@ -509,7 +507,7 @@ def run_version_1_c():
         "High-Low": format_diff(t_high.trace() - t_low.trace()),
         "High-Med": format_diff(t_high.trace() - t_med.trace())
     })
-    # θ differences across OVcate:
+    # θ differences across OVcate
     rows_OV.append({
         "Parameter": "θ",
         "Group-level": "",
@@ -517,7 +515,7 @@ def run_version_1_c():
         "High-Low": format_diff(theta_high - theta_low),
         "High-Med": format_diff(theta_high - theta_med)
     })
-    # b0 and b1 (group-level):
+    # b0 and b1 (group-level)
     rows_OV.append({
         "Parameter": "b0",
         "Group-level": format_estimate(inter_OV.trace()),
@@ -532,7 +530,7 @@ def run_version_1_c():
         "High-Low": "",
         "High-Med": ""
     })
-    # b2: differences in v_InattentionW across OVcate:
+    # b2: differences in v_InattentionW across OVcate
     rows_OV.append({
         "Parameter": "b2",
         "Group-level": "",

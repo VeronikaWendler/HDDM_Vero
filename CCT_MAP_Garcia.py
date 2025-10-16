@@ -18,8 +18,6 @@ import kabuki
 
 def run_version_1_a():
     #---------------------------------------------------------------------------------------------------------------
-    # Version 1: OV-modulated models (high, medium, low)
-    # load and combine OV model files (set which model)
     model_paths_OV = [
         "/home/jovyan/OfficialTutorials/For_Linux/models_dir_garcia/garcia_replication_EE_5_4.pkl",
         "/home/jovyan/OfficialTutorials/For_Linux/models_dir_garcia/garcia_replication_EE_5_3.pkl",
@@ -35,7 +33,7 @@ def run_version_1_a():
             
     combinedModels_OV = kabuki.utils.concat_models(models_OV)
     
-    # summary stats for relevant nodes:
+    # summary stats 
     stats_summary_OV = combinedModels_OV.gen_stats()
     print(stats_summary_OV[stats_summary_OV.index.isin([
         'a',
@@ -121,7 +119,7 @@ def run_version_1_a():
         "High-Low": "",
         "High-Med": ""
     })
-    # a differences across OVcate:
+    # a differences across OVcate
     rows_OV.append({
         "Parameter": "t",
         "Group-level": "",
@@ -129,7 +127,7 @@ def run_version_1_a():
         "High-Low": format_diff(t_high.trace() - t_low.trace()),
         "High-Med": format_diff(t_high.trace() - t_med.trace())
     })
-    # θ differences across OVcate:
+    # θ differences across OVcate
     rows_OV.append({
         "Parameter": "θ",
         "Group-level": "",
@@ -137,7 +135,7 @@ def run_version_1_a():
         "High-Low": format_diff(theta_high - theta_low),
         "High-Med": format_diff(theta_high - theta_med)
     })
-    # b0 and b1 (group-level):
+    # b0 and b1 (group-level)
     rows_OV.append({
         "Parameter": "b0",
         "Group-level": format_estimate(inter_OV.trace()),
@@ -152,7 +150,7 @@ def run_version_1_a():
         "High-Low": "",
         "High-Med": ""
     })
-    # b2: differences in v_InattentionW across OVcate:
+    # b2: differences in v_InattentionW across OVcate
     rows_OV.append({
         "Parameter": "b2",
         "Group-level": "",
@@ -244,8 +242,7 @@ def run_version_1_a():
 
 def run_version_1_b():
     #---------------------------------------------------------------------------------------------------------------
-    # Version 1: OV-modulated models (high, medium, low)
-    # load and combine OV model files (set which model)
+
     model_paths_OV_4 = [
         "/home/jovyan/OfficialTutorials/For_Linux/models_dir_garcia/garcia_replication_EE_4_4.pkl",
         "/home/jovyan/OfficialTutorials/For_Linux/models_dir_garcia/garcia_replication_EE_4_3.pkl",
@@ -261,7 +258,7 @@ def run_version_1_b():
             
     combinedModels_OV_4 = kabuki.utils.concat_models(models_OV_4)
     
-    # summary stats for relevant nodes:
+    # summary stats for relevant nodes
     stats_summary_OV_4 = combinedModels_OV_4.gen_stats()
     print(stats_summary_OV_4[stats_summary_OV_4.index.isin([
         't',
@@ -277,7 +274,7 @@ def run_version_1_b():
     print("DIC (OV):", combinedModels_OV_4.dic)            # some diagnostics
     print("BPIC (OV):", combinedModels_OV_4.mc.BPIC)
     
-    # nodes for OV:
+    # nodes for OV
     t_OV     = combinedModels_OV_4.nodes_db.node['t']
     a_low    = combinedModels_OV_4.nodes_db.node['a(low)']
     a_med    = combinedModels_OV_4.nodes_db.node['a(medium)']
@@ -347,7 +344,7 @@ def run_version_1_b():
         "High-Low": "",
         "High-Med": ""
     })
-    # a differences across OVcate:
+    # a differences across OVcate
     rows_OV_4.append({
         "Parameter": "a",
         "Group-level": "",
@@ -355,7 +352,7 @@ def run_version_1_b():
         "High-Low": format_diff(a_high.trace() - a_low.trace()),
         "High-Med": format_diff(a_high.trace() - a_med.trace())
     })
-    # θ differences across OVcate:
+    # θ differences across OVcate
     rows_OV_4.append({
         "Parameter": "θ",
         "Group-level": "",
@@ -363,7 +360,7 @@ def run_version_1_b():
         "High-Low": format_diff(theta_high - theta_low),
         "High-Med": format_diff(theta_high - theta_med)
     })
-    # b0 and b1 (group-level):
+    # b0 and b1 (group-level)
     rows_OV_4.append({
         "Parameter": "b0",
         "Group-level": format_estimate(inter_OV.trace()),
@@ -378,7 +375,7 @@ def run_version_1_b():
         "High-Low": "",
         "High-Med": ""
     })
-    # b2: differences in v_InattentionW across OVcate:
+    # b2: differences in v_InattentionW across OVcate
     rows_OV_4.append({
         "Parameter": "b2",
         "Group-level": "",
@@ -398,8 +395,6 @@ def run_version_1_b():
 
 def run_version_1_c():
     #---------------------------------------------------------------------------------------------------------------
-    # Version 1: OV-modulated models (high, medium, low)
-    # load and combine OV model files (set which model)
     model_paths_OV = [
         "/home/jovyan/OfficialTutorials/For_Linux/models_dir_garcia/garcia_replication_ES_5_4.pkl",
         "/home/jovyan/OfficialTutorials/For_Linux/models_dir_garcia/garcia_replication_ES_5_3.pkl",
@@ -415,7 +410,7 @@ def run_version_1_c():
             
     combinedModels_OV = kabuki.utils.concat_models(models_OV)
     
-    # summary stats for relevant nodes:
+    # summary stats for relevant nodes
     stats_summary_OV = combinedModels_OV.gen_stats()
     print(stats_summary_OV[stats_summary_OV.index.isin([
         'a',
@@ -431,7 +426,7 @@ def run_version_1_c():
     print("DIC (OV):", combinedModels_OV.dic)            # some diagnostics
     print("BPIC (OV):", combinedModels_OV.mc.BPIC)
     
-    # nodes for OV:
+    # nodes for OV
     a_OV     = combinedModels_OV.nodes_db.node['a']
     t_low    = combinedModels_OV.nodes_db.node['t(low)']
     t_med    = combinedModels_OV.nodes_db.node['t(medium)']
@@ -501,7 +496,7 @@ def run_version_1_c():
         "High-Low": "",
         "High-Med": ""
     })
-    # a differences across OVcate:
+    # a differences across OVcate
     rows_OV.append({
         "Parameter": "t",
         "Group-level": "",
@@ -509,7 +504,7 @@ def run_version_1_c():
         "High-Low": format_diff(t_high.trace() - t_low.trace()),
         "High-Med": format_diff(t_high.trace() - t_med.trace())
     })
-    # θ differences across OVcate:
+    # θ differences across OVcate
     rows_OV.append({
         "Parameter": "θ",
         "Group-level": "",
@@ -517,7 +512,7 @@ def run_version_1_c():
         "High-Low": format_diff(theta_high - theta_low),
         "High-Med": format_diff(theta_high - theta_med)
     })
-    # b0 and b1 (group-level):
+    # b0 and b1 (group-level)
     rows_OV.append({
         "Parameter": "b0",
         "Group-level": format_estimate(inter_OV.trace()),
@@ -532,7 +527,7 @@ def run_version_1_c():
         "High-Low": "",
         "High-Med": ""
     })
-    # b2: differences in v_InattentionW across OVcate:
+    # b2: differences in v_InattentionW across OVcate
     rows_OV.append({
         "Parameter": "b2",
         "Group-level": "",
@@ -624,8 +619,6 @@ def run_version_1_c():
 
 def run_version_1_d():
     #---------------------------------------------------------------------------------------------------------------
-    # Version 1: OV-modulated models (high, medium, low)
-    # load and combine OV model files (set which model)
     model_paths_OV_4 = [
         "/home/jovyan/OfficialTutorials/For_Linux/models_dir_garcia/garcia_replication_ES_4_4.pkl",
         "/home/jovyan/OfficialTutorials/For_Linux/models_dir_garcia/garcia_replication_ES_4_3.pkl",
@@ -641,7 +634,6 @@ def run_version_1_d():
             
     combinedModels_OV_4 = kabuki.utils.concat_models(models_OV_4)
     
-    # summary stats for relevant nodes:
     stats_summary_OV_4 = combinedModels_OV_4.gen_stats()
     print(stats_summary_OV_4[stats_summary_OV_4.index.isin([
         't',
@@ -654,7 +646,7 @@ def run_version_1_d():
         'v_InattentionW:C(OVcate)[medium]',
         'v_InattentionW:C(OVcate)[high]'
     ])])
-    print("DIC (OV):", combinedModels_OV_4.dic)            # some diagnostics
+    print("DIC (OV):", combinedModels_OV_4.dic)            
     print("BPIC (OV):", combinedModels_OV_4.mc.BPIC)
     
     # nodes for OV:
@@ -668,7 +660,7 @@ def run_version_1_d():
     vIA_med  = combinedModels_OV_4.nodes_db.node['v_InattentionW:C(OVcate)[medium]']
     vIA_high = combinedModels_OV_4.nodes_db.node['v_InattentionW:C(OVcate)[high]']
     
-    # Group-level Table for OV (theta = b2 / b1 per OV level)
+    # Group-level yable for OV (theta = b2 / b1 per OV level)
     theta_low  = vIA_low.trace() / vA_OV.trace()
     theta_med  = vIA_med.trace() / vA_OV.trace()
     theta_high = vIA_high.trace() / vA_OV.trace()
@@ -700,7 +692,7 @@ def run_version_1_d():
     print("group-level parameter estimates:")
     print(df_group_OV_4)
     
-    #Combined Parameter Comparison Table
+    #Parameter Comparison Table
     def format_estimate(trace):
         m = trace.mean()
         l = stats.mstats.mquantiles(trace, [0.025])[0]
@@ -727,7 +719,7 @@ def run_version_1_d():
         "High-Low": "",
         "High-Med": ""
     })
-    # a differences across OVcate:
+    # a differences across OVcate
     rows_OV_4.append({
         "Parameter": "a",
         "Group-level": "",
@@ -735,7 +727,7 @@ def run_version_1_d():
         "High-Low": format_diff(a_high.trace() - a_low.trace()),
         "High-Med": format_diff(a_high.trace() - a_med.trace())
     })
-    # θ differences across OVcate:
+    # θ differences across OVcate
     rows_OV_4.append({
         "Parameter": "θ",
         "Group-level": "",
@@ -743,7 +735,7 @@ def run_version_1_d():
         "High-Low": format_diff(theta_high - theta_low),
         "High-Med": format_diff(theta_high - theta_med)
     })
-    # b0 and b1 (group-level):
+    # b0 and b1 (group-level)
     rows_OV_4.append({
         "Parameter": "b0",
         "Group-level": format_estimate(inter_OV.trace()),
@@ -758,7 +750,7 @@ def run_version_1_d():
         "High-Low": "",
         "High-Med": ""
     })
-    # b2: differences in v_InattentionW across OVcate:
+    # b2: differences in v_InattentionW across OVcate
     rows_OV_4.append({
         "Parameter": "b2",
         "Group-level": "",
@@ -780,8 +772,7 @@ def run_version_1_d():
 # ESEE 
 
 def run_version_2_a():
-    # -------------------------------------------------------------------------
-    # Version 2: Phase differences ES EE
+
     import pandas as pd
     import pickle
     import kabuki
@@ -1124,9 +1115,7 @@ import os
 PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
 
 def run_version_14():
-    #---------------------------------------------------------------------------------------------------------------
-    # Version 1: OV-modulated models (high, medium, low)
-    # load and combine OV model files (set which model)
+
     MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_garcia")
     model_paths_OV = [
         os.path.join(MODELS_DIR, "garcia_replication_ES_14_2.pkl"),
@@ -1232,7 +1221,7 @@ def run_version_14():
         "High-Low": "",
         "High-Med": ""
     })
-    # a differences across OVcate:
+    # a differences across OVcate
     rows_OV.append({
         "Parameter": "t",
         "Group-level": format_estimate(t_OV.trace()),
@@ -1240,7 +1229,7 @@ def run_version_14():
         "High-Low": "",
         "High-Med": ""
     })
-    # θ differences across OVcate:
+    # θ differences across OVcate
     rows_OV.append({
         "Parameter": "θ",
         "Group-level": "",
@@ -1248,7 +1237,7 @@ def run_version_14():
         "High-Low": format_diff(theta_high - theta_low),
         "High-Med": format_diff(theta_high - theta_med)
     })
-    # b0 and b1 (group-level):
+    # b0 and b1 (group-level)
     rows_OV.append({
         "Parameter": "b0",
         "Group-level": format_estimate(inter_OV.trace()),
@@ -1583,173 +1572,6 @@ def run_version_36():
 
     PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
     MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_OV")
-
-    # ---------- Helpers ----------
-    def load_idata(model_stem: str, chain_idxs=(0,1,2)):
-        idatas = []
-        for i in chain_idxs:
-            path = os.path.join(MODELS_DIR, f"{model_stem}_{i}.nc")
-            if os.path.exists(path):
-                try:
-                    idata = az.from_netcdf(path)
-                    idatas.append(idata)
-                except Exception as e:
-                    print(f"[WARN] Chain {i} for model '{model_stem}' failed to load: {e}")
-            else:
-                print(f"[WARN] Missing chain file: {path}")
-                
-        if len(idatas) == 0:
-            raise ValueError(f"No chains found for model '{model_stem}'")
-        return az.concat(idatas, dim="chain")
-
-
-    def short_label(stem: str) -> str:
-        toks = stem.split("_")
-        return toks[-1] if toks else stem
-
-    def compare_group(group_name: str, model_stems: list, chain_idxs=(0,1,2)):
-        """Run LOO, stacking, pointwise LOO, and Pareto-k for a set of models"""
-        # Load models
-        model_idatas = {}
-        for stem in model_stems:
-            try:
-                idata = load_idata(stem, chain_idxs=chain_idxs)
-                label = short_label(stem)
-                # Ensure uniqueness if same label appears
-                base, k = label, 1
-                while label in model_idatas:
-                    k += 1
-                    label = f"{base}#{k}"
-                model_idatas[label] = idata
-            except Exception as e:
-                print(f"[WARN] Skipping '{stem}' due to load error: {e}")
-    
-        if len(model_idatas) < 2:
-            print(f"[WARN] Group '{group_name}': need ≥2 models. Got {len(model_idatas)}. Aborting.")
-            return
-
-        # LOO compare
-        cmp_loo = az.compare(model_idatas, method="BB-pseudo-BMA", ic="loo")
-        print(f"\nLOO compare (group: {group_name}):")
-        print(cmp_loo)
-        cmp_loo_df = cmp_loo.reset_index().rename(columns={"index": "model"})
-        cmp_loo_df.to_csv(os.path.join(MODELS_DIR, f"{group_name}_LOO.csv"), index=False)
-    
-        # Stacking weights
-        cmp_stack = az.compare(model_idatas, method="stacking", ic="loo")
-        print(f"\nStacking weights (group: {group_name}):")
-        print(cmp_stack)
-        cmp_stack_df = cmp_stack.reset_index().rename(columns={"index": "model"})
-        cmp_stack_df.to_csv(os.path.join(MODELS_DIR, f"{group_name}_stacking.csv"), index=False)
-    
-        # Pointwise LOO + Pareto-k reliability
-        loo_summ_rows, pareto_rows = [], []
-        for label, idata in model_idatas.items():
-            loo_pw = az.loo(idata, pointwise=True)
-            loo_summ_rows.append({
-                "model": label,
-                "elpd_loo": float(loo_pw.elpd_loo),
-                "p_loo":    float(loo_pw.p_loo),
-            })
-            pk = loo_pw.pareto_k.values
-            pareto_rows.append({
-                "model": label,
-                "frac_k>0.7": float(np.mean(pk > 0.7)),
-                "frac_k>1.0": float(np.mean(pk > 1.0)),
-            })
-    
-        pd.DataFrame(loo_summ_rows).to_csv(
-            os.path.join(MODELS_DIR, f"{group_name}_LOO_summary.csv"), index=False
-        )
-        pd.DataFrame(pareto_rows).to_csv(
-            os.path.join(MODELS_DIR, f"{group_name}_pareto_k.csv"), index=False
-        )
-        print(f"\nPareto-k reliability (group: {group_name}):")
-        print(pd.DataFrame(pareto_rows))
-    
-        # Quick console rule-of-thumb for top 2
-        se_col = "elpd_diff_se" if "elpd_diff_se" in cmp_loo_df.columns else ("dse" if "dse" in cmp_loo_df.columns else None)
-        if len(cmp_loo_df) >= 2:
-            best, runner = cmp_loo_df.iloc[0], cmp_loo_df.iloc[1]
-            if se_col is not None:
-                se_val = runner[se_col]
-                ratio = abs(runner["elpd_diff"]) / se_val if se_val != 0 else np.inf
-                print(f"\nBest by LOO (group {group_name}): {best['model']} (elpd_diff=0).")
-                print(f"Runner-up: {runner['model']}, elpd_diff={runner['elpd_diff']:.2f}, "
-                      f"SE={se_val:.2f} → |elpd_diff|/SE = {ratio:.2f}")
-            else:
-                print(f"\nBest by LOO (group {group_name}): {best['model']} (elpd_diff=0). "
-                      f"Runner-up: {runner['model']}, elpd_diff={runner['elpd_diff']:.2f} (SE column not found)")
-    
-    # ---------- Define your groups ----------
-    # Group 1 (first 4)
-    # group1_stems = [
-    #     "garcia_replication_ES_VAL_16",  # pure DDM (z not included)
-    #     "garcia_replication_ES_VAL_12",  # DDM + SP (z free)
-    #     "garcia_replication_ES_VAL_17",  # pure aDDM (z not included)
-    #     "garcia_replication_ES_VAL_7",   # aDDM + SP (z included)
-    # ]
-    
-    #for EXP1 (6000 samples)
-    group1_stems = [
-         "garcia_replication_For_paper_15",  # pure DDM (z not included)
-         "garcia_replication_For_paper_14",  # DDM + SP (z free)
-         "garcia_replication_For_paper_16",  # pure aDDM (z not included)
-         "garcia_replication_For_paper_2",   # aDDM + SP (z included)
-     ]
-    
-    # #for EXP2 (6000 samples)
-    # group1_stems = [
-    #      "OV_replication_For_paper_7",  # pure DDM (z not included)
-    #      "OV_replication_For_paper_2",  # DDM + SP (z free)
-    #      "OV_replication_For_paper_8",  # pure aDDM (z not included)
-    #      "OV_replication_For_paper_3",   # aDDM + SP (z included)
-    #  ]
-    
-    
-    # # Group 2 (rest)
-    # group2_stems = [
-    #     "garcia_replication_ES_VAL_10",  # Value_diff + DTA (z free)
-    #     "garcia_replication_ES_VAL_7",   # aDDM + SP (z free)
-    #     "garcia_replication_ES_VAL_26",  # a ~ OV (z free), shared inattn
-    #     "garcia_replication_ES_VAL_35",  # dual inattn (no a~OV?)
-    #     "garcia_replication_ES_VAL_36",  # dual inattn, a ~ OV
-    # ]
-   # for EXP2 (6000 Samples) Group 2 (rest)
-#     group2_stems = [
-#         "OV_replication_For_paper_4",  # Value_diff + DTA (z free)
-#         "OV_replication_For_paper_3",  # aDDM + SP (z free)
-#         "OV_replication_For_paper_6",  # a ~ OV (z free), dual inattn
-#         "OV_replication_For_paper_5"  # dual inattn (no a~OV?)
-# #        "OV_replication_ES_VAL_36",    #  aDDM, a ~ OV
-#     ]
-    
-       # for EXP2 (6000 Samples) Group 2 (rest)
-    # group2_stems = [
-    #     "garcia_replication_ES_VAL_10",  # Value_diff + DTA (z free)
-    #     "garcia_replication_For_paper_3",  # aDDM + SP (z free)
-    #     "garcia_replication_For_paper_7",  # a ~ OV (z free), dual inattn
-    #     "garcia_replication_For_paper_6"  # dual inattn (no a~OV?)
-    #     "garcia_replication_For_paper_3",    #  aDDM, a ~ OV
-    # ]
-    # # ---------- Run ----------
-    # compare_group("group1_first4_garcia2", group1_stems, chain_idxs=(0,1,2))
-    # compare_group("group2_rest_garcia2",   group2_stems, chain_idxs=(0,1,2))
-    
-    # idata_8 = load_idata("OV_replication_For_paper_8", chain_idxs=(0,1,2))
-    # az.loo(idata_8)
-
-    
-    
-    
-    
-    import os
-    import arviz as az
-    import numpy as np
-    import pandas as pd
-    
-    PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
-    MODELS_DIR = os.path.join(PROJECT_DIR, "models_dir_OV")
     
     # Load .nc files and combine chains
     nc_paths = [
@@ -1774,8 +1596,6 @@ def run_version_36():
     vA     = draws("v_ES_AttentionW")
     vIA_E  = np.abs(draws("v_ES_InattentionW_E"))
     vIA_S  = draws("v_ES_InattentionW_S")
-    
-    # Compute θ
     thetaE = vIA_E / vA
     thetaS = vIA_S / vA
     
@@ -1798,14 +1618,12 @@ def run_version_36():
             out["ROPE_%"] = float(np.mean((arr >= rope[0]) & (arr <= rope[1])))
         return out
     
-    # Define ROPEs
-    rope_theta = (-0.02, 0.02)   # example for θ differences
-    rope_b2    = (-0.002, 0.002) # example for raw weight differences
-    rope_a     = (-0.05, 0.05)   # example for boundary differences
+    rope_theta = (-0.02, 0.02)  
+    rope_b2    = (-0.002, 0.002) 
+    rope_a     = (-0.05, 0.05)   
     
     summary_rows = []
     
-    # ----- θ and b2 contrasts -----
     d_theta_unsigned = thetaE - thetaS
     d_b2_unsigned = vIA_E - vIA_S
     
@@ -1814,7 +1632,6 @@ def run_version_36():
     summary_rows.append(summarize_diff(d_theta_signed,  "Δθ (signed: vIA_E/vA − vIA_S/vA)",      rope=rope_theta))
     summary_rows.append(summarize_diff(d_b2_signed,     "Δb2 (signed: vIA_E − vIA_S)",           rope=rope_b2))
     
-    # ----- a parameter pairwise contrasts -----
     contrasts_a = {
         "Δa (high − low)": a_H - a_L,
         "Δa (medium − low)": a_M - a_L,
@@ -1824,7 +1641,6 @@ def run_version_36():
     for name, arr in contrasts_a.items():
         summary_rows.append(summarize_diff(arr, name, rope=rope_a))
     
-    # Save combined contrasts table
     df_contrasts = pd.DataFrame(summary_rows)
     df_contrasts.to_csv(
         os.path.join(MODELS_DIR, "posterior_contrast_summary_For_paper_6.csv"),
@@ -1834,7 +1650,6 @@ def run_version_36():
     print("\nPosterior contrast summary:")
     print(df_contrasts)
     
-    # ---------------- GROUP-LEVEL MAP / HDI ----------------
     def hdi(arr):
         lo, hi = az.hdi(arr, hdi_prob=0.95)
         return lo, hi
@@ -1864,7 +1679,6 @@ def run_version_36():
     print("group‐level estimates:")
     print(df_group)
     
-    # ---------------- PAIRED COMPARISON TABLE ----------------
     rows = []
     def diff(x, y): 
         return x.mean() - y.mean(), *hdi(x - y)
@@ -1888,203 +1702,8 @@ def run_version_36():
     print(df_comp)
 
     
-    # import os
-    # import arviz as az
-    # import pandas as pd
-
-    # PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
-    # MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_garcia")
-
-    # # ---------- 1) Helper: load & concat chains for a model ----------
-    # def load_idata(model_stem, chain_idxs=(0,1,2)):
-    #     """
-    #     model_stem: e.g., 'garcia_replication_ES_VAL_36'
-    #     expects files: f"{model_stem}_{i}.nc" inside MODELS_DIR
-    #     returns: InferenceData with chains concatenated along 'chain'
-    #     """
-    #     paths = [os.path.join(MODELS_DIR, f"{model_stem}_{i}.nc") for i in chain_idxs]
-    #     idatas = [az.from_netcdf(p) for p in paths]
-    #     # Concatenate along a new chain axis
-    #     idata = az.concat(idatas, dim="chain")
-    #     return idata
-
-    # # ---------- 2) Load BOTH models (dual vs shared) ----------
-    # # Adjust stems to your filenames
-    # dual_stem   = "garcia_replication_ES_VAL_36"
-    # shared_stem = "garcia_replication_ES_VAL_26"
-
-    # # If you have 4 chains (0..3), set chain_idxs=(0,1,2,3)
-    # dual_idata   = load_idata(dual_stem,   chain_idxs=(0,1,2))
-    # shared_idata = load_idata(shared_stem, chain_idxs=(0,1,2))
-
-    # # ---------- 3) LOO comparison (predictive fit) ----------
-    # # Tip: If you get errors about 'log_likelihood', ensure your .nc includes it.
-    # cmp_loo = az.compare({"dual": dual_idata, "shared": shared_idata},
-    #                  method="BB-pseudo-BMA", ic="loo")
-    # print("\nLOO compare (BB-pseudo-BMA):")
-    # print(cmp_loo)
-
-    # cmp_loo_df = cmp_loo.reset_index().rename(columns={"index":"model"})
-    # cmp_loo_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO.csv"), index=False)
-
-    # # Also pointwise LOO (useful diagnostics; optional)
-    # loo_dual   = az.loo(dual_idata, pointwise=True)
-    # loo_shared = az.loo(shared_idata, pointwise=True)
-    # pd.DataFrame({
-    #     "dual_elpd":   [loo_dual.elpd_loo],
-    #     "dual_p_loo":  [loo_dual.p_loo],
-    #     "shared_elpd": [loo_shared.elpd_loo],
-    #     "shared_p_loo":[loo_shared.p_loo]
-    #     }).to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO_summary.csv"), index=False)
-
-    # # ---------- 4) Stacking weights (model averaging) ----------
-    # cmp_stack = az.compare({"dual": dual_idata, "shared": shared_idata},
-    #                    method="stacking", ic="loo")
-    # print("\nStacking weights (LOO):")
-    # print(cmp_stack)
-
-    # cmp_stack_df = cmp_stack.reset_index().rename(columns={"index":"model"})
-    # cmp_stack_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_stacking.csv"), index=False)
-
-    # # ---------- 5) Quick console rule-of-thumb ----------
-    # best = cmp_loo_df.iloc[0]         # top row is the best by ELPD
-    # other = cmp_loo_df.iloc[1]
-    # print(f"\nBest by LOO: {best['model']} (elpd_diff=0 by definition).")
-    # print(f"Runner-up: {other['model']}, elpd_diff={other['elpd_diff']:.2f}, "
-    #       f"SE={other['elpd_diff_se']:.2f} — if |elpd_diff| > SE, that’s meaningful support for the best model.")
-    #
-    
-#     # first table csv etc ...   
-#     # first these need to be compared:
-#     #1.
-#     # garcia_replication_ES_VAL_16 (z not included)
-#     # pure DDM
-#             v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
-#             reg_descr = [v_reg]
-#     # 2.         
-#     # garcia_repliction_ES_VAL_12  (z is free param, hence + SP)
-#     # DDM + SP
-#             v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
-#             reg_descr = [v_reg]
-#     # 3. 
-#     # pure aDDM (z not incldued)
-#     # garica_replication_ES_VAL_17
-#             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
-#             reg_descr = [v_reg]
-#     # 4. 
-#     # aDDM + SP (z is included)
-#     # garcia_replication_ES_VAL_7
-#             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
-#             reg_descr = [v_reg]
-            
-    
-#     # second table/csv etc....
-#     # models to be compared in a seperate tabel/csv
-#         #modles that I wanat to incldue to compare: 
-   
-#     # indpependent influences of value difference and Dwelltime advantage (z is free param)
-#      # garcia_replication_ES_VAL_10
-#             v_reg = {'model': 'v ~ 0 + Value_diff + DTA', 'link_func': lambda x: x}
-#             reg_descr = [v_reg]
-#  # normal attnetional inattentional no a varies by oV  # (z is free param)
-#     #garcia_replication_ES_VAL_7
-#             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
-#             reg_descr = [v_reg]
-#     # garcia_replication_ES_VAL_26
-#             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
-#             reg_descr = [v_reg]
-#             depends_on = {'a': 'OVcate'} 
-#     # garcia_replication_ES_VAL_35
-#             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
-#             reg_descr = [v_reg]
-#     # garcia_replication_ES_VAL_36
-#             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
-#             reg_descr = [v_reg]
-#             depends_on = {'a': 'OVcate'} 
-    
-    
-    
-    
-    
-    
-    # import os
-    # import arviz as az
-    # import pandas as pd
-    # import numpy as np
-
-    # PROJECT_DIR = os.environ.get("PROJECT_DIR", "/workspace")
-    # MODELS_DIR  = os.path.join(PROJECT_DIR, "models_dir_garcia")
-
-    # # ---------- 1) Helper: load & concat chains for a model ----------
-    # def load_idata(model_stem, chain_idxs=(0,1,2)):
-        
-    #     paths = [os.path.join(MODELS_DIR, f"{model_stem}_{i}.nc") for i in chain_idxs]
-    #     idatas = [az.from_netcdf(p) for p in paths]
-    #     idata = az.concat(idatas, dim="chain")
-    #     return idata
-
-    # # ---------- 2) Load BOTH models (dual vs shared) ----------
-    # dual_stem   = "garcia_replication_ES_VAL_36"
-    # shared_stem = "garcia_replication_ES_VAL_26"
-
-    # # change chain_idxs if you truly only have 3 chains
-    # dual_idata   = load_idata(dual_stem,   chain_idxs=(0,1,2))
-    # shared_idata = load_idata(shared_stem, chain_idxs=(0,1,2))
-
-    # # ---------- 3) LOO comparison (predictive fit) ----------
-    # cmps = {"dual": dual_idata, "shared": shared_idata}
-    # cmp_loo = az.compare(cmps, method="BB-pseudo-BMA", ic="loo")
-    # print("\nLOO compare (BB-pseudo-BMA):")
-    # print(cmp_loo)
-
-    # cmp_loo_df = cmp_loo.reset_index().rename(columns={"index":"model"})
-    # cmp_loo_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO.csv"), index=False)
-
-    # # Pointwise LOO + Pareto-k diagnostics (useful with those PSIS warnings)
-    # loo_dual   = az.loo(dual_idata,   pointwise=True)
-    # loo_shared = az.loo(shared_idata, pointwise=True)
-
-    # pd.DataFrame({
-    #     "dual_elpd":   [loo_dual.elpd_loo],
-    #     "dual_p_loo":  [loo_dual.p_loo],
-    #     "shared_elpd": [loo_shared.elpd_loo],
-    #     "shared_p_loo":[loo_shared.p_loo]
-    #     }).to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_LOO_summary.csv"), index=False)
-
-    # pareto_df = pd.DataFrame({
-    #     "model": ["dual","shared"],
-    #     "frac_k>0.7": [np.mean(loo_dual.pareto_k.values>0.7),
-    #                np.mean(loo_shared.pareto_k.values>0.7)],
-    #     "frac_k>1.0": [np.mean(loo_dual.pareto_k.values>1.0),
-    #                np.mean(loo_shared.pareto_k.values>1.0)],
-    #     })
-    # pareto_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_pareto_k.csv"), index=False)
-    # print("\nPareto-k reliability:")
-    # print(pareto_df)
-
-    # # ---------- 4) Stacking weights (model averaging) ----------
-    # cmp_stack = az.compare(cmps, method="stacking", ic="loo")
-    # print("\nStacking weights (LOO):")
-    # print(cmp_stack)
-    # cmp_stack_df = cmp_stack.reset_index().rename(columns={"index":"model"})
-    # cmp_stack_df.to_csv(os.path.join(MODELS_DIR, "VAL36_vs_VAL26_stacking.csv"), index=False)
-
-    # # ---------- 5) Quick console rule-of-thumb ----------
-    # best  = cmp_loo_df.iloc[0]     # top row = best by ELPD
-    # other = cmp_loo_df.iloc[1]
-    # se_col = "elpd_diff_se" if "elpd_diff_se" in cmp_loo_df.columns else ("dse" if "dse" in cmp_loo_df.columns else None)
-
-    # if se_col is not None:
-    #     ratio = abs(other["elpd_diff"])/other[se_col] if other[se_col] != 0 else np.inf
-    #     print(f"\nBest by LOO: {best['model']} (elpd_diff=0).")
-    #     print(f"Runner-up: {other['model']}, elpd_diff={other['elpd_diff']:.2f}, "
-    #           f"SE={other[se_col]:.2f} → |elpd_diff|/SE = {ratio:.2f}")
-    # else:
-    #     print(f"\nBest by LOO: {best['model']} (elpd_diff=0). Runner-up: {other['model']}, "
-    #           f"elpd_diff={other['elpd_diff']:.2f} (SE column not found)")
 
 
-################################### for LEESEE phase differences ##############################################################################
 ################################### for LEESEE phase differences ##############################################################################
 
 """def run_version3():

@@ -37,7 +37,7 @@ sys.modules.setdefault('_gdbm', types.ModuleType('_gdbm'))
 
 
 import dill as pickle
-from copy import deepcopy   # for modfiying z to be 0.55 (like in Sebastian's Matlab)
+from copy import deepcopy   # can be used for modfiying z to be 0.55 (like in Sebastian's Matlab)
 import argparse
 
 # warning settings
@@ -52,7 +52,7 @@ from hddm.simulators.hddm_dataset_generators import simulator_h_c
 from pathlib import Path
 
 # Import my own libraries - I don't really use it anymore 
-#current_directory = os.getcwd()    # we don't use this on the cluster
+#current_directory = os.getcwd()    # we don't use this on the cluster; used it when running locally
 
 PROJECT_DIR = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace"))
 
@@ -70,11 +70,6 @@ def make_z_link(full_stimulus_vector):
     stim = np.asarray(full_stimulus_vector, dtype=int)
 
     def _link(x):
-        """
-        x can be a NumPy array *or* a pandas Series coming from HDDM.
-        We return the *same* type HDDM gave us so later code still works.
-        """
-        # --- make sure stim is at least as long as x ---
         if stim.size < len(x):
             reps = (len(x) // stim.size) + 1
             stim_aligned = np.tile(stim, reps)[:len(x)]
@@ -109,12 +104,10 @@ def make_z_link(full_stimulus_vector):
 # V_sub = value of the worse option
 
 
-# created these new columns
+# created these new columns (these are not for accuracy coded models - rather, the idea is to have one of the options as the upper/lower bound)
 #data['ES_AttentionW'] = (data['PropDwell_Right'] * data['p2']) - (data['PropDwell_Left'] * data['p1'])
 #data['ES_InattentionW'] = (data['PropDwell_Left'] * data['p2']) - (data['PropDwell_Right'] * data['p1'])
-#data['ES_AttentionW'] = data['ES_AttentionW'].round(3)
-#data['ES_InattentionW'] = data['ES_InattentionW'].round(3)
-##
+
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
 nr_samples      = 6000       # samples per chain - do 11000 but for now for a quick one we do 600
@@ -584,7 +577,6 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
 #
 ## ONLY FOR RL ##-------------------------------------------------------------------------------------------
 def run_and_save(trace_id, data, model_dir, model_name, version, phase, samples):
-    # 1) instantiate + sample exactly as you do in run_model()
     model, infdata = run_model(
         trace_id=trace_id,
         data=data,
@@ -594,15 +586,12 @@ def run_and_save(trace_id, data, model_dir, model_name, version, phase, samples)
         phase=phase,
         samples=samples,
     )
-    # 2) save *inside* the worker
     fname = f"{model_name}_{trace_id}"
     model.save(os.path.join(model_dir, fname + ".hddm"))
     with open(os.path.join(model_dir, fname + ".pkl"), "wb") as f:
         pickle.dump(model, f)
     infdata = sanitize_infdata(infdata)
     az.to_netcdf(infdata, os.path.join(model_dir, fname + ".nc"))
-
-    # 3) return something small
     return fname
 
 import dill as pickle  # to create the pkl object
@@ -643,7 +632,7 @@ def drift_diffusion_hddm(data,
                 
                 with open(os.path.join(model_dir, f"{model_name}_{i}.pkl"), "wb") as f:
                     pickle.dump(model, f)
-                infdata = sanitize_infdata(infdata)  # clean before saving
+                infdata = sanitize_infdata(infdata) 
                 az.to_netcdf(infdata, os.path.join(model_dir, f"{model_name}_{i}.nc"))
 
 
@@ -1546,8 +1535,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
 
     size_plot = len(combined_model.data.subj_idx.unique()) / 3.0 * 1.5
     combined_model.plot_posterior_predictive(samples=10, bins=100, figsize=(6, size_plot), save=True, path=str(diag_dir), format="pdf")
-    
-    # shrink font for the next set of plots
     matplotlib.rcParams.update({"font.size": 6})
     combined_model.plot_posteriors(save=True,
                                    path=str(diag_dir),
@@ -1557,7 +1544,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     # stats table
     results = combined_model.gen_stats()
     results.to_csv(diag_dir / "results.csv")
-    
     # Posterior‐trace KDEs
     traces = [combined_model.nodes_db.node[p].trace() for p in params_of_interest]
     # optional alpha‐transform if RL is used for instance
@@ -1624,7 +1610,7 @@ model_dir = BASE_MODEL_DIR
 
 
 # ==================================================================
-# BATCH DRIVER – runs every (phase, version) - pairing
+# BATCH DRIVER that runs every (phase, version) pairing
 # ==================================================================
 
 if __name__ == "__main__":
@@ -1637,11 +1623,9 @@ if __name__ == "__main__":
             continue                    
         
         phase_key = phase
-
-
         for version, model_name in enumerate(model_versions[phase]):
             
-            # ------------- Start Control -----------------------------
+            # Start Version
             if not started:
                 if phase == start_phase and version >= start_version:
                     started = True
@@ -1650,13 +1634,12 @@ if __name__ == "__main__":
                 else:
                     continue #skip
 
-            # ----------------------------------------------------------
             
             full_model_name = model_base_name + model_name
             print(f"\n===  PHASE {phase} : {model_name}  ===")
 
-            # --------------- filter data for this phase ---------------
-            source_phase = PHASE_TO_SOURCE.get(phase, phase)   #assignes ES_ZBIAS
+            # filter data for this phase
+            source_phase = PHASE_TO_SOURCE.get(phase, phase)  
 
             if phase == "ESEE":
                 data = data_full[data_full["phase"].isin(["ES", "EE"])].copy()
@@ -1669,7 +1652,7 @@ if __name__ == "__main__":
                 raise ValueError(f"No rows left after filtering for phase '{phase}' "
                                  f"(source = '{source_phase}')")
 
-            # ---------------- preprocessing ---------------
+            # preprocessing 
             data["gazeCI"]  = pd.to_numeric(data["gazeCI"],  errors="coerce")
             data["gazeSE"]= pd.to_numeric(data["gazeSE"],errors="coerce")
             data["phase"]       = data["phase"].astype("category")
@@ -1679,9 +1662,7 @@ if __name__ == "__main__":
 
             data                = data[data["rt"] > 0.250]
             # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
-            # ------------------------------------------------------------------
             if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL", "For_paper"):
-
                 data["response"] = pd.to_numeric(data["chose_right"], errors="coerce")
                 print("[ZBIAS DEBUG] head of response mapping:")
                 print(data[["chose_right","corr","response"]].head(10).to_string(index=False))
@@ -1696,7 +1677,6 @@ if __name__ == "__main__":
             
             print(f"[DEBUG] phase={phase}  response counts:\n",
             data["response"].value_counts(dropna=False).head())
-            
             data["OVcate"]      = data["OVcate_2"].astype("category")
             data["Abscate"]     = data["Abscate_2"].astype("category")
             data["cond"]     = data["cond"].fillna(-1)
@@ -1711,8 +1691,7 @@ if __name__ == "__main__":
             data["Value_diff"] = pd.to_numeric(data["Value_diff"], errors="coerce")
             data["DTA"] = pd.to_numeric(data["DTA"], errors="coerce")
 
-            
-            # keep only trials with strictly positive dwell time on both sides, this can be changed; depends on the goal
+            # keep only trials with strictly positive dwell time on both sides, but this can be changed; depends on the goal (I'm not actually doing this here)
             #data = data[(data["DwellLeft"] > -1) & (data["DwellRight"] > -1)]
             data = data[~data["subj_idx"].isin({6, 14, 20, 26, 2, 9, 18})]
             data = data.dropna(subset=["rt",
@@ -1723,9 +1702,11 @@ if __name__ == "__main__":
                                        "AttentionW",
                                        "InattentionW",
                                        "cond",
-                                       "ES_AttentionW", "ES_InattentionW", "ES_InattentionW_E", "ES_InattentionW_S", "DTA"])   
-            
-            # ------------------------------------------------------------
+                                       "ES_AttentionW",
+                                       "ES_InattentionW",
+                                       "ES_InattentionW_E", 
+                                       "ES_InattentionW_S",
+                                       "DTA"])   
             # quick report at the start
             quick_report(data, phase, version, model_name, phase_key)
 

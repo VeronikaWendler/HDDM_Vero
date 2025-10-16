@@ -1,7 +1,11 @@
 # my gitignore file
 .env
-models_dir_garcia/*.hddm
-models_dir_OV/*.hddm
-
-figures_dir_combined
-
+models_dir_garcia/
+models_dir_OV/
+quick_dat_frame_OV.py
+quick_dat_frame.py
+figures_dir_OV/macleod_cluster_out/old/
+figures_dir_combined/
+CCT_Matlab_PPC/
+combined_model/
+data_sets/merging_files.py

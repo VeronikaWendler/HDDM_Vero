@@ -5,7 +5,7 @@
 #SBATCH -o logs/slurm.%j.out                # STDOUT goes to this file
 #SBATCH -e logs/slurm.%j.err                # STDERR goes to this file
 #SBATCH --mail-type=ALL                     # email when job ends or fails
-#SBATCH --mail-user=u04vw21@abdn.ac.uk      # university email
+#SBATCH --mail-user=u04vw21@abdn.ac.uk      # university email (still Aberdeen)
 
 #Singularity module 
 module load singularity/3.8.5

@@ -4,10 +4,10 @@ from pathlib import Path
 
 BASE_DIR = Path(r"C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/macleod_cluster_out")
 
-# Collect DIC values
+# get DIC values
 models = {}  
 
-for i in range(1, 42):      # ES models 
+for i in range(1, 42):    
     dic_file = BASE_DIR / f"garcia_replication_ES_{i}" / "diagnostics" / "DIC.txt"
     try:
         with dic_file.open() as f:
