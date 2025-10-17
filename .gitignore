@@ -8,3 +8,5 @@ combined_model
 data_sets/merging_files.py
 param_recovery_and_correlations/old
 old/
+figures_dir_garcia_old/
+figures_dir_OV_old/
