@@ -15,14 +15,11 @@ M35_DIAG    = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper
 OUT_DIR     = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "correlation" / "sp_phase"
 OUT_DIR.mkdir(parents=True, exist_ok=True)
 
-# Input data for SP trials
+# in the new rearranged code, both versions work
 SP_DATA_CSV = os.getenv("SP_DATA_CSV")
 if SP_DATA_CSV is None:
-    # paths that both work
     CANDIDATES = [
-        PROJECT_DIR / "data" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
         PROJECT_DIR / "data_sets" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
-        Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/data/data_sets/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
         Path(r"C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_Garcia/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
     ]
     SP_PATH = next((str(p) for p in CANDIDATES if Path(p).exists()), None)
@@ -31,11 +28,9 @@ else:
 
 CONF_GLOB = os.getenv("CONF_GLOB") or r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/data/sub-*/beh/EXP4_garcia_participant_*.csv"
 
-# Exclusion list
 _excl = os.getenv("EXCLUDE_SUBJECTS", "1,4,5,6,14,99").strip()
 EXCLUDE_SUBJECTS = [] if _excl == "" else [int(x) for x in _excl.split(",") if x.strip().isdigit()]
 
-# ------------------------- helpers -------------------------
 def _read_results(path: Path | str) -> pd.DataFrame:
     df = pd.read_csv(path)
     first = df.columns[0]
@@ -47,12 +42,6 @@ def _read_results(path: Path | str) -> pd.DataFrame:
 
 
 def _extract_all_subject_params(df: pd.DataFrame, central: str = "mean") -> dict[str, dict[int, float]]:
-    """Return mapping {param_name: {sid: value}}.
-    Supports names like:
-      a_subj.12 -> 'a'
-      a_subj(high).12 -> 'a(high)'
-      v_ES_AttentionW_subj.12 -> 'v_ES_AttentionW'
-    """
     by_param: dict[str, dict[int, float]] = {}
     pat = re.compile(r"^(?P<base>.+)_subj(?:\((?P<mod>.+?)\))?\.(?P<sid>\d+)$")
     for _, row in df.iterrows():
@@ -128,7 +117,6 @@ def _p_text(p: float) -> str:
     return "p<.001" if p < 1e-3 else f"p={p:.3f}"
 
 
-# ------------------------- SP data loaders -------------------------
 
 def _parse_args(argv=None):
     p = argparse.ArgumentParser(description="Correlate aDDM params with SP-phase ratings & confidence.")
@@ -143,7 +131,6 @@ def _parse_args(argv=None):
     args, _ = p.parse_known_args(argv)
     return args
 
-# ------------------------- SP data loaders -------------------------
 SP_CONF_CANDIDATE_COLS = [
     "confidence", "conf", "confidenceLevelsArrayEXP", "confidence_level", "confidenceLevels"
 ]
@@ -155,14 +142,10 @@ def _standardize_op1(op):
     s = str(op).strip().upper()
     if s in {"E", "S"}:
         return s
-    # try to infer from strings like 'Pie...' present in some files
     return "S" if "PIE" in s else "E"
 
 
 def read_sp_from_combined(csv_path: str | Path) -> tuple[dict[int, float], dict[int, float], dict[int, float], dict[int, float] | None, dict[int, float] | None, dict[int, float] | None]:
-    """Return six maps: (prob_E, prob_S, prob_all, conf_E, conf_S, conf_all).
-    conf_* may be None if confidence not available in this file.
-    """
     df = pd.read_csv(csv_path)
     if "phase" not in df.columns:
         raise ValueError("Combined SP CSV must have a 'phase' column.")
@@ -172,15 +155,13 @@ def read_sp_from_combined(csv_path: str | Path) -> tuple[dict[int, float], dict[
     if df.empty:
         raise ValueError("No SP-phase rows found in the combined CSV.")
 
-    # exclusions
     if "sub_id" not in df.columns:
         raise ValueError("Combined SP CSV must have 'sub_id'.")
     df = df[~df["sub_id"].isin(EXCLUDE_SUBJECTS)].copy()
     df["sub_id"] = pd.to_numeric(df["sub_id"], errors="coerce").astype("Int64")
-    df = df.dropna(subset=["sub_id"])  # keep valid SIDs
+    df = df.dropna(subset=["sub_id"])
     df["sub_id"] = df["sub_id"].astype(int)
 
-    # op1 and stated probability
     if "op1" not in df.columns:
         raise ValueError("Combined SP CSV must have 'op1' column for option type (E/S)")
     df["op1_std"] = df["op1"].map(_standardize_op1)
@@ -189,14 +170,12 @@ def read_sp_from_combined(csv_path: str | Path) -> tuple[dict[int, float], dict[
     if "cho" not in df.columns:
         raise ValueError("Combined SP CSV must include 'cho' as stated probability rating.")
     df["cho"] = pd.to_numeric(df["cho"], errors="coerce")
-    df = df.dropna(subset=["cho"])  # ratings present
+    df = df.dropna(subset=["cho"]) 
 
-    # mean stated probability per subject by option
     prob_E   = df[df["op1_std"] == "E"].groupby("sub_id")["cho"].mean().to_dict()
     prob_S   = df[df["op1_std"] == "S"].groupby("sub_id")["cho"].mean().to_dict()
     prob_all = df.groupby("sub_id")["cho"].mean().to_dict()
 
-    # confidence if present
     conf_col = next((c for c in SP_CONF_CANDIDATE_COLS if c in df.columns), None)
     if conf_col is None:
         return prob_E, prob_S, prob_all, None, None, None
@@ -213,10 +192,6 @@ def read_sp_from_combined(csv_path: str | Path) -> tuple[dict[int, float], dict[
 
 
 def read_confidence_from_glob(glob_pattern: str | Path) -> tuple[dict[int, float], dict[int, float], dict[int, float]]:
-    """Fallback loader for confidence from per-subject files.
-    Requires columns: SubID, confidenceLevelsArrayEXP, selectedImageNamesArrayEXP.
-    Infers op1: contains 'Pie' -> 'S', else 'E'. Returns (conf_E, conf_S, conf_all).
-    """
     files = sorted(glob.glob(str(glob_pattern)))
     if not files:
         raise FileNotFoundError(f"No files matched CONF_GLOB pattern: {glob_pattern}")
@@ -259,7 +234,7 @@ def read_confidence_from_glob(glob_pattern: str | Path) -> tuple[dict[int, float
     return conf_E, conf_S, conf_all
 
 
-# ------------------------- correlation plotting -------------------------
+# correlation plotting
 def correlate_and_plot(target_map: dict[int, float],
                        params_by_name: dict[str, dict[int, float]],
                        x_label: str,
@@ -268,7 +243,6 @@ def correlate_and_plot(target_map: dict[int, float],
                        out_pdf: Path | str,
                        out_csv: Path | str,
                        min_overlap: int = 5) -> None:
-    """Make grid of scatter+fit+CI and a CSV summary."""
     panels = []
     rows = []
 
@@ -281,14 +255,12 @@ def correlate_and_plot(target_map: dict[int, float],
         y = np.array([subj_map[s]   for s in common], dtype=float)
 
         if len(np.unique(x)) < 2 or len(np.unique(y)) < 2:
-            # no variability -> skip correlation
             continue
 
         r, p = stats.pearsonr(x, y)
         r2 = float(r**2)
         n = len(common)
 
-        # regression & 95% CI
         b1, b0 = np.polyfit(x, y, 1)
         x_line = np.linspace(x.min(), x.max(), 100)
         y_line = b1 * x_line + b0
@@ -316,7 +288,7 @@ def correlate_and_plot(target_map: dict[int, float],
         })
 
     if not panels:
-        print(f"[WARN] Nothing to plot for {title_prefix} (no parameters with >= {min_overlap} overlapping subjects).")
+        print(f"Nothing to plot for {title_prefix} (no parameters with >= {min_overlap} overlapping subjects).")
         return
 
     k = len(panels)
@@ -365,11 +337,10 @@ def correlate_and_plot(target_map: dict[int, float],
     print(f"Saved CSV: {out_csv}")
 
 
-# ------------------------- run pipeline -------------------------
+# pipeline 
 if __name__ == "__main__":
     args = _parse_args()
 
-    
     # exclusions
     _excl = (args.exclude or "").strip()
     EXCLUDE_SUBJECTS = [] if _excl == "" else [int(x) for x in _excl.split(",") if x.strip().isdigit()]
@@ -378,32 +349,30 @@ if __name__ == "__main__":
     CONF_GLOB = args.conf_glob or os.getenv("CONF_GLOB") or \
         r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/data/sub-*/beh/EXP4_garcia_participant_*.csv"
 
-    # SP combined CSV (stated probabilities & maybe confidence)
+    # SP combined CSV (stated probabilities & confidence)
     if args.sp_csv:
         SP_PATH = args.sp_csv
     elif os.getenv("SP_DATA_CSV"):
         SP_PATH = os.getenv("SP_DATA_CSV")
     else:
         sp_candidates = [
+            # I'm trying out a more flexible account of accessing the files
             Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/data/data_sets/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
             PROJECT_DIR / "data" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
             PROJECT_DIR / "data_sets" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
         ]
         SP_PATH = next((str(p) for p in sp_candidates if Path(p).exists()), None)
 
-    # ---- aDDM parameters (with theta) ----
-    # locate aDDM results (results.csv) robustly
     if args.results:
         candidates = [Path(args.results)]
         m35_in = candidates[0]
     else:
+        # I'm trying out a more flexible account of accessing the files
         candidates = [
             M35_DIAG / "results.csv",
             PROJECT_DIR / "figures_dir_Garcia" / "macleod_cluster_out" / "garcia_replication_For_paper_7" / "diagnostics" / "results.csv",
-            Path(r"C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/garcia_replication_For_paper_7/diagnostics/results.csv"),
             Path(r"C:/Cluster_Github/HDDM_Vero/figures_dir_garcia/macleod_cluster_out/garcia_replication_For_paper_7/diagnostics/results.csv"),
-            Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/figures_dir_garcia/garcia_replication_For_paper_7/diagnostics/results.csv"),
-            Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/figures_dir_garcia/macleod_cluster_out/garcia_replication_For_paper_7/diagnostics/results.csv"),
+
         ]
         m35_in = next((p for p in candidates if p.exists()), None)
 
@@ -412,59 +381,53 @@ if __name__ == "__main__":
         raise FileNotFoundError("Couldn't find aDDM results.csv. Use --results or set PROJECT_DIR/M35_RESULTS_CSV. Tried:" + tried
         )
 
-    # where to save the theta-augmented CSV
     m35_plus = Path(m35_in).with_name("results_plus_theta.csv")
-
-    print(f"[INFO] Using aDDM results: {m35_in}")
-    print(f"[INFO] Using SP combined CSV: {SP_PATH}")
-    print(f"[INFO] Using CONF_GLOB: {CONF_GLOB}")
-    print(f"[INFO] Excluding subjects: {EXCLUDE_SUBJECTS}")
-
+    print(f"Using aDDM results: {m35_in}")
+    print(f"Using SP combined CSV: {SP_PATH}")
+    print(f"Using CONF_GLOB: {CONF_GLOB}")
+    print(f"Excluding subjects: {EXCLUDE_SUBJECTS}")
     m35_aug_path = add_theta_params_to_results(m35_in, m35_plus, use_median=False)
     m35_df = _read_results(m35_aug_path)
     params_by_name = _extract_all_subject_params(m35_df, central="mean")
     if not params_by_name:
-        raise ValueError("No '*_subj.<id>' parameters found in aDDM results.")
+        raise ValueError("No parameters found in aDDM results")
 
-    # ---- stated probabilities & confidence from combined SP CSV ----
     if SP_PATH is None:
         raise FileNotFoundError(
-            "SP_DATA_CSV not set and no default combined CSV found. Provide --sp-csv or set SP_DATA_CSV."
+            "SP_DATA_CSV not set and no default combined CSV found"
         )
 
     (prob_E, prob_S, prob_all,
      conf_E_from_comb, conf_S_from_comb, conf_all_from_comb) = read_sp_from_combined(SP_PATH)
 
-    # ---- confidence fallback (if needed) ----
     conf_E = conf_E_from_comb
     conf_S = conf_S_from_comb
     conf_all = conf_all_from_comb
 
     if conf_E is None or conf_S is None or conf_all is None:
-        print("[INFO] Confidence ratings not found in combined SP CSV. Trying CONF_GLOB fallback...")
+        print("Confidence ratings not found in combined SP CSV. Trying CONF_GLOB fallback")
         try:
             conf_E, conf_S, conf_all = read_confidence_from_glob(CONF_GLOB)
-            print(f"[INFO] Loaded confidence from per-subject files: pattern {CONF_GLOB}")
+            print(f"Loaded confidence from per-subject files: pattern {CONF_GLOB}")
         except Exception as e:
-            print(f"[WARN] Could not load confidence ratings from fallback: {e}")
+            print(f"Could not load confidence ratings from fallback: {e}")
             conf_E = conf_E or {}
             conf_S = conf_S or {}
             conf_all = conf_all or {}
 
-    # ---------------- make 6 outputs ----------------
-    # Colors per target
-    COL_E   = "#5B95B5"  # blue-ish
-    COL_S   = "#AA4E73"  # magenta-ish
+    # Colors
+    COL_E   = "#5B95B5"  # blue
+    COL_S   = "#AA4E73"  # magenta
     COL_ALL = "teal"
 
-    # 1–3: stated probability ratings
+    #stated probability ratings
     correlate_and_plot(
         prob_E, params_by_name,
         x_label="Mean stated probability (SP, E)",
         title_prefix="Correlations: SP stated probability (E) vs aDDM parameters",
         accent=COL_E,
         out_pdf=OUT_DIR / "addm_vs_sp_ratings_E.pdf",
-        out_csv=OUT_DIR / "addm_vs_sp_ratings_E_summary.csv",
+        out_csv=OUT_DIR / "addm_vs_sp_ratings_E_stats.csv",
     )
 
     correlate_and_plot(
@@ -473,7 +436,7 @@ if __name__ == "__main__":
         title_prefix="Correlations: SP stated probability (S) vs aDDM parameters",
         accent=COL_S,
         out_pdf=OUT_DIR / "addm_vs_sp_ratings_S.pdf",
-        out_csv=OUT_DIR / "addm_vs_sp_ratings_S_summary.csv",
+        out_csv=OUT_DIR / "addm_vs_sp_ratings_S_stats.csv",
     )
 
     correlate_and_plot(
@@ -482,12 +445,12 @@ if __name__ == "__main__":
         title_prefix="Correlations: SP stated probability (ALL) vs aDDM parameters",
         accent=COL_ALL,
         out_pdf=OUT_DIR / "addm_vs_sp_ratings_ALL.pdf",
-        out_csv=OUT_DIR / "addm_vs_sp_ratings_ALL_summary.csv",
+        out_csv=OUT_DIR / "addm_vs_sp_ratings_ALL_stats.csv",
     )
 
-    # 4–6: confidence ratings (only if we have any)
+    # confidence ratings
     if len(conf_E) + len(conf_S) + len(conf_all) == 0:
-        print("[WARN] No confidence data found. Skipping confidence correlations (4–6).")
+        print("No confidence data found. Skipping confidence correlations.")
     else:
         if conf_E:
             correlate_and_plot(
@@ -499,7 +462,7 @@ if __name__ == "__main__":
                 out_csv=OUT_DIR / "addm_vs_sp_confidence_E_summary.csv",
             )
         else:
-            print("[WARN] No E-option confidence data; skipping (4).")
+            print("No E-option confidence data; skipping (4).")
 
         if conf_S:
             correlate_and_plot(
@@ -511,7 +474,7 @@ if __name__ == "__main__":
                 out_csv=OUT_DIR / "addm_vs_sp_confidence_S_summary.csv",
             )
         else:
-            print("[WARN] No S-option confidence data; skipping (5).")
+            print("No S-option confidence data; skipping (5).")
 
         if conf_all:
             correlate_and_plot(
@@ -523,6 +486,6 @@ if __name__ == "__main__":
                 out_csv=OUT_DIR / "addm_vs_sp_confidence_ALL_summary.csv",
             )
         else:
-            print("[WARN] No ALL confidence data; skipping (6).")
+            print("No ALL confidence data; skipping (6).")
 
     print("Done. Outputs are in:", OUT_DIR)

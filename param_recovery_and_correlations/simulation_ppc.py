@@ -1,6 +1,6 @@
 # #Veronika Wendler
 
-# #Posterior Predictive Checks for the aDDM
+# Posterior Predictive Checks for the aDDM (this produces only RT & Accuracy, we programmed anther version in Matlab)
 # can be used for both experiments, the 'garcia' quasi-replication (Exp1) and the 'OV' experiment, in which we manipulated overall value levels during learning
 # you just need to set the paths accordingly
 
@@ -22,13 +22,12 @@ model_paths = [
     "/home/jovyan/OfficialTutorials/For_Linux/models_dir_OV/OV_replication_EE_5_0.hddm"
 ]
 
-# initialize variables for selecting the best model (lowest DIC) and select only this model
+# initialize variables for selecting the best model (lowest DIC) 
 best_model = None
 best_model_path = None
 best_dic = float('inf')
 best_model_name = None
 
-# Iterate over model paths one by one (to reduce memory usage)
 for path in model_paths:
     print(f"Loading model from: {path}")
     m = hddm.load(path)
@@ -41,24 +40,20 @@ for path in model_paths:
         best_model_path = path  
         best_model_name = os.path.basename(path).replace(".hddm", "")
     else:
-        # del model not needed and force garbage collection
         del m
         gc.collect()
 
 print("Best model selected:", best_model_name, "with DIC =", best_dic)
 
-# ------------------------------------------------------------------
+
 # Posterior Predictive Data
 print("Generating posterior predictive data with (nr of samples) samples per node...")
 ppc_data = hddm.utils.post_pred_gen(best_model, samples=2000, append_data=True)     #samples=500
 print("Posterior predictive data (first few rows):")
 print(ppc_data.head())
-
-# ------------------------------------------------------------------
 output_dir = "/home/jovyan/OfficialTutorials/For_Linux/figures_dir_OV/OV_replication_EE_5/diagnostics"
 os.makedirs(output_dir, exist_ok=True)
 
-# ------------------------------------------------------------------
 # RT Distribution
 bins = np.histogram_bin_edges(best_model.data['rt'], bins=50)
 fig, ax = plt.subplots(figsize=(8,6))
@@ -81,7 +76,6 @@ rt_plot_path = os.path.join(output_dir, f"RT_Distribution_{best_model_name}.png"
 plt.savefig(rt_plot_path, dpi=300, bbox_inches='tight')
 plt.close(fig) 
 
-# ------------------------------------------------------------------
 # Response Distribution
 real_response_counts = best_model.data['response'].value_counts(normalize=True).sort_index()
 simulated_response_counts = ppc_data['response_sampled'].value_counts(normalize=True).sort_index()
@@ -104,7 +98,6 @@ response_plot_path = os.path.join(output_dir, f"Response_Proportions_{best_model
 plt.savefig(response_plot_path, dpi=300, bbox_inches='tight')
 plt.close(fig)
 
-# ------------------------------------------------------------------
 # Generate and Save Summary Statistics
 print("Generating summary statistics with 800 samples per node...")
 ppc_data_2 = hddm.utils.post_pred_gen(best_model, samples=2000)        # , samples=500
@@ -117,8 +110,6 @@ summary_stats_path = os.path.join(output_dir, f"posterior_predictive_summary_{be
 ppc_stats.to_csv(summary_stats_path)
 print(f"Summary statistics saved to {summary_stats_path}")
 
-# ------------------------------------------------------------------
-# 
 del best_model, ppc_data, ppc_data_2
 gc.collect()
 

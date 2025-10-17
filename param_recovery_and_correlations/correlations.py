@@ -1,3 +1,7 @@
+# ============================================================
+# Correlations - learning rate and ESaDDM+z+a~OV
+# ============================================================
+
 from pathlib import Path
 import os
 import re
@@ -8,7 +12,6 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import math
 
-# Paths #
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 
 # best fitting aDDM model 
@@ -19,7 +22,6 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 
 def _read_results(path):
     df = pd.read_csv(path)
-    # ensure parameter column is present
     first = df.columns[0]
     if first.lower() in {"", "unnamed: 0"} or not np.issubdtype(df[first].dtype, np.number):
         df = df.rename(columns={first: "param"})
@@ -27,9 +29,9 @@ def _read_results(path):
         df = df.reset_index().rename(columns={"index": "param"})
     return df
 
+# finding the parameter
 def _extract_all_subject_params(df, central="mean"):
     by_param = {}
-    # Updated regex to capture things like a_subj(high).12
     pat = re.compile(r"^(?P<base>.+)_subj(?:\((?P<mod>.+?)\))?\.(?P<sid>\d+)$")
     for _, row in df.iterrows():
         m = pat.match(str(row["param"]))
@@ -56,8 +58,6 @@ def add_theta_params_to_results(m35_in_csv, m35_out_csv, use_median=False):
     
     df = _read_results(m35_in_csv)
     central = "50q" if use_median else "mean"
-
-    # All subj-level mappings
     subj_maps = _extract_all_subject_params(df, central=central)
 
     need = {
@@ -148,10 +148,8 @@ def plot_alpha_correlations(
 
         x = np.array([alpha_subj[s] for s in common])
         y = np.array([subj_map[s]   for s in common])
-
         r, p = stats.pearsonr(x, y)
         r2 = float(r**2)
-
         # 95% CI
         n = len(common)
         b1, b0 = np.polyfit(x, y, 1)
@@ -180,7 +178,7 @@ def plot_alpha_correlations(
 
     k = len(panels)
     if k == 0:
-        raise ValueError("Nothing to plot (no parameters with >=5 overlapping subjects).")
+        raise ValueError("Nothing to plot, check subjcts")
 
     ncols = 3 if k <= 9 else 4 if k <= 16 else 5
     nrows = math.ceil(k / ncols)
@@ -196,22 +194,14 @@ def plot_alpha_correlations(
         ax.plot(panel["x_line"], panel["y_line"], color=ACCENT, lw=2.5)
         ax.fill_between(panel["x_line"], panel["y_lo"], panel["y_hi"],
                         color=ACCENT, alpha=0.25, linewidth=0)
-
-        # bigger labels & title
         ax.set_xlabel("α (learning rate)", fontsize=16, labelpad=8)
         ax.set_ylabel(panel["name"], fontsize=16, labelpad=8)
         ax.set_title(panel["name"], fontsize=18, pad=10)
-
-        # bigger tick labels
         ax.tick_params(axis="both", which="major", labelsize=14, width=1.5)
-
-        # remove top/right spines, thicken bottom/left
         for side in ["top", "right"]:
             ax.spines[side].set_visible(False)
         for side in ["bottom", "left"]:
             ax.spines[side].set_linewidth(1.5)
-
-        # large annotation box
         txt = f"R² = {panel['r2']:.3f}\n{_p_text(panel['p'])}"
         ax.text(
             0.03, 0.98, txt, transform=ax.transAxes,
@@ -224,7 +214,7 @@ def plot_alpha_correlations(
     for j in range(len(panels), len(axes)):
         axes[j].axis("off")
 
-    fig.suptitle("Correlations: α vs subject-level parameters", y=0.995, fontsize=23, weight="bold")
+    fig.suptitle("Correlations: Alpha vs participant-level parameters", y=0.995, fontsize=23, weight="bold")
     fig.tight_layout(rect=(0, 0, 1, 0.98))
     fig.savefig(out_pdf, dpi=300, bbox_inches="tight")
     plt.close(fig)
@@ -234,15 +224,15 @@ def plot_alpha_correlations(
     print(f"Saved: {out_csv}")
 
 
-# ---------- run ----------
+# run
 rl_results_csv = (RL1_DIAG / "results_alpha_transformed.csv").as_posix()
 m35_in_csv     = (M35_DIAG / "results.csv").as_posix()
-m35_plus_csv   = (M35_DIAG / "results_plus_theta.csv").as_posix()
+m35_plus_csv   = (M35_DIAG / "results_theta.csv").as_posix()
 
 m35_aug = add_theta_params_to_results(m35_in_csv, m35_plus_csv, use_median=False)
 
-out_pdf = (OUT_DIR / "alpha_param_correlations_with_theta.pdf").as_posix()
-out_csv = (OUT_DIR / "alpha_param_correlations_with_theta_summary.csv").as_posix()
+out_pdf = (OUT_DIR / "alpha_param_theta_correlations.pdf").as_posix()
+out_csv = (OUT_DIR / "alpha_param_theta_correlations_stats.csv").as_posix()
 
 plot_alpha_correlations(
     rl_results_csv=rl_results_csv,

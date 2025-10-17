@@ -1,4 +1,8 @@
+# ============================================================
+# Correlations between the best aDDM & RMSE in the SP phase
+# ============================================================
 
+# import libraries
 from __future__ import annotations
 import argparse
 import os
@@ -19,9 +23,7 @@ M35_DEFAULT = PROJECT_DIR / "figures_dir_garcia" / "macleod_cluster_out" / "garc
 
 SP_CSV_FALLBACKS = [
     Path(r"D:/Aberdeen_Uni_June24/cap/THESIS/Garcia_Analysis/data/data_sets/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
-    PROJECT_DIR / "data" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
     PROJECT_DIR / "data_sets" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv",
-    Path(r"C:/Cluster_Github/HDDM_Vero/data_sets/data_sets_garcia/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv"),
 ]
 
 
@@ -39,7 +41,6 @@ def _parse_args(argv=None):
     return args
 
 
-# ------------------- HELPERS -------------------
 def _read_results(path: Path | str) -> pd.DataFrame:
     df = pd.read_csv(path)
     first = df.columns[0]
@@ -51,7 +52,6 @@ def _read_results(path: Path | str) -> pd.DataFrame:
 
 
 def _extract_all_subject_params(df: pd.DataFrame, central: str = "mean") -> dict[str, dict[int, float]]:
-    """Return mapping {param_name: {sid: value}}. Supports a_subj.12 and a_subj(high).12"""
     by_param: dict[str, dict[int, float]] = {}
     pat = re.compile(r"^(?P<base>.+)_subj(?:\((?P<mod>.+?)\))?\.(?P<sid>\d+)$")
     for _, row in df.iterrows():
@@ -66,7 +66,6 @@ def _extract_all_subject_params(df: pd.DataFrame, central: str = "mean") -> dict
 
 
 def _maybe_add_theta(results_df: pd.DataFrame) -> pd.DataFrame:
-    """Append theta rows if Attention/ Inattention weights are present."""
     by = _extract_all_subject_params(results_df)
     need = ["v_ES_InattentionW_S", "v_ES_InattentionW_E", "v_ES_AttentionW"]
     if not all(k in by for k in need):
@@ -94,10 +93,8 @@ def _normalize_prob_series(x: pd.Series) -> pd.Series:
     x = pd.to_numeric(x, errors="coerce")
     return x/100.0 if x.max(skipna=True) > 1.5 else x
 
-
 def rmse(true: np.ndarray, pred: np.ndarray) -> float:
     return float(np.sqrt(np.mean((true - pred)**2)))
-
 
 def rmse_by_subject(sp_df: pd.DataFrame, which: str | None, subjects: list[int]) -> pd.Series:
     d = sp_df if which is None else sp_df[sp_df["op1_std"] == which]
@@ -106,7 +103,6 @@ def rmse_by_subject(sp_df: pd.DataFrame, which: str | None, subjects: list[int])
         g = d.loc[d["sub_id"] == sid, ["p1", "cho"]].dropna()
         out[sid] = np.nan if g.empty else rmse(g["p1"].to_numpy(), g["cho"].to_numpy())
     return pd.Series(out).sort_index()
-
 
 def correlate_grid(target: pd.Series,
                    params_by_name: dict[str, dict[int, float]],
@@ -189,11 +185,9 @@ def correlate_grid(target: pd.Series,
     print(f"Saved CSV: {out_csv}")
 
 
-# ------------------- MAIN -------------------
 if __name__ == "__main__":
     args = _parse_args()
 
-    # Project dir override (optional)
     if args.project_dir:
         PROJECT_DIR = Path(args.project_dir).resolve()
         OUT_DIR     = PROJECT_DIR / "figures_dir_garcia" / "garcia_replication_For_paper_7" / "correlation" / "sp_phase_rmse"
@@ -201,7 +195,6 @@ if __name__ == "__main__":
     # Exclusions
     exclude_ids = [int(s) for s in (args.exclude or "").split(",") if s.strip().isdigit()] or DEFAULT_EXCLUDE
 
-    # ----- aDDM results (auto) -----
     if args.results:
         results_csv = Path(args.results)
     else:
@@ -222,7 +215,6 @@ if __name__ == "__main__":
     if not params_by:
         raise ValueError("No '*_subj.<id>' parameters found in results.csv.")
 
-    # ----- SP CSV (auto) -----
     if args.sp_csv:
         sp_csv = Path(args.sp_csv)
     else:
@@ -239,30 +231,19 @@ if __name__ == "__main__":
     if miss:
         raise ValueError(f"SP CSV missing columns: {miss}")
 
-    # filter & clean (strict same-subjects after exclusions)
     sp = sp[sp["phase"].astype(str).str.upper() == "SP"].copy()
     sp["sub_id"] = pd.to_numeric(sp["sub_id"], errors="coerce").astype("Int64")
     sp = sp.dropna(subset=["sub_id"]).copy()
     sp["sub_id"] = sp["sub_id"].astype(int)
     sp = sp[~sp["sub_id"].isin(exclude_ids)].copy()
-
-    # exact E/S (you said op1 is already clean E/S)
     sp["op1_std"] = sp["op1"].astype(str).str.strip().str.upper()
-
-    # normalize scales (e.g., 90 -> 0.90)
     sp["p1"]  = _normalize_prob_series(sp["p1"])
     sp["cho"] = _normalize_prob_series(sp["cho"])
-
-    # subject list used everywhere
     subjects = sorted(sp["sub_id"].unique().tolist())
     print(f"[INFO] N subjects (after exclusion): {len(subjects)}")
-
-    # RMSE targets
     rmse_E   = rmse_by_subject(sp, "E", subjects)
     rmse_S   = rmse_by_subject(sp, "S", subjects)
     rmse_ALL = rmse_by_subject(sp, None, subjects)
-
-    # correlate & plot (three grid PDFs + CSVs)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
 
     correlate_grid(rmse_E,   params_by, subjects,

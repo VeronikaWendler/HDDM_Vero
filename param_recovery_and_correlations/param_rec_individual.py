@@ -1,21 +1,22 @@
 # ============================================================
-# Parameter-recovery loop – group- and individual-level
+# Parameter recovery for group and participant level
 # ============================================================
+
+#libraries
 import os, warnings
 from pathlib import Path
 import numpy as np
 import pandas as pd
 import arviz as az
 import hddm
-
 import matplotlib; matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm.auto import trange
+import re
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
-# ---------------- configuration -----------------------------------------
 PROJECT_DIR    = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 BASE_MODEL_DIR = PROJECT_DIR / "models_dir_OV"
 FIG_DIR        = PROJECT_DIR / "figures_dir_OV/OV_replication_For_paper_6/recovery_For_paper_m6"
@@ -31,7 +32,7 @@ N_REPS    = 10        # as in the paper
 N_SAMPLES = 1000
 BURN      = 100
 
-# group-level parameters (means)
+# group-level parameters
 PARAM_LIST = [
     'a(high)',
     'a(low)',
@@ -42,9 +43,8 @@ PARAM_LIST = [
     'v_ES_InattentionW_E',
     'v_ES_InattentionW_S'
 ]
-
-            
-# corresponding group-level SD names (as they appear in idata)
+  
+# group-level SD
 PARAM_LIST_SD = [
     'a(high)_std',
     'a(low)_std',
@@ -57,20 +57,20 @@ PARAM_LIST_SD = [
 ]
 PARAM_SD_MAP = dict(zip(PARAM_LIST, PARAM_LIST_SD))
 
-# HDDM model spec
+# HDDM model
 v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
 reg_descr = [v_reg]
 depends_on={'a':'OVcate'}
 
-# ------------- helpers ---------------------------------------------------
-### CSV writer
+# helper functions
+# CSV writer
 def atomic_to_csv(df: pd.DataFrame, path: Path):
     tmp = path.with_suffix(path.suffix + ".tmp")
     df.to_csv(tmp, index=False)
     os.replace(tmp, path)
 
 def _read_or_empty(path, cols):
-    # empty or missing file -> empty dataframe with expected columns
+    # empty or missing file ... empty dataframe with columns
     if (not path.exists()) or (path.stat().st_size == 0):
         return pd.DataFrame(columns=cols)
     try:
@@ -108,14 +108,10 @@ def extract_group_sd(idata, *, seed=None):
 
 
 def sample_true_subjects(mu_dict, sd_dict, subjects, *, seed=None):
-    """Draw θ_i for each subject: Normal(mu, sd).
-    For a(high/low/medium), use the global a_std (if present) to ensure
-    subject-level variability even when condition-specific SDs are absent.
-    """
     rng = np.random.default_rng(seed)
     true_individuals = {}
 
-    # SD to use for all a(level) draws
+    # SD for all boundary separation params
     a_sd = sd_dict.get("a_std", 0.0)
 
     for s in subjects:
@@ -142,7 +138,7 @@ def sample_true_subjects(mu_dict, sd_dict, subjects, *, seed=None):
     return true_individuals
 
 
-### NEW: helper to flatten per-subject 'true' draws (for saving)
+# helper to flatten draws for participants
 def flatten_true_subjects(true_individuals, rep):
     rows = []
     for subj, pmap in true_individuals.items():
@@ -150,12 +146,13 @@ def flatten_true_subjects(true_individuals, rep):
             rows.append(dict(rep=rep, subj=subj, parameter=p, true=val))
     return rows
 
+
 def simulate_dataset(true_individuals, raw_df):
-    """
-    Simulate trials using subject-specific parameters.
-    'a' varies by OV category (low/medium/high) via depends_on,
-    'v' is computed per trial from regressors, 't' and  'z' are subject constants
-    """
+    # simulation code
+    # a varies by OV
+    # v is computed from regressors
+    # t & z are constants
+
     sim_rows = []
 
     def _norm_ov(ov_raw):
@@ -163,21 +160,17 @@ def simulate_dataset(true_individuals, raw_df):
         if ov in {"low"}: return "low"
         if ov in {"medium"}: return "medium"
         if ov in {"high"}: return "high"
-        return ov  # expect one of low/medium/high
+        return ov  
     for _, tr in raw_df.iterrows():
         subj = int(tr["subj_idx"])
         ov   = _norm_ov(tr["OVcate"])
         pars = true_individuals[subj]
-
-        # # choose a per OVcate
         a_key = f"a({ov})"
         if a_key not in pars:
-            # fallbacks in case labels are slightly different
             map_ = {"low": "a(low)", "medium": "a(medium)", "high": "a(high)"}
             a_key = map_.get(ov, "a(low)")
         a_val = float(pars[a_key])
 
-        # drift per trial from regressors (no intercept by design: 0 + X)
         v_trial = (
             pars["v_ES_AttentionW"] * float(tr["ES_AttentionW"]) +
             pars["v_ES_InattentionW_E"] * float(tr["ES_InattentionW_E"]) +
@@ -190,7 +183,6 @@ def simulate_dataset(true_individuals, raw_df):
 
         trial_df, _ = hddm.generate.gen_rand_data(par_dict, size=1, subjs=1)
 
-        # carry over predictors & identifiers
         for col in ["subj_idx", "OVcate", "ES_AttentionW", "ES_InattentionW_E", "ES_InattentionW_S"]:
             trial_df[col] = tr[col]
         sim_rows.append(trial_df)
@@ -213,15 +205,13 @@ def refit_and_get_means(sim_df, seed):
     return means, mdl
 
 
-import re
-
 def extract_individual_means(mdl):
     out = {}
     for node in mdl.nodes_db.index:
         if "_subj." not in node and "_subj(" not in node:
             continue
 
-        # Try all match formats
+        # all formats are tried since a, v and t are saved differnetly by hddm
         for regex in [
             r"^([A-Za-z_]+)\(([^)]+)\)_subj\.(\d+)$",       # a(high)_subj.1
             r"^([A-Za-z_]+)_subj\(([^)]+)\)\.(\d+)$",       # a_subj(high).1
@@ -242,7 +232,7 @@ def extract_individual_means(mdl):
 
             if param in PARAM_LIST:
                 out[(int(subj), param)] = mdl.nodes_db.loc[node, 'node'].trace().mean()
-                break  # stop trying other regexes once matched
+                break  
 
     return out
 
@@ -250,26 +240,23 @@ def extract_individual_means(mdl):
 
 # -----------------------------------------------------------------------
 
-# load empirical fit & predictors
+# load fit & predictors
 empirical = az.concat([az.from_netcdf(p) for p in EMPIRICAL_POST_PATHS], dim="chain")
 raw_df    = empirical.observed_data.to_dataframe().reset_index(drop=True)
 raw_df["subj_idx"] = raw_df["subj_idx"].astype(int)
 subjects = sorted(raw_df["subj_idx"].unique())
 
-# storage
 group_records = []
 indiv_records = []
-true_draw_records = []  ### NEW: keep a running log of per-subject "true" draws
+true_draw_records = [] 
 
-# paths for partial saves
+# I want to save draws in case something crashes (hence, partial)
 GROUP_PARTIAL_CSV = FIG_DIR / "partial_group6.csv"
 INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual6.csv"
-TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws6.csv"  ### NEW
+TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws6.csv"
 
 expected_per_rep = len(PARAM_LIST)
 
-
-# load existing partials
 group_cols = ["rep", "parameter", "true", "recovered"]
 indiv_cols = ["rep", "subj", "parameter", "true", "recovered"]
 true_cols  = ["rep", "subj", "parameter", "true"]
@@ -278,7 +265,6 @@ group_partial = _read_or_empty(GROUP_PARTIAL_CSV, group_cols)
 indiv_partial = _read_or_empty(INDIV_PARTIAL_CSV, indiv_cols)
 true_partial  = _read_or_empty(TRUE_PARTIAL_CSV,  true_cols)
 
-# determine which reps are fully completed in the group file
 counts = group_partial.groupby("rep")["parameter"].count()
 complete_reps = set(counts[counts >= expected_per_rep].index.tolist())
 all_reps_seen = set(group_partial["rep"].unique())
@@ -289,16 +275,14 @@ if incomplete_reps:
     indiv_partial = indiv_partial[~indiv_partial["rep"].isin(incomplete_reps)]
     true_partial  = true_partial[~true_partial["rep"].isin(incomplete_reps)]
 
-# figure out where to restart
 start_rep = (max(complete_reps) + 1) if len(complete_reps) else 0
 print(f"Resuming from rep {start_rep} (completed reps: {sorted(complete_reps)})")
 
-# seed in-memory lists with what we already have
 group_records = group_partial.to_dict("records")
 indiv_records = indiv_partial.to_dict("records")
 true_draw_records = true_partial.to_dict("records")
-# ---------------------------------------------------------------
 
+# ---------------------------------------------------------------
 
 
 for rep in trange(start_rep, N_REPS, desc="parameter-recovery", unit="rep"):
@@ -330,7 +314,7 @@ for rep in trange(start_rep, N_REPS, desc="parameter-recovery", unit="rep"):
             
             
     finally:
-        # always write what we have so far
+        # write what we have so far
         atomic_to_csv(pd.DataFrame(group_records), GROUP_PARTIAL_CSV)
         atomic_to_csv(pd.DataFrame(indiv_records), INDIV_PARTIAL_CSV)
 
@@ -340,7 +324,7 @@ pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group6.csv", index
 pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual6.csv", index=False)
 pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all6.csv", index=False)  ### NEW
 
-# ---------- plotting ----------
+# some immediate plotting
 sns.set_style("white")
 
 # group plot
@@ -356,7 +340,7 @@ g.set_axis_labels("true value", "posterior mean (recovered)")
 g.tight_layout()
 g.savefig(FIG_DIR/"scatter_group7.png", dpi=300)
 
-# individual plot (means only, all reps & subs)
+# individual plot
 ind = pd.DataFrame(indiv_records)
 h = sns.FacetGrid(ind, col="parameter", col_wrap=3, sharex=False, sharey=False, height=3.0)
 h.map_dataframe(sns.scatterplot, x="true", y="recovered", s=16, alpha=.5)

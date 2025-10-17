@@ -1,4 +1,3 @@
-# my gitignore file
 .env
 models_dir_garcia/
 models_dir_OV/
@@ -9,3 +8,4 @@ figures_dir_combined/
 CCT_Matlab_PPC/
 combined_model/
 data_sets/merging_files.py
+param_recovery_and_correlations/old
