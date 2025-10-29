@@ -123,7 +123,7 @@ model_versions  = {
                 "ES_33","ES_34","ES_35","ES_36","ES_37","ES_38","ES_39","ES_40","ES_41", "ES_42", 'ES_43', 'ES_44', "ES_45", 'ES_46', 'ES_47',"ES_48",
                 "ES_49", "ES_50", "ES_51", "ES_52", "ES_53", "ES_54", "ES_55", "ES_56", "ES_57", "ES_58", "ES_59", "ES_60", "ES_61", "ES_62", "ES_63", "ES_64"],
     
-    "EE":      ["EE_1","EE_2","EE_3","EE_4","EE_5"],
+    "EE":      ["EE_0", "EE_1","EE_2","EE_3","EE_4","EE_5"],
     "ESEE":    ["ESEE_1","ESEE_2","ESEE_3","ESEE_4","ESEE_5"],
     "LEESEE":  ["LEESEE_1","LEESEE_2","LEESEE_3","LEESEE_4","LEESEE_5"],
     "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5", "ES_ZBIAS_6","ES_ZBIAS_7","ES_ZBIAS_8", "ES_ZBIAS_9","ES_ZBIAS_10", "ES_ZBIAS_11","ES_ZBIAS_12", "ES_ZBIAS_13",
@@ -144,16 +144,17 @@ PHASE_TO_SOURCE = {
     "LE_RL": "LE",
     "ES_VAL": "ES",
     "For_paper": "ES",
+    "EE": "EE",
 }
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["For_paper"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","ES","ES_VAL","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}  # ignored this phase
+PHASE_RUN_ORDER = ["EE"]                                         # order
+SKIP_PHASES     = {"LE","ES_ZBIAS","ES","ES_VAL","For_paper","ES_quad", "ESEE", "LEESEE", "LE_RL"}  # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits (but loading is done in the aDDM_Garcia_LE_ES_EE.py file)
 
 # selectivity
-start_phase = "For_paper"
-start_version = 16
+start_phase = "EE"
+start_version = 0
 started = False
 
 # dir
@@ -669,23 +670,28 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
     
     elif phase == 'EE':
         accuracy_coding = True
+        depends_on = {}
         if version == 0:     # m1 # this is the 0 model with fully fixed parameters across OV levels
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 0 + AttentionW + InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         elif version == 1:  # m2 attentional weight parameter (fixated) option weights varies by OV level 
-            v_reg = {'model': 'v ~ 1 + AttentionW:C(OVcate) + InattentionW', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 0 + AttentionW:C(OVcate) + InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         elif version == 2:  #m3  non-fixated option weights varies by OV level
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 0 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]       
         elif version == 3: # m4 non-fixated options weights varies by OV level and boundary separation
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 0 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on = {'a': 'OVcate'}      
         elif version == 4: # m5 non-fixated options weights varies by OV level and non-dec. time
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 0 + AttentionW + InattentionW:C(OVcate)', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-            depends_on={'t': 'OVcate'}      
+            depends_on={'t': 'OVcate'}  
+        elif version == 5: # m5 non-fixated options weights varies by OV level and non-dec. time
+            v_reg = {'model': 'v ~ 0 + AttentionW + InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'a': 'OVcate'}      
         
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
