@@ -30,6 +30,9 @@ import time
 import arviz as az
 import dill as pickle
 import re
+import networkx as nx
+import matplotlib.pyplot as plt
+
 # warning settings
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -896,6 +899,53 @@ ensure_dir(fig_dir)
 ensure_dir(fig_dir/"diagnostics")
 
 
+def plot_hddm_dependency_graph(model, model_dir, model_base_name, model_name):
+
+    try:
+        G = nx.DiGraph()
+        nodes = model.nodes
+
+        for child_name, child_node in nodes.items():
+            if hasattr(child_node, "parents"):
+                for parent in child_node.parents:
+                    G.add_edge(parent, child_name)
+
+        group_level = [n for n in nodes if n.startswith("mu_") or n.startswith("sigma_")]
+        subj_level = [n for n in nodes if n.endswith("_subj") or n.endswith("_j")]
+        data_level = [n for n in nodes if "x" in n or "data" in n or "like" in n]
+
+        pos = {}
+        y_levels = {**{n: 3 for n in group_level},
+                    **{n: 2 for n in subj_level},
+                    **{n: 1 for n in data_level}}
+
+        for n in nodes:
+            y_levels.setdefault(n, 2)
+
+        x_positions = {}
+        for i, n in enumerate(G.nodes()):
+            x_positions[n] = i
+
+        pos = {n: (x_positions[n], y_levels[n]) for n in G.nodes()}
+
+        plt.figure(figsize=(12, 8))
+        nx.draw_networkx_nodes(G, pos, node_color="#a0c4ff", node_size=800, edgecolors="black")
+        nx.draw_networkx_edges(G, pos, arrows=True, arrowstyle="->", arrowsize=15)
+        nx.draw_networkx_labels(G, pos, font_size=8, font_weight="bold")
+        plt.title("HDDM Hierarchical Model Dependency Graph", fontsize=14)
+        plt.axis("off")
+
+        out_path = Path(model_dir) / f"{model_base_name}{model_name}_dependency_graph.png"
+        plt.tight_layout()
+        plt.savefig(out_path, dpi=300)
+        plt.close()
+        print(f"Saved hierarchical dependency graph: {out_path}")
+
+    except Exception as e:
+        print(f"Could not create dependency graph: {e}")
+
+
+
 
 def analyze_model(models, fig_dir, nr_models, version, phase):
     # 'sns.set_theme(style='darkgrid', font='sans-serif', font_scale=0.5)
@@ -906,22 +956,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     print(f"Saving figures to: {fig_dir}")
     sns.set_theme(style='darkgrid', font='sans-serif', font_scale=0.5)
     
-    m = models[0] if isinstance(models, list) else models
-    
-    try:
-        dot_source = getattr(m, "graph", None)
-        if dot_source:
-            out_path = Path(model_dir) / f"{model_base_name}{model_name}_graphviz.dot"
-            with open(out_path, "w") as f:
-                f.write(dot_source)
-            print(f"Saved Graphviz DOT source to: {out_path}")
-            print("to view the full hierarchical model (with plates).")
-        else:
-            print("This HDDM object has no graph attribute (perhaps an older HDDM version).")
-    except Exception as e:
-        print(f"Could not extract Graphviz DOT graph: {e}")
-        
-
     if not models or models[0] is None:
         print("ERROR: Models are empty or invalid.")
         return
@@ -4786,11 +4820,8 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     # diagnistics
     diag_dir = Path(fig_dir) / "diagnostics"
     ensure_dir(diag_dir)
-    
-    from pathlib import Path
-    
+        
 
-    
     # Gelman-Rubin
     gr = hddm.analyze.gelman_rubin(models)
     with open(diag_dir / "gelman_rubin.txt", "w") as f:
@@ -5429,6 +5460,8 @@ else:
             accuracy_coding=True
         )
         analyze_model(models, fig_dir, nr_models, version, phase)
+        m = models[0] if isinstance(models, list) else models
+        plot_hddm_dependency_graph(m, model_dir, model_base_name, model_name)
 
         diag_dir = Path(fig_dir) / "diagnostics"
         plot_inatt_forest(
