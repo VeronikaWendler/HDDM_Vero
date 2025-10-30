@@ -315,6 +315,7 @@ def export_posterior_draws(model_name, model_dir, n_jobs=3, S=1000):
 fig_dir = FIG_DIR_ROOT / f"{model_base_name}{model_name}"
 ensure_dir(fig_dir / "diagnostics")
 
+
 # try:
 #     os.system('mkdir {}'.format(fig_dir))
 #     os.system('mkdir {}'.format(os.path.join(fig_dir, 'diagnostics')))
@@ -903,8 +904,23 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     
     print(f"Analyzing {len(models)} models for {phase}, version {version}")
     print(f"Saving figures to: {fig_dir}")
-
     sns.set_theme(style='darkgrid', font='sans-serif', font_scale=0.5)
+    
+    m = models[0] if isinstance(models, list) else models
+    
+    try:
+        dot_source = getattr(m, "graph", None)
+        if dot_source:
+            out_path = Path(model_dir) / f"{model_base_name}{model_name}_graphviz.dot"
+            with open(out_path, "w") as f:
+                f.write(dot_source)
+            print(f"Saved Graphviz DOT source to: {out_path}")
+            print("to view the full hierarchical model (with plates).")
+        else:
+            print("This HDDM object has no graph attribute (perhaps an older HDDM version).")
+    except Exception as e:
+        print(f"Could not extract Graphviz DOT graph: {e}")
+        
 
     if not models or models[0] is None:
         print("ERROR: Models are empty or invalid.")
@@ -4771,6 +4787,10 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     diag_dir = Path(fig_dir) / "diagnostics"
     ensure_dir(diag_dir)
     
+    from pathlib import Path
+    
+
+    
     # Gelman-Rubin
     gr = hddm.analyze.gelman_rubin(models)
     with open(diag_dir / "gelman_rubin.txt", "w") as f:
@@ -5208,7 +5228,7 @@ def analyze_rl(infdatas, fig_dir, version):
         print("ERROR")
     
     
-    
+   
     
 
     
