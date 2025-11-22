@@ -95,7 +95,7 @@ else:
     raise ValueError(f"Invalid phase: {phase}")
 
 phase = phase_key   
-#hard coded
+#hard coded #
 nr_models = 3         # Nr of chains -> 5 in Ting & Gluth (2025)
 nr_samples = 600     # Nr of samples ->  6000 with 1000 burn-in in T&G (2025) + Krajbich etc...
 parallel = True      
