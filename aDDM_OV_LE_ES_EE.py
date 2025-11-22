@@ -65,7 +65,7 @@ numba.config.CACHE_ENABLE = False
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2,low ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ β3 x (gazeS -gazeE)
 
 # params:
-version = 5     # set which version you want to run
+version = 7     # set which version you want to run
 run = False       # if True, the the models run, if False the models load
 
 phase = ['For_paper']  #['ES', 'EE']  #
@@ -1953,7 +1953,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 't',
                 'v_Value_diff' 
                 ]
-        # z is included - aDDM without z
+        # aDDM without z
         elif version == 7:
             params_of_interest = [    
                 'a',
@@ -1968,6 +1968,12 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_AttentionW',
                 'v_ES_InattentionW'
                 ]   
+            export_posterior_draws(
+                model_name="OV_replication_For_paper_8",
+                model_dir=BASE_MODEL_DIR,
+                n_jobs=nr_models,
+                S=1000
+            )
         elif version == 8:
             params_of_interest = [    
                 'a(high)',
