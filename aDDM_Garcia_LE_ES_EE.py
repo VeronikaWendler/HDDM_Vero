@@ -935,50 +935,50 @@ ensure_dir(fig_dir)
 ensure_dir(fig_dir/"diagnostics")
 
 
-#def plot_hddm_dependency_graph(model, model_dir, model_base_name, model_name):
+# def plot_hddm_dependency_graph(model, model_dir, model_base_name, model_name):
 
-    try:
-        G = nx.DiGraph()
-        nodes = model.nodes
+#     try:
+#         G = nx.DiGraph()
+#         nodes = model.nodes
 
-        for child_name, child_node in nodes.items():
-            if hasattr(child_node, "parents"):
-                for parent in child_node.parents:
-                    G.add_edge(parent, child_name)
+#         for child_name, child_node in nodes.items():
+#             if hasattr(child_node, "parents"):
+#                 for parent in child_node.parents:
+#                     G.add_edge(parent, child_name)
 
-        group_level = [n for n in nodes if n.startswith("mu_") or n.startswith("sigma_")]
-        subj_level = [n for n in nodes if n.endswith("_subj") or n.endswith("_j")]
-        data_level = [n for n in nodes if "x" in n or "data" in n or "like" in n]
+#         group_level = [n for n in nodes if n.startswith("mu_") or n.startswith("sigma_")]
+#         subj_level = [n for n in nodes if n.endswith("_subj") or n.endswith("_j")]
+#         data_level = [n for n in nodes if "x" in n or "data" in n or "like" in n]
 
-        pos = {}
-        y_levels = {**{n: 3 for n in group_level},
-                    **{n: 2 for n in subj_level},
-                    **{n: 1 for n in data_level}}
+#         pos = {}
+#         y_levels = {**{n: 3 for n in group_level},
+#                     **{n: 2 for n in subj_level},
+#                     **{n: 1 for n in data_level}}
 
-        for n in nodes:
-            y_levels.setdefault(n, 2)
+#         for n in nodes:
+#             y_levels.setdefault(n, 2)
 
-        x_positions = {}
-        for i, n in enumerate(G.nodes()):
-            x_positions[n] = i
+#         x_positions = {}
+#         for i, n in enumerate(G.nodes()):
+#             x_positions[n] = i
 
-        pos = {n: (x_positions[n], y_levels[n]) for n in G.nodes()}
+#         pos = {n: (x_positions[n], y_levels[n]) for n in G.nodes()}
 
-        plt.figure(figsize=(12, 8))
-        nx.draw_networkx_nodes(G, pos, node_color="#a0c4ff", node_size=800, edgecolors="black")
-        nx.draw_networkx_edges(G, pos, arrows=True, arrowstyle="->", arrowsize=15)
-        nx.draw_networkx_labels(G, pos, font_size=8, font_weight="bold")
-        plt.title("HDDM Hierarchical Model Dependency Graph", fontsize=14)
-        plt.axis("off")
+#         plt.figure(figsize=(12, 8))
+#         nx.draw_networkx_nodes(G, pos, node_color="#a0c4ff", node_size=800, edgecolors="black")
+#         nx.draw_networkx_edges(G, pos, arrows=True, arrowstyle="->", arrowsize=15)
+#         nx.draw_networkx_labels(G, pos, font_size=8, font_weight="bold")
+#         plt.title("HDDM Hierarchical Model Dependency Graph", fontsize=14)
+#         plt.axis("off")
 
-        out_path = Path(model_dir) / f"{model_base_name}{model_name}_dependency_graph.png"
-        plt.tight_layout()
-        plt.savefig(out_path, dpi=300)
-        plt.close()
-        print(f"Saved hierarchical dependency graph: {out_path}")
+#         out_path = Path(model_dir) / f"{model_base_name}{model_name}_dependency_graph.png"
+#         plt.tight_layout()
+#         plt.savefig(out_path, dpi=300)
+#         plt.close()
+#         print(f"Saved hierarchical dependency graph: {out_path}")
 
-    except Exception as e:
-        print(f"Could not create dependency graph: {e}")
+#     except Exception as e:
+#         print(f"Could not create dependency graph: {e}")
 
 
 
