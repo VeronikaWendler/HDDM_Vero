@@ -79,7 +79,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 6    # defining version #
+version = 15    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['For_paper']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -731,7 +731,44 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=600, accur
         elif version == 9:
             v_reg = {'model': 'v ~ 1 + ES_AttentionW_E + ES_AttentionW_S + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-
+            
+       # again with more samples (10 thousand each)
+        elif version == 10:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW_E + ES_AttentionW_S + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        
+        
+        elif version == 11:
+            v_reg = {'model': 'v ~ 0 + V_E + V_S + PropDwell_Left + PropDwell_Right', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            
+        elif version == 12:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW_dwell + ES_InattentionW_E_dwell + ES_InattentionW_S_dwell', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        # z is inlcuded - DDM + SP    - 6000 samples
+        elif version == 13:
+            v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        # z not included
+        elif version == 14:
+            v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        # z not included
+        elif version == 15:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            
+        # z included
+        elif version == 16:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_IAW_chart + ES_IAW_image', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 17:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_IAW_chart + ES_IAW_image', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on={'a':'OVcate'}
+        else:
+            raise ValueError(f"Invalid version {version}")
+        
 
 ###############################################################################################################    
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -899,7 +936,7 @@ ensure_dir(fig_dir)
 ensure_dir(fig_dir/"diagnostics")
 
 
-def plot_hddm_dependency_graph(model, model_dir, model_base_name, model_name):
+#def plot_hddm_dependency_graph(model, model_dir, model_base_name, model_name):
 
     try:
         G = nx.DiGraph()
@@ -4759,6 +4796,14 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 't',
                 'v_ES_AttentionW',
                 'v_ES_InattentionW']
+            
+            export_posterior_draws(
+                model_name="garcia_replication_For_paper_16",
+                model_dir=BASE_MODEL_DIR,
+                n_jobs=nr_models,
+                S=1000
+            )
+            
         # z included
         elif version == 16:
             params_of_interest = [    
@@ -4910,7 +4955,6 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     group_vplot_dir = diag_dir / "group_param_vertical_kdes"
     group_vplot_dir.mkdir(parents=True, exist_ok=True)
     
-    # bigger, readable fonts
     vz_title = 27
     vz_label = 26
     vz_tick  = 24
@@ -5461,16 +5505,16 @@ else:
         )
         analyze_model(models, fig_dir, nr_models, version, phase)
         m = models[0] if isinstance(models, list) else models
-        plot_hddm_dependency_graph(m, model_dir, model_base_name, model_name)
+        #plot_hddm_dependency_graph(m, model_dir, model_base_name, model_name)
 
         diag_dir = Path(fig_dir) / "diagnostics"
-        plot_inatt_forest(
-            fig_dir=fig_dir,
-            model_dir=model_dir,
-            model_base=model_base_name + model_name,
-            param_E="v_ES_InattentionW_E_subj",
-            param_S="v_ES_InattentionW_S_subj"
-        )
+        #plot_inatt_forest(
+        #    fig_dir=fig_dir,
+        #    model_dir=model_dir,
+        #    model_base=model_base_name + model_name,
+        #    param_E="v_ES_InattentionW_E_subj",
+        #    param_S="v_ES_InattentionW_S_subj"
+        #)
         
 
 
