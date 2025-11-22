@@ -526,7 +526,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         elif version == 6:
             v_reg = {'model': 'v ~ 0 + Value_diff', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-        # z is included - aDDM without z
+        #  aDDM without z
         elif version == 7:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
