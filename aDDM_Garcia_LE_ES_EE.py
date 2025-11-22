@@ -94,7 +94,6 @@ elif len(phase) == 1:
 else:
     raise ValueError(f"Invalid phase: {phase}")
 
-# update the phase variable so the rest of the code works seamlessly
 phase = phase_key   
 #hard coded
 nr_models = 3         # Nr of chains -> 5 in Ting & Gluth (2025)
