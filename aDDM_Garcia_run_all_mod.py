@@ -3,7 +3,7 @@
 # code for the attentional drift diffusion model
 # originally, I used this in summer 2024 in Quebec and was inspired by Jan WIllem De Gee's framework somewhere on his GitHub; but this version is pretty much my creation
 
-# import libraries  
+# import libraries  #
 import pandas as pd
 import numpy as np
 import hddm
