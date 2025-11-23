@@ -134,7 +134,7 @@ model_versions  = {
     "ES_VAL": ["ES_VAL_1", "ES_VAL_2", "ES_VAL_3", "ES_VAL_4", "ES_VAL_5", "ES_VAL_6", "ES_VAL_7", "ES_VAL_8","ES_VAL_9", "ES_VAL_10", "ES_VAL_11", "ES_VAL_12",  "ES_VAL_13", "ES_VAL_14", "ES_VAL_15","ES_VAL_16", "ES_VAL_17",
                "ES_VAL_18", "ES_VAL_19", "ES_VAL_20", "ES_VAL_21", "ES_VAL_22", "ES_VAL_23", "ES_VAL_24", "ES_VAL_25", "ES_VAL_26", "ES_VAL_27", "ES_VAL_28",
                "ES_VAL_29", "ES_VAL_30", "ES_VAL_31", "ES_VAL_32", "ES_VAL_33", "ES_VAL_34", "ES_VAL_35", "ES_VAL_36", "ES_VAL_37", "ES_VAL_38"],
-    "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", "For_paper_15", "For_paper_16", "For_paper_17", "For_paper_18", "For_paper_19"],
+    "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", "For_paper_15", "For_paper_16", "For_paper_17", "For_paper_18", "For_paper_19", "For_paper_20"],
 }
 
 
@@ -149,12 +149,12 @@ PHASE_TO_SOURCE = {
 
 # BATCH-RUN CONTROL
 PHASE_RUN_ORDER = ["EE"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","ES","ES_VAL","For_paper","ES_quad", "ESEE", "LEESEE", "LE_RL"}  # ignored this phase
+SKIP_PHASES     = {"LE","ES_ZBIAS","ES","ES_VAL","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}  # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits (but loading is done in the aDDM_Garcia_LE_ES_EE.py file)
 
 # selectivity
-start_phase = "EE"
-start_version = 0
+start_phase = "For_paper"
+start_version = 18
 started = False
 
 # dir
@@ -1223,6 +1223,16 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_IAW_chart + ES_IAW_image', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on={'a':'OVcate'}
+            
+        #---------------------------------------------------------------------------------------------------------------------
+        # Models with NON-Informative Priors (Why? Because we need more freedom around z and less hierarchical shrinkage)
+        # the only change is informative=False in the model description - before it was True
+
+        elif version == 18:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            depends_on = {'a': 'OVcate'} 
+        
         else:
             raise ValueError(f"Invalid version {version}")
         
@@ -1232,7 +1242,8 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
                                     include=['a', 't', 'v', 'z'],   #'z'
                                     depends_on=depends_on,
                                     group_only_regressors=False,
-                                    keep_regressor_trace=True
+                                    keep_regressor_trace=True,
+                                    informative=False
                                     )
         m.find_starting_values()
         infdata = m.sample(samples,
