@@ -148,7 +148,7 @@ PHASE_TO_SOURCE = {
 }
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["EE"]                                         # order
+PHASE_RUN_ORDER = ["For_paper"]                                         # order
 SKIP_PHASES     = {"LE","ES_ZBIAS","ES","ES_VAL","EE","ES_quad", "ESEE", "LEESEE", "LE_RL"}  # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits (but loading is done in the aDDM_Garcia_LE_ES_EE.py file)
 
