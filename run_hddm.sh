@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --partition=compute                 # CPU partition (on MacLeod, not sure about Maxwell)
-#SBATCH --cpus-per-task=8                   # number of CPU cores for chains
+#SBATCH --cpus-per-task=6                   # number of CPU cores for chains
 #SBATCH --mem=180G                          # total memory for the job
 #SBATCH -o logs/slurm.%j.out                # STDOUT goes to this file
 #SBATCH -e logs/slurm.%j.err                # STDERR goes to this file
