@@ -134,11 +134,9 @@ PHASE_TO_SOURCE = {
     "For_paper": "ES",
 }
 
-
-
 # BATCH-RUN CONTROL
 PHASE_RUN_ORDER = ["EE"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","ES","EE","ES_VAL","ES_quad", "ESEE", "LEESEE", "For_paper", "LE_RL"}                 # ignored this phase
+SKIP_PHASES     = {"LE","ES_ZBIAS","ES","ES_VAL","ES_quad", "ESEE", "LEESEE", "For_paper", "LE_RL"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
