@@ -135,13 +135,13 @@ PHASE_TO_SOURCE = {
 }
 
 # BATCH-RUN CONTROL
-PHASE_RUN_ORDER = ["EE"]                                         # order
-SKIP_PHASES     = {"LE","ES_ZBIAS","ES","ES_VAL","ES_quad", "ESEE", "LEESEE", "For_paper", "LE_RL"}                 # ignored this phase
+PHASE_RUN_ORDER = ["For_paper"]                                         # order
+SKIP_PHASES     = {"LE","ES_ZBIAS","ES","ES_VAL","ES_quad", "ESEE", "LEESEE", "EE", "LE_RL"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "EE"
-start_version = 0
+start_phase = "For_paper"
+start_version = 9
 started = False
 
 # dir
@@ -538,11 +538,13 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on={'a': 'OVcate'}
-        
+        elif version == 9:      # without z
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW_E + ES_AttentionW_S + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     p_outlier=.05, 
-                                    include=['a', 't', 'v', 'z'],   #'z'
+                                    include=['a', 't', 'v'],   #'z'
                                     depends_on=depends_on,
                                     group_only_regressors=False,
                                     keep_regressor_trace=True

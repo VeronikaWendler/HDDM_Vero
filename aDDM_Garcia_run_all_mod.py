@@ -154,7 +154,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "For_paper"
-start_version = 19
+start_version = 20
 started = False
 
 # dir
@@ -1237,6 +1237,8 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         elif version == 19:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW_E + ES_AttentionW_S + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+        elif version == 20:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
         else:
             raise ValueError(f"Invalid version {version}")
         
