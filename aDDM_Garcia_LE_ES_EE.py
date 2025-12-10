@@ -117,7 +117,7 @@ model_versions = {
            "ES_45", "ES_46", "ES_47", "ES_48", "ES_49","ES_50", "ES_51", "ES_52", "ES_53" , "ES_54", "ES_55", "ES_56", "ES_57", "ES_58",
            "ES_59", "ES_60", 'ES_61', 'ES_62', "ES_63", 'ES_64'],  
 
-    'EE': ['EE_1', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
+    'EE': ['EE_0', 'EE_2', 'EE_3', 'EE_4', 'EE_5'],
     'ESEE': ['ESEE_1', 'ESEE_2', 'ESEE_3', 'ESEE_4', 'ESEE_5'],
     'LEESEE': ['LEESEE_1', 'LEESEE_2', 'LEESEE_3', 'LEESEE_4', 'LEESEE_5'],
     "ES_ZBIAS":["ES_ZBIAS_1", "ES_ZBIAS_2", "ES_ZBIAS_3", "ES_ZBIAS_4", "ES_ZBIAS_5", 'ES_ZBIAS_6', "ES_ZBIAS_7", "ES_ZBIAS_8", 'ES_ZBIAS_9', "ES_ZBIAS_10", "ES_ZBIAS_11", "ES_ZBIAS_12", "ES_ZBIAS_13",
@@ -2770,7 +2770,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             ]    
             
     elif phase == 'EE':
-        if version == 1:
+        if version == 0:
             params_of_interest = [
                 'a',
                 't',
@@ -2795,7 +2795,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 n_jobs=nr_models,
                 S=1000
             )
-        elif version == 2:
+        elif version == 1:
             params_of_interest = [
             'a',
             't', 
@@ -2823,7 +2823,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Drift AttentionW:C(OVcate)[high]',
             'Drift InattentionW', 
             ]
-        elif version == 2:
+        elif version == 3:
             params_of_interest = [
             'a',
             't',
@@ -4935,145 +4935,145 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
     results.to_csv(diag_dir / "results.csv")
     
     
-    #  helper to get the trace 
-    def _get_trace(model, name):
-        try:
-            return model.nodes_db.loc[name, "node"].trace()
-        except Exception:
-            return None
+    # #  helper to get the trace 
+    # def _get_trace(model, name):
+    #     try:
+    #         return model.nodes_db.loc[name, "node"].trace()
+    #     except Exception:
+    #         return None
     
-    # HORIZONTAL KDE PANEL FOR ATTENTION/INATTENTION WEIGHTS
-    panel_params = [
-        ("v_ES_AttentionW",   "Attention weight (β_att)"),
-        ("v_ES_InattentionW_E", "Inattention to E (β_IAW-E)"),
-        ("v_ES_InattentionW_S", "Inattention to S (β_IAW-S)"),
-    ]
-    panel_traces = []
-    panel_labels = []
-    for p, label in panel_params:
-        tr = _get_trace(combined_model, p)
-        if tr is not None:
-            panel_traces.append(np.asarray(tr))
-            panel_labels.append(label)
+    # # HORIZONTAL KDE PANEL FOR ATTENTION/INATTENTION WEIGHTS
+    # panel_params = [
+    #     ("v_ES_AttentionW",   "Attention weight (β_att)"),
+    #     ("v_ES_InattentionW_E", "Inattention to E (β_IAW-E)"),
+    #     ("v_ES_InattentionW_S", "Inattention to S (β_IAW-S)"),
+    # ]
+    # panel_traces = []
+    # panel_labels = []
+    # for p, label in panel_params:
+    #     tr = _get_trace(combined_model, p)
+    #     if tr is not None:
+    #         panel_traces.append(np.asarray(tr))
+    #         panel_labels.append(label)
     
-    if panel_traces:
-        # big fonts
-        big_title_size = 27
-        big_label_size = 26
-        big_tick_size  = 24
+    # if panel_traces:
+    #     # big fonts
+    #     big_title_size = 27
+    #     big_label_size = 26
+    #     big_tick_size  = 24
     
-        n = len(panel_traces)
-        fig, axes = plt.subplots(
-            1, n, figsize=(6.0 * n, 5), constrained_layout=True
-        )
-        if n == 1:
-            axes = [axes]
+    #     n = len(panel_traces)
+    #     fig, axes = plt.subplots(
+    #         1, n, figsize=(6.0 * n, 5), constrained_layout=True
+    #     )
+    #     if n == 1:
+    #         axes = [axes]
     
-        for ax, tr, label in zip(axes, panel_traces, panel_labels):
-            # horizontal KDE
-            sns.kdeplot(x=tr, fill=True, ax=ax)
-            ax.axvline(0.0, ls="--", lw=1, color="grey")
-            ax.set_title(label, fontsize=big_title_size, pad=12)
-            ax.set_xlabel("Parameter value", fontsize=big_label_size, labelpad=6)
-            ax.set_ylabel("Density", fontsize=big_label_size)
-            ax.tick_params(axis="both", labelsize=big_tick_size, width=1.2)
-            for side in ["top","right"]:
-                ax.spines[side].set_visible(False)
-            for side in ["left","bottom"]:
-                ax.spines[side].set_linewidth(1.2)
+    #     for ax, tr, label in zip(axes, panel_traces, panel_labels):
+    #         # horizontal KDE
+    #         sns.kdeplot(x=tr, fill=True, ax=ax)
+    #         ax.axvline(0.0, ls="--", lw=1, color="grey")
+    #         ax.set_title(label, fontsize=big_title_size, pad=12)
+    #         ax.set_xlabel("Parameter value", fontsize=big_label_size, labelpad=6)
+    #         ax.set_ylabel("Density", fontsize=big_label_size)
+    #         ax.tick_params(axis="both", labelsize=big_tick_size, width=1.2)
+    #         for side in ["top","right"]:
+    #             ax.spines[side].set_visible(False)
+    #         for side in ["left","bottom"]:
+    #             ax.spines[side].set_linewidth(1.2)
     
-        fig.suptitle("Posterior densities (horizontal)", fontsize=big_title_size+2)
-        fig.savefig(diag_dir / "kde_attention_inattention_horizontal.pdf", bbox_inches="tight")
-        plt.close(fig)
-    else:
-        print("[KDE] No traces found for attention/inattention weights; skipping panel.")
-    
-    
-    group_params_to_plot = [
-        "z",
-        "v_ES_AttentionW",
-        "v_ES_InattentionW_E",
-        "v_ES_InattentionW_S",
-    ]
-    group_vplot_dir = diag_dir / "group_param_vertical_kdes"
-    group_vplot_dir.mkdir(parents=True, exist_ok=True)
-    
-    vz_title = 27
-    vz_label = 26
-    vz_tick  = 24
-    
-    for param in group_params_to_plot:
-        tr = _get_trace(combined_model, param)
-        if tr is None:
-            print(f"Skipping missing parameter: {param}")
-            continue
-    
-        fig, ax = plt.subplots(figsize=(5, 8))
-        sns.kdeplot(y=tr, fill=True, ax=ax)
-        ax.set_facecolor("white")
-    
-        if param == "z":
-            ax.axhline(0.5, color="red", linestyle="--", linewidth=5)
-    
-            # Two-sided posterior probability that z != 0.5
-            tr_arr = np.asarray(tr)
-            p_gt = np.mean(tr_arr > 0.5)
-            p_lt = np.mean(tr_arr < 0.5)
-            p_two_sided = 2 * min(p_gt, p_lt)
-    
-            # HDI for delta = z - 0.5 ( to check whether it's sig. differnet from 50%)
-            delta = tr_arr - 0.5
-            hdi_lo, hdi_hi = az.hdi(delta, hdi_prob=0.95).ravel()
-            hdi_text = f"95% HDI(z-0.5)=[{hdi_lo:.3f}, {hdi_hi:.3f}]"
-    
-            # ROPE around 0.5 (0.02 by default similar to the tutorials by Pan et al., 2025)
-            rope = 0.02
-            p_in_rope = np.mean((np.abs(delta) <= rope))
-    
-            ax.set_title(
-                f"{param}  |P(z!=0.5)={1-p_two_sided:.3f}\n{hdi_text} | P(|z-0.5|<={rope:.2f})={p_in_rope:.3f}",
-                fontsize=vz_title, pad=12
-            )
-        else:
-            ax.set_title(param, fontsize=vz_title, pad=12)
-    
-        ax.set_xlabel("Density", fontsize=vz_label, labelpad=10)
-        ax.set_ylabel("Value", fontsize=vz_label)
-        ax.tick_params(axis="both", labelsize=vz_tick, width=1.2)
-        for side in ["top","right"]:
-            ax.spines[side].set_visible(False)
-        for side in ["left","bottom"]:
-            ax.spines[side].set_linewidth(1.2)
-    
-        plt.tight_layout()
-        fig.savefig(group_vplot_dir / f"{param}_vertical_kde_big.pdf", bbox_inches="tight")
-        plt.close(fig)
+    #     fig.suptitle("Posterior densities (horizontal)", fontsize=big_title_size+2)
+    #     fig.savefig(diag_dir / "kde_attention_inattention_horizontal.pdf", bbox_inches="tight")
+    #     plt.close(fig)
+    # else:
+    #     print("[KDE] No traces found for attention/inattention weights; skipping panel.")
     
     
-    #  z-diagnostics text file
-    z_trace = _get_trace(combined_model, "z")
-    if z_trace is not None:
-        z_arr = np.asarray(z_trace)
-        delta = z_arr - 0.5
-        p_gt = np.mean(z_arr > 0.5)
-        p_lt = np.mean(z_arr < 0.5)
-        p_two_sided = 2 * min(p_gt, p_lt)
-        hdi_lo, hdi_hi = az.hdi(delta, hdi_prob=0.95).ravel()
-        rope = 0.02
-        p_in_rope = np.mean((np.abs(delta) <= rope))
+    # group_params_to_plot = [
+    #     "z",
+    #     "v_ES_AttentionW",
+    #     "v_ES_InattentionW_E",
+    #     "v_ES_InattentionW_S",
+    # ]
+    # group_vplot_dir = diag_dir / "group_param_vertical_kdes"
+    # group_vplot_dir.mkdir(parents=True, exist_ok=True)
     
-        with open(diag_dir / "z_diagnostics.txt", "w") as f:
-            f.write("z diagnostics (group-level)\n")
-            f.write("---------------------------\n")
-            f.write(f"mean(z)        = {z_arr.mean():.4f}\n")
-            f.write(f"sd(z)          = {z_arr.std(ddof=1):.4f}\n")
-            f.write(f"P(z > 0.5)     = {p_gt:.4f}\n")
-            f.write(f"P(z < 0.5)     = {p_lt:.4f}\n")
-            f.write(f"Two-sided P(z != 0.5) = {1 - p_two_sided:.4f}\n")
-            f.write(f"95% HDI(z-0.5) = [{hdi_lo:.4f}, {hdi_hi:.4f}]  (excludes 0? {'YES' if (hdi_lo>0 or hdi_hi<0) else 'NO'})\n")
-            f.write(f"ROPE +- {rope:.2f}: P(|z-0.5| <= ROPE) = {p_in_rope:.4f}\n")
-    else:
-        print("No group-level z trace found; skipping z_diagnostics.")
+    # vz_title = 27
+    # vz_label = 26
+    # vz_tick  = 24
+    
+    # for param in group_params_to_plot:
+    #     tr = _get_trace(combined_model, param)
+    #     if tr is None:
+    #         print(f"Skipping missing parameter: {param}")
+    #         continue
+    
+    #     fig, ax = plt.subplots(figsize=(5, 8))
+    #     sns.kdeplot(y=tr, fill=True, ax=ax)
+    #     ax.set_facecolor("white")
+    
+    #     if param == "z":
+    #         ax.axhline(0.5, color="red", linestyle="--", linewidth=5)
+    
+    #         # Two-sided posterior probability that z != 0.5
+    #         tr_arr = np.asarray(tr)
+    #         p_gt = np.mean(tr_arr > 0.5)
+    #         p_lt = np.mean(tr_arr < 0.5)
+    #         p_two_sided = 2 * min(p_gt, p_lt)
+    
+    #         # HDI for delta = z - 0.5 ( to check whether it's sig. differnet from 50%)
+    #         delta = tr_arr - 0.5
+    #         hdi_lo, hdi_hi = az.hdi(delta, hdi_prob=0.95).ravel()
+    #         hdi_text = f"95% HDI(z-0.5)=[{hdi_lo:.3f}, {hdi_hi:.3f}]"
+    
+    #         # ROPE around 0.5 (0.02 by default similar to the tutorials by Pan et al., 2025)
+    #         rope = 0.02
+    #         p_in_rope = np.mean((np.abs(delta) <= rope))
+    
+    #         ax.set_title(
+    #             f"{param}  |P(z!=0.5)={1-p_two_sided:.3f}\n{hdi_text} | P(|z-0.5|<={rope:.2f})={p_in_rope:.3f}",
+    #             fontsize=vz_title, pad=12
+    #         )
+    #     else:
+    #         ax.set_title(param, fontsize=vz_title, pad=12)
+    
+    #     ax.set_xlabel("Density", fontsize=vz_label, labelpad=10)
+    #     ax.set_ylabel("Value", fontsize=vz_label)
+    #     ax.tick_params(axis="both", labelsize=vz_tick, width=1.2)
+    #     for side in ["top","right"]:
+    #         ax.spines[side].set_visible(False)
+    #     for side in ["left","bottom"]:
+    #         ax.spines[side].set_linewidth(1.2)
+    
+    #     plt.tight_layout()
+    #     fig.savefig(group_vplot_dir / f"{param}_vertical_kde_big.pdf", bbox_inches="tight")
+    #     plt.close(fig)
+    
+    
+    # #  z-diagnostics text file
+    # z_trace = _get_trace(combined_model, "z")
+    # if z_trace is not None:
+    #     z_arr = np.asarray(z_trace)
+    #     delta = z_arr - 0.5
+    #     p_gt = np.mean(z_arr > 0.5)
+    #     p_lt = np.mean(z_arr < 0.5)
+    #     p_two_sided = 2 * min(p_gt, p_lt)
+    #     hdi_lo, hdi_hi = az.hdi(delta, hdi_prob=0.95).ravel()
+    #     rope = 0.02
+    #     p_in_rope = np.mean((np.abs(delta) <= rope))
+    
+    #     with open(diag_dir / "z_diagnostics.txt", "w") as f:
+    #         f.write("z diagnostics (group-level)\n")
+    #         f.write("---------------------------\n")
+    #         f.write(f"mean(z)        = {z_arr.mean():.4f}\n")
+    #         f.write(f"sd(z)          = {z_arr.std(ddof=1):.4f}\n")
+    #         f.write(f"P(z > 0.5)     = {p_gt:.4f}\n")
+    #         f.write(f"P(z < 0.5)     = {p_lt:.4f}\n")
+    #         f.write(f"Two-sided P(z != 0.5) = {1 - p_two_sided:.4f}\n")
+    #         f.write(f"95% HDI(z-0.5) = [{hdi_lo:.4f}, {hdi_hi:.4f}]  (excludes 0? {'YES' if (hdi_lo>0 or hdi_hi<0) else 'NO'})\n")
+    #         f.write(f"ROPE +- {rope:.2f}: P(|z-0.5| <= ROPE) = {p_in_rope:.4f}\n")
+    # else:
+    #     print("No group-level z trace found; skipping z_diagnostics.")
     
     
     for f in os.listdir(diag_dir):
