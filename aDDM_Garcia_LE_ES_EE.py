@@ -4694,7 +4694,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_InattentionW_S']
             
             export_posterior_draws(
-                model_name="garcia_replication_For_paper_7",
+                model_name="garcia_replication_For_paper_8",
                 model_dir=BASE_MODEL_DIR,
                 n_jobs=nr_models,
                 S=1000
