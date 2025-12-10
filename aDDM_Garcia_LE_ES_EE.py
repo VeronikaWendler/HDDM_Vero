@@ -79,10 +79,10 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 7    # defining version #
+version = 0    # defining version #
 run = False        # if True, the the models run, if False the models load
 
-phase = ['For_paper']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
+phase = ['EE']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
 
 # Determines whether to use a single phase or the combined ESEE model
 if set(phase) == {'ES', 'EE'}:
@@ -459,7 +459,7 @@ def run_model(trace_id, data, model_dir, model_name, version, samples=600, accur
     elif phase == 'EE':
         accuracy_coding = True
         if version == 0:     # m1 # this is the 0 model with fully fixed parameters across OV levels
-            v_reg = {'model': 'v ~ 1 + AttentionW + InattentionW', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 0 + AttentionW + InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         elif version == 1:  # m2 attentional weight parameter (fixated) option weights varies by OV level 
             v_reg = {'model': 'v ~ 1 + AttentionW:C(OVcate) + InattentionW', 'link_func': lambda x: x}
@@ -2774,24 +2774,27 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             params_of_interest = [
                 'a',
                 't',
-                'v_Intercept',
                 'v_AttentionW',
                 'v_InattentionW',
                 ]
             params_of_interest_s = [
                 'a_subj', 
                 't_subj', 
-                'v_Intercept_subj',
                 'v_AttentionW_subj',
                 'v_InattentionW_subj', 
                 ]
             titles = [
             'Boundary sep.',
             'Non-dec. time',
-            'Intercept drift rate',
             'Drift AttentionW',
             'Drift InattentionW',
             ]
+            export_posterior_draws(
+                model_name="garcia_replication_For_paper_1",
+                model_dir=BASE_MODEL_DIR,
+                n_jobs=nr_models,
+                S=1000
+            )
         elif version == 1:
             params_of_interest = [
             'a',
