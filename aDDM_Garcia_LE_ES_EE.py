@@ -4906,8 +4906,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 n_jobs=nr_models,
                 S=1000
             )
-            else:
-                raise ValueError(f"Invalid version {version}")
+
             
     elif phase == "LE_RL":
         if version == 0:
