@@ -2785,7 +2785,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             'Drift InattentionW',
             ]
             export_posterior_draws(
-                model_name="garcia_replication_For_paper_0",
+                model_name="garcia_replication_EE_0",
                 model_dir=BASE_MODEL_DIR,
                 n_jobs=nr_models,
                 S=1000
