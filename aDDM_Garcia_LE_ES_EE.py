@@ -2770,7 +2770,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             ]    
             
     elif phase == 'EE':
-        if version == 0:
+        if version == 1:
             params_of_interest = [
                 'a',
                 't',
@@ -2795,7 +2795,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 n_jobs=nr_models,
                 S=1000
             )
-        elif version == 1:
+        elif version == 2:
             params_of_interest = [
             'a',
             't', 
