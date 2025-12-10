@@ -520,10 +520,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
             depends_on = {'a': 'OVcate'} 
-        
-       
-        
-        
+            
         # # noch ned gesampled
         # # z is inlcuded - DDM without z
         elif version == 6:
@@ -539,7 +536,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             reg_descr = [v_reg]
             depends_on={'a': 'OVcate'}
         elif version == 9:      # without z
-            v_reg = {'model': 'v ~ 0 + ES_AttentionW_E + ES_AttentionW_S + ES_InattentionW', 'link_func': lambda x: x}
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
