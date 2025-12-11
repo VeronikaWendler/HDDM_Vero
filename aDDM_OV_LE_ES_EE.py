@@ -65,7 +65,7 @@ numba.config.CACHE_ENABLE = False
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2,low ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ β3 x (gazeS -gazeE)
 
 # params:
-version = 4     # set which version you want to run
+version = 9     # set which version you want to run
 run = False       # if True, the the models run, if False the models load
 
 phase = ['For_paper']  #['ES', 'EE']  #
@@ -2001,18 +2001,14 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 ]   
         elif version == 9:
             params_of_interest = [    
-                'a(high)',
-                'a(low)',
-                'a(medium)',
+                'a',
                 't',
                 'v_ES_AttentionW',
                 'v_ES_InattentionW'
                 ]
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
-                'a(high)',
-                'a(low)',
-                'a(medium)',                
+                'a',                
                 't',
                 'v_ES_AttentionW',
                 'v_ES_InattentionW'
