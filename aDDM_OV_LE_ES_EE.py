@@ -65,7 +65,7 @@ numba.config.CACHE_ENABLE = False
 # v = β0 + β1 ⋅ (PropDwell_opt​ ⋅ V_opt​ − PropDwell_sub ⋅ V_sub) + β2,low ⋅ (PropDwell_sub ⋅ V_opt​ − PropDwell_opt​ ⋅ V_sub)+ β3 x (gazeS -gazeE)
 
 # params:
-version = 9     # set which version you want to run
+version = 10     # set which version you want to run
 run = False       # if True, the the models run, if False the models load
 
 phase = ['For_paper']  #['ES', 'EE']  #
