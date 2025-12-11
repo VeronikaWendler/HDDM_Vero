@@ -2004,7 +2004,8 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'a',
                 't',
                 'v_ES_AttentionW',
-                'v_ES_InattentionW'
+                'v_ES_InattentionW_E'
+                'v_ES_InattentionW_S'
                 ]
             params_of_interest_s = [p + "_subj" for p in params_of_interest]
             titles = [
