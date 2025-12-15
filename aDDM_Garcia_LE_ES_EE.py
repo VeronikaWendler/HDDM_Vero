@@ -79,7 +79,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 21    # defining version #
+version = 20    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['For_paper']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -4918,7 +4918,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'v_ES_InattentionW_S']
             
             export_posterior_draws(
-                model_name="garcia_replication_For_paper_20",
+                model_name="garcia_replication_For_paper_21",
                 model_dir=BASE_MODEL_DIR,
                 n_jobs=nr_models,
                 S=1000
