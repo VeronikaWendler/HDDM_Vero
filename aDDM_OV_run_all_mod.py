@@ -150,8 +150,6 @@ PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 BASE_MODEL_DIR = PROJECT_DIR / "models_dir_OV"
 FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_OV"
 
-# -----
-
 # ------------------------------------------------------------------
 
 # reporting function
