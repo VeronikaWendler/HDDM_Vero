@@ -110,7 +110,7 @@ def make_z_link(full_stimulus_vector):
 
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
-nr_samples      = 2000       # samples per chain - do 11000 but for now for a quick one we do 600
+nr_samples      = 3000       # samples per chain - do 11000 but for now for a quick one we do 600
 parallel        = True      # parallel
 model_base_name = "OV_replication_"
 model_versions  = {
@@ -608,7 +608,7 @@ def run_and_save(trace_id, data, model_dir, model_name, version, phase, samples)
 import dill as pickle  # to create the pkl object
 
 def drift_diffusion_hddm(data, 
-                         samples=2000,
+                         samples=3000,
                          n_jobs=3,
                          run=True,
                          parallel=True,
@@ -1728,18 +1728,18 @@ if __name__ == "__main__":
             ensure_dir(fig_dir / "diagnostics")
 
             # # # run hddm function 
-            # drift_diffusion_hddm(
-            #     data=data,
-            #     samples=nr_samples,
-            #     n_jobs=nr_models,
-            #     run=RUN_ALL_MODELS,
-            #     parallel=parallel,
-            #     model_name=full_model_name,
-            #     model_dir=BASE_MODEL_DIR,        
-            #     version=version,
-            #     phase=phase,
-            #     accuracy_coding=True
-            # )
+            drift_diffusion_hddm(
+                data=data,
+                samples=nr_samples,
+                n_jobs=nr_models,
+                run=RUN_ALL_MODELS,
+                parallel=parallel,
+                model_name=full_model_name,
+                model_dir=BASE_MODEL_DIR,        
+                version=version,
+                phase=phase,
+                accuracy_coding=True
+            )
             #only when running RL in the LE phase
             drift_diffusion_hddmRL(
                 data=data,
