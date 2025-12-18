@@ -79,7 +79,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 20    # defining version #
+version = 1    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['For_paper']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -309,7 +309,7 @@ def export_posterior_draws(model_name, model_dir, n_jobs=3, S=1000):
     df_all = post_s[all_params].to_dataframe().reset_index(drop=True)
     out_csv = Path(model_dir) / f"{model_name}_posterior_draws.csv"
     df_all.to_csv(out_csv, index=False)
-    print(f"Saved {df_all.shape[0]} draws × {df_all.shape[1]} columns to {out_csv}")
+    print(f"Saved {df_all.shape[0]} draws * {df_all.shape[1]} columns to {out_csv}")
 
     return out_csv
 
@@ -4561,6 +4561,13 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 'z',
                 'v_ES_AttentionW',
                 'v_ES_InattentionW']
+            
+            export_posterior_draws(
+                model_name="garcia_replication_For_paper_1",
+                model_dir=BASE_MODEL_DIR,
+                n_jobs=nr_models,
+                S=1000
+            )
             
         elif version == 2:
             params_of_interest = [    
