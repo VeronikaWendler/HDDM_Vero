@@ -1,6 +1,4 @@
-# ============================================================
 # Parameter recovery for group and participant level
-# ============================================================
 
 #libraries
 import os, warnings
@@ -18,14 +16,14 @@ import re
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 PROJECT_DIR    = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
-BASE_MODEL_DIR = PROJECT_DIR / "models_dir_OV"
-FIG_DIR        = PROJECT_DIR / "figures_dir_OV/OV_replication_For_paper_6/recovery_For_paper_m6"
+BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
+FIG_DIR        = PROJECT_DIR / "figures_dir_garcia/garcia_replication_For_paper_6/recovery_For_paper_m6"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 EMPIRICAL_POST_PATHS = [
-    BASE_MODEL_DIR / "OV_replication_For_paper_6_0.nc",
-    BASE_MODEL_DIR / "OV_replication_For_paper_6_1.nc",
-    BASE_MODEL_DIR / "OV_replication_For_paper_6_2.nc",
+    BASE_MODEL_DIR / "garcia_replication_For_paper_6_0.nc",
+    BASE_MODEL_DIR / "garcia_replication_For_paper_6_1.nc",
+    BASE_MODEL_DIR / "garcia_replication_For_paper_6_2.nc",
 ]
 
 N_REPS    = 10        # as in the paper
@@ -34,9 +32,7 @@ BURN      = 100
 
 # group-level parameters
 PARAM_LIST = [
-    'a(high)',
-    'a(low)',
-    'a(medium)',
+    'a',
     't',
     'z',
     'v_ES_AttentionW',
@@ -46,9 +42,7 @@ PARAM_LIST = [
   
 # group-level SD
 PARAM_LIST_SD = [
-    'a(high)_std',
-    'a(low)_std',
-    'a(medium)_std',
+    'a_std',
     't_std',
     'z_std',
     'v_ES_AttentionW_std',
@@ -60,7 +54,7 @@ PARAM_SD_MAP = dict(zip(PARAM_LIST, PARAM_LIST_SD))
 # HDDM model
 v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
 reg_descr = [v_reg]
-depends_on={'a':'OVcate'}
+depends_on={}  #'a':'OVcate'
 
 # helper functions
 # CSV writer
@@ -107,38 +101,56 @@ def extract_group_sd(idata, *, seed=None):
     return out
 
 
+# def sample_true_subjects(mu_dict, sd_dict, subjects, *, seed=None):
+#     rng = np.random.default_rng(seed)
+#     true_individuals = {}
+
+#     # SD for all boundary separation params
+#     a_sd = sd_dict.get("a_std", 0.0)
+
+#     for s in subjects:
+#         pars = {}
+
+#         for a_key in ['a(high)', 'a(low)', 'a(medium)']:
+#             mu = mu_dict[a_key]
+#             sd_use = a_sd if a_sd > 0 else sd_dict.get(a_key, 0.0)
+#             if sd_use == 0:
+#                 sd_use = 0.1  
+#             pars[a_key] = float(rng.normal(mu, sd_use))
+
+#         for p in PARAM_LIST:
+#             if p in {'a(high)', 'a(low)', 'a(medium)'}:
+#                 continue
+#             mu, sd = mu_dict[p], sd_dict.get(p, 0.0)
+#             pars[p] = float(rng.normal(mu, sd)) if sd > 0 else float(mu)
+
+#         true_individuals[s] = pars
+
+#     print("a_std used:", a_sd)
+#     print("Subject 1 a's:", {k: true_individuals[subjects[0]][k] for k in ['a(high)','a(low)','a(medium)']})
+
+#     return true_individuals
 def sample_true_subjects(mu_dict, sd_dict, subjects, *, seed=None):
     rng = np.random.default_rng(seed)
     true_individuals = {}
-
-    # SD for all boundary separation params
     a_sd = sd_dict.get("a_std", 0.0)
+    if a_sd == 0:
+        print("ERROR: Posterior does not contain sd")
 
     for s in subjects:
         pars = {}
-
-        for a_key in ['a(high)', 'a(low)', 'a(medium)']:
-            mu = mu_dict[a_key]
-            sd_use = a_sd if a_sd > 0 else sd_dict.get(a_key, 0.0)
-            if sd_use == 0:
-                sd_use = 0.1  
-            pars[a_key] = float(rng.normal(mu, sd_use))
-
+        pars["a"] = float(rng.normal(mu_dict["a"], a_sd))
         for p in PARAM_LIST:
-            if p in {'a(high)', 'a(low)', 'a(medium)'}:
+            if p == "a":
                 continue
-            mu, sd = mu_dict[p], sd_dict.get(p, 0.0)
+            mu = mu_dict[p]
+            sd = sd_dict.get(p, 0.0)
             pars[p] = float(rng.normal(mu, sd)) if sd > 0 else float(mu)
-
         true_individuals[s] = pars
-
-    print("a_std used:", a_sd)
-    print("Subject 1 a's:", {k: true_individuals[subjects[0]][k] for k in ['a(high)','a(low)','a(medium)']})
-
     return true_individuals
 
 
-# helper to flatten draws for participants
+#helper to flatten draws for participants
 def flatten_true_subjects(true_individuals, rep):
     rows = []
     for subj, pmap in true_individuals.items():
@@ -155,21 +167,21 @@ def simulate_dataset(true_individuals, raw_df):
 
     sim_rows = []
 
-    def _norm_ov(ov_raw):
-        ov = str(ov_raw).strip().lower()
-        if ov in {"low"}: return "low"
-        if ov in {"medium"}: return "medium"
-        if ov in {"high"}: return "high"
-        return ov  
+    # def _norm_ov(ov_raw):
+    #     ov = str(ov_raw).strip().lower()
+    #     if ov in {"low"}: return "low"
+    #     if ov in {"medium"}: return "medium"
+    #     if ov in {"high"}: return "high"
+    #     return ov  
     for _, tr in raw_df.iterrows():
         subj = int(tr["subj_idx"])
-        ov   = _norm_ov(tr["OVcate"])
+#        ov   = _norm_ov(tr["OVcate"])
         pars = true_individuals[subj]
-        a_key = f"a({ov})"
-        if a_key not in pars:
-            map_ = {"low": "a(low)", "medium": "a(medium)", "high": "a(high)"}
-            a_key = map_.get(ov, "a(low)")
-        a_val = float(pars[a_key])
+#        a_key = f"a({ov})"
+#        if a_key not in pars:
+#            map_ = {"low": "a(low)", "medium": "a(medium)", "high": "a(high)"}
+#            a_key = map_.get(ov, "a(low)")
+#        a_val = float(pars[a_key])
 
         v_trial = (
             pars["v_ES_AttentionW"] * float(tr["ES_AttentionW"]) +
@@ -177,10 +189,9 @@ def simulate_dataset(true_individuals, raw_df):
             pars["v_ES_InattentionW_S"] * float(tr["ES_InattentionW_S"])
         )
 
-        par_dict = {"v": v_trial, "a": a_val, "t": float(pars["t"])}
+        par_dict = {"v": v_trial, "a": float(pars["t"]), "t": float(pars["t"])}   # would b a_val for 'a' if a~OV
         if "z" in pars:
             par_dict["z"] = float(pars["z"])
-
         trial_df, _ = hddm.generate.gen_rand_data(par_dict, size=1, subjs=1)
 
         for col in ["subj_idx", "OVcate", "ES_AttentionW", "ES_InattentionW_E", "ES_InattentionW_S"]:
@@ -211,11 +222,9 @@ def extract_individual_means(mdl):
         if "_subj." not in node and "_subj(" not in node:
             continue
 
-        # all formats are tried since a, v and t are saved differnetly by hddm
         for regex in [
-            r"^([A-Za-z_]+)\(([^)]+)\)_subj\.(\d+)$",       # a(high)_subj.1
-            r"^([A-Za-z_]+)_subj\(([^)]+)\)\.(\d+)$",       # a_subj(high).1
-            r"^([A-Za-z_]+)_subj\.(\d+)$"                   # z_subj.1, t_subj.1
+            r"^([A-Za-z_]+)_subj\(([^)]+)\)\.(\d+)$",       # a_subj(high).1              # this is the notation if we have OV in the exp
+            r"^([A-Za-z_]+)_subj\.(\d+)$"                   # z_subj.1, t_subj.1          # this is the notation for the other params
         ]:
             m = re.match(regex, node)
             if not m:
@@ -296,11 +305,11 @@ for rep in trange(start_rep, N_REPS, desc="parameter-recovery", unit="rep"):
 
         sim_df = simulate_dataset(true_individuals, raw_df)
 
-        θ_hat_group, mdl = refit_and_get_means(sim_df, seed=10_000 + rep)
+        θ_hat_group, mdl = refit_and_get_means(sim_df, seed=10000 + rep)
         for p in PARAM_LIST:
             group_records.append(dict(rep=rep, parameter=p, true=mu[p], recovered=θ_hat_group[p]))
 
-        np.random.seed(20_000 + rep)
+        np.random.seed(20000 + rep)
         mdl = hddm.HDDMRegressor(sim_df, reg_descr, include=["a","t","v","z"], depends_on=depends_on,
                                  p_outlier=0.05, keep_regressor_trace=True,
                                  group_only_regressors=False)
@@ -338,7 +347,7 @@ for ax in g.axes.ravel():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
 g.set_axis_labels("true value", "posterior mean (recovered)")
 g.tight_layout()
-g.savefig(FIG_DIR/"scatter_group7.png", dpi=300)
+g.savefig(FIG_DIR/"scatter_group6.png", dpi=300)
 
 # individual plot
 ind = pd.DataFrame(indiv_records)
