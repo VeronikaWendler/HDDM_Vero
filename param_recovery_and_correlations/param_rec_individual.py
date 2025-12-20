@@ -189,7 +189,7 @@ def simulate_dataset(true_individuals, raw_df):
             pars["v_ES_InattentionW_S"] * float(tr["ES_InattentionW_S"])
         )
 
-        par_dict = {"v": v_trial, "a": float(pars["t"]), "t": float(pars["t"])}   # would b a_val for 'a' if a~OV
+        par_dict = {"v": v_trial, "a": float(pars["a"]), "t": float(pars["t"])}   # would b a_val for 'a' if a~OV
         if "z" in pars:
             par_dict["z"] = float(pars["z"])
         trial_df, _ = hddm.generate.gen_rand_data(par_dict, size=1, subjs=1)
