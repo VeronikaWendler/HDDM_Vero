@@ -1,6 +1,4 @@
-# ============================================================
 # participant level plotting for parameter recovery
-# ============================================================
 
 import os
 from pathlib import Path

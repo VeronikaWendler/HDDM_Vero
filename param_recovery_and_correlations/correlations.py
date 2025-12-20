@@ -1,6 +1,5 @@
-# ============================================================
 # Correlations - learning rate and ESaDDM+z+a~OV
-# ============================================================
+
 
 from pathlib import Path
 import os

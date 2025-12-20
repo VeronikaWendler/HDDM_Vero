@@ -1,96 +1,40 @@
 ## DockerHDDM model codes
-
-# structure:
 C:.
-├───data_sets
-│   ├───additional
-│   ├───data_sets_Garcia
-│   └───data_sets_OV
-├───figures_dir_garcia
-│   ├───garcia_replication_For_paper_7
-│   │   └───correlation
-│   │       └───sp_phase_rmse
-│   └───macleod_cluster_out
+├───aDDM_Garcia_LE_ES_EE.py                    # plots the specified model/s for Study 1
+├───aDDM_Garcia_run_all_mod.py                 # runs the specified model/s for Study 2
+├───aDDM_OV_LE_ES_EE.py                        # plots the specified model/s for Study 2
+├───aDDM_OV_run_all_mod.py                     # runs the specified model/s for Study 2
+├───DIC_ranking.py                             # ranks DIC files 
+├───run_hddm.sh                                # runs the specified python code on the cluster
+├───data_sets                                  # Folder containing the main datasets. Items with the prefix "garcia" or "Garcia" belong to Study 1, whereas items prefixed with "OV" belong to Study 2
+│   ├───data_sets_Garcia                       # Study 1
+│   └───data_sets_OV                           # Study 2
+├───figures_dir_garcia                         # folders containing the figures for Study 1
+│   └───macleod_cluster_out                  
+│       ├───garcia_replication_EE_0            # EE phase, basic addm model
+│       │   └───diagnostics                    # diagnostics files always contain useful diagnostic files, e.g. DIC, Rhat, images, etc....
 │       ├───garcia_replication_For_paper_1
 │       │   └───diagnostics
-│       ├───garcia_replication_For_paper_10
-│       │   └───diagnostics
-│       ├───garcia_replication_For_paper_11
-│       │   └───diagnostics
-│       ├───garcia_replication_For_paper_13
-│       │   └───diagnostics
-│       ├───garcia_replication_For_paper_14
-│       │   └───diagnostics
-│       ├───garcia_replication_For_paper_15
-│       │   └───diagnostics
-│       ├───garcia_replication_For_paper_16
-│       │   └───diagnostics
-│       ├───garcia_replication_For_paper_17
-│       │   └───diagnostics
-│       ├───garcia_replication_For_paper_18
-│       │   └───diagnostics
-│       ├───garcia_replication_For_paper_19
-│       │   └───diagnostics
-│       ├───garcia_replication_For_paper_2
-│       │   └───diagnostics
-│       ├───garcia_replication_For_paper_5
-│       │   └───diagnostics
-│       ├───garcia_replication_For_paper_6
-│       │   └───diagnostics
-│       ├───garcia_replication_For_paper_7
-│       │   ├───correlation
-│       │   │   └───sp_phase
-│       │   ├───diagnostics
-│       │   │   └───group_param_vertical_kdes
-│       │   └───recovery_For_paper_m7
 │       └───garcia_replication_LE_RL_1
 │           └───diagnostics
-├───figures_dir_OV
+├───figures_dir_OV                                      # folder with figures and diagnostics for Study 2
 │   └───macleod_cluster_out
 │       ├───OV_replication_For_paper_1
 │       │   └───diagnostics
-│       ├───OV_replication_For_paper_2
-│       │   └───diagnostics
-│       ├───OV_replication_For_paper_3
-│       │   └───diagnostics
-│       ├───OV_replication_For_paper_4
-│       │   └───diagnostics
-│       ├───OV_replication_For_paper_5
-│       │   └───diagnostics
-│       ├───OV_replication_For_paper_6
-│       │   ├───correlation
-│       │   │   └───sp_phase
-│       │   ├───diagnostics
-│       │   │   └───group_param_vertical_kdes
-│       │   └───recovery_For_paper_m6
-│       ├───OV_replication_For_paper_7
-│       │   └───diagnostics
-│       ├───OV_replication_For_paper_8
-│       │   └───diagnostics
-│       ├───OV_replication_For_paper_9
-│       │   └───diagnostics
 │       └───OV_replication_LE_RL_1
 │           └───diagnostics
-├───models_dir_garcia
-├───models_dir_OV
-├───old
-│   ├───CCT_Matlab_PPC
-│   │   ├───data
-│   │   └───sim
-│   ├───combined_model
-│   ├───creating_dataframes
-│   └───figures_dir_combined
-│       ├───combined_replication_ES_1
-│       │   └───diagnostics
-│       ├───combined_replication_ES_2
-│       │   └───diagnostics
-│       ├───combined_replication_ES_30
-│       │   └───diagnostics
-│       └───combined_replication_ES_31
-│           └───diagnostics
+├───models_dir_garcia                               # the actual models, however, are on the cluster
+├───models_dir_OV                                   # the actual models, however, are on the cluster
 └───param_recovery_and_correlations
-    └───old
+    └───correlations.py                             # Correlations - learning rate and ESaDDM+z+a~OV
+    └───param_rec_individual.py                     # Parameter recovery for group and participant level
+    └───param_rec_individuals_plotting.py           # participant level plotting for parameter recovery
+    └───simulation_ppc.py                           # hddm built-in ppc, but not useed
+    └───sp_phase_conf_stated_prob_corr.py           # confidence 
+    └───sp_RMSE.py                                  # Correlations between the best aDDM & RMSE in the SP phase
 
+
+# structure:
 
 #     CCT_MAP_Garcia.py  --> group maximum posterior estimates of the aDDM params + parameter comparison for Exp1 - from Chih-Chung Ting
 #     CCT_MAP_OV.py      --> group maximum posterior estimates of the aDDM params + parameter comparison for Exp2 - from Chih-Chung Ting

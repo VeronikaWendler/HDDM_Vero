@@ -1,6 +1,4 @@
-# ============================================================
-# Correlations between the best aDDM & RMSE in the SP phase
-# ============================================================
+# c
 
 # import libraries
 from __future__ import annotations
