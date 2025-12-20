@@ -10,7 +10,7 @@ import seaborn as sns
 from scipy import stats as st
 
 PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
-FIG_DIR     = PROJECT_DIR / "figures_dir_OV/OV_replication_For_paper_6/recovery_For_paper_m6"
+FIG_DIR     = PROJECT_DIR / "figures_dir_garcia/garcia_replication_For_paper_6/recovery_For_paper_m6"
 IN_CSV      = FIG_DIR / "true_vs_recovered_individual6.csv"
 OUT_PNG     = FIG_DIR / "scatter_individual_ALL_params_6.png"
 OUT_STATS   = FIG_DIR / "scatter_individual_ALL_params_6.csv"
@@ -21,9 +21,7 @@ if df.empty:
     raise SystemExit("Empty csv")
 
 # order for plotting
-priority = ['a(high)',
-            'a(low)',
-            'a(medium)',
+priority = ['a',
             't',
             'z',
             'v_ES_AttentionW',
