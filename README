@@ -34,12 +34,19 @@ C:.
     └───sp_RMSE.py                                  # Correlations between the best aDDM & RMSE in the SP phase
 
 
-# structure:
+# Steps involved in getting the images running on the cluster (HDDM & MNE)
 
-#     CCT_MAP_Garcia.py  --> group maximum posterior estimates of the aDDM params + parameter comparison for Exp1 - from Chih-Chung Ting
-#     CCT_MAP_OV.py      --> group maximum posterior estimates of the aDDM params + parameter comparison for Exp2 - from Chih-Chung Ting
-#     aDDM_Garcia_LE_ES_EE.py  --> aDDM code for Exp1
-#     aDDM_OV_LE_ES_EE.py      --> aDDM code for Exp2
-#     README
-#     simulation_ppc.py            --> posterior predictive checks
-#     txt_tocsv.py                 --> some file that converts some txt files to csv files (don't really use it)
+
+# go to https://remote.abdn.ac.uk/vdesk/webtop.eui?webtop=/Common/remote.abnd.ac.uk_Azure_SP_Access_Profile-RemoteAccess_SSL_Webtop_Full&webtop_type=webtop_full (or your uni's remote access)
+# and log into macleod1 (or your university's remote login)
+# you need to log in with your uni account (email) and password
+# once on the cluster, cd into sharedscratch which is the location you can keep all your files and output and folders and so on
+# but cd outside of sharedscratch for now, there you need set up a containers folder which holds your images, see below for code:
+
+# Load Singularity
+~cd containers
+module load singularity
+
+# Pull the prebuilt HDDM image
+singularity pull hddm_latest.sif docker://hcp4715/hddm:latest
+
