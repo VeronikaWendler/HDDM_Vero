@@ -35,7 +35,7 @@ C:.
 
 
 # Steps involved in getting the images running on the cluster (HDDM & MNE)
-
+# works if you are an Aberdonian person with an abdn account, if not, use your own cluster
 
 # go to https://remote.abdn.ac.uk/vdesk/webtop.eui?webtop=/Common/remote.abnd.ac.uk_Azure_SP_Access_Profile-RemoteAccess_SSL_Webtop_Full&webtop_type=webtop_full (or your uni's remote access)
 # and log into macleod1 (or your university's remote login)
