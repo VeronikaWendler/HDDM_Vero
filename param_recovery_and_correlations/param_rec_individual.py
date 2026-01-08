@@ -16,14 +16,14 @@ import re
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 PROJECT_DIR    = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
-BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
-FIG_DIR        = PROJECT_DIR / "figures_dir_garcia/garcia_replication_For_paper_6/recovery_For_paper_m6"
+BASE_MODEL_DIR = PROJECT_DIR / "models_dir_OV"
+FIG_DIR        = PROJECT_DIR / "figures_dir_OV/OV_replication_For_paper_5/recovery_For_paper_m5"
 FIG_DIR.mkdir(parents=True, exist_ok=True)
 
 EMPIRICAL_POST_PATHS = [
-    BASE_MODEL_DIR / "garcia_replication_For_paper_6_0.nc",
-    BASE_MODEL_DIR / "garcia_replication_For_paper_6_1.nc",
-    BASE_MODEL_DIR / "garcia_replication_For_paper_6_2.nc",
+    BASE_MODEL_DIR / "OV_replication_For_paper_5_0.nc",
+    BASE_MODEL_DIR / "OV_replication_For_paper_5_1.nc",
+    BASE_MODEL_DIR / "OV_replication_For_paper_5_2.nc",
 ]
 
 N_REPS    = 10        # as in the paper
@@ -260,9 +260,9 @@ indiv_records = []
 true_draw_records = [] 
 
 # I want to save draws in case something crashes (hence, partial)
-GROUP_PARTIAL_CSV = FIG_DIR / "partial_group6.csv"
-INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual6.csv"
-TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws6.csv"
+GROUP_PARTIAL_CSV = FIG_DIR / "partial_group5.csv"
+INDIV_PARTIAL_CSV = FIG_DIR / "partial_individual5.csv"
+TRUE_PARTIAL_CSV  = FIG_DIR / "partial_true_subject_draws5.csv"
 
 expected_per_rep = len(PARAM_LIST)
 
@@ -329,9 +329,9 @@ for rep in trange(start_rep, N_REPS, desc="parameter-recovery", unit="rep"):
 
 
 # final CSVs
-pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group6.csv", index=False)
-pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual6.csv", index=False)
-pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all6.csv", index=False)  ### NEW
+pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group5.csv", index=False)
+pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual5.csv", index=False)
+pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all5.csv", index=False)  ### NEW
 
 # some immediate plotting
 sns.set_style("white")
@@ -360,7 +360,7 @@ for ax in h.axes.ravel():
     ax.set_xlim(lo, hi); ax.set_ylim(lo, hi)
 h.set_axis_labels("true value", "posterior mean (recovered)")
 h.tight_layout()
-h.savefig(FIG_DIR/"scatter_individual6.png", dpi=300)
+h.savefig(FIG_DIR/"scatter_individual5.png", dpi=300)
 
 print("Done.")
 
