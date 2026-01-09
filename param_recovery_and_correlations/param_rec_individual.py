@@ -304,6 +304,7 @@ for rep in trange(start_rep, N_REPS, desc="parameter-recovery", unit="rep"):
         atomic_to_csv(pd.DataFrame(true_draw_records), TRUE_PARTIAL_CSV)  # save ASAP
 
         sim_df = simulate_dataset(true_individuals, raw_df)
+        atomic_to_csv(sim_df, FIG_DIR / f"sim_df_rep{rep}.csv")
 
         θ_hat_group, mdl = refit_and_get_means(sim_df, seed=10000 + rep)
         for p in PARAM_LIST:
