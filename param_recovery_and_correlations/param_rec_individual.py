@@ -26,7 +26,8 @@ EMPIRICAL_POST_PATHS = [
     BASE_MODEL_DIR / "OV_replication_For_paper_5_2.nc",
 ]
 
-N_REPS    = 10        # as in the paper
+#try 2
+N_REPS    = 2      
 N_SAMPLES = 1000
 BURN      = 100
 
@@ -166,6 +167,11 @@ def simulate_dataset(true_individuals, raw_df):
     # t & z are constants
 
     sim_rows = []
+    tmp = raw_df.copy()
+
+    tmp["subj_idx"] = tmp["subj_idx"].astype(int)
+    tmp["trial"] = tmp.groupby("subj_idx").cumcount()
+
 
     # def _norm_ov(ov_raw):
     #     ov = str(ov_raw).strip().lower()
@@ -173,7 +179,7 @@ def simulate_dataset(true_individuals, raw_df):
     #     if ov in {"medium"}: return "medium"
     #     if ov in {"high"}: return "high"
     #     return ov  
-    for _, tr in raw_df.iterrows():
+    for _, tr in tmp.iterrows():
         subj = int(tr["subj_idx"])
 #        ov   = _norm_ov(tr["OVcate"])
         pars = true_individuals[subj]
@@ -199,6 +205,7 @@ def simulate_dataset(true_individuals, raw_df):
         sim_rows.append(trial_df)
 
     return pd.concat(sim_rows, ignore_index=True)
+
 
 def refit_and_get_means(sim_df, seed):
     np.random.seed(seed)
@@ -250,8 +257,9 @@ def extract_individual_means(mdl):
 # -----------------------------------------------------------------------
 
 # load fit & predictors
-empirical = az.concat([az.from_netcdf(p) for p in EMPIRICAL_POST_PATHS], dim="chain")
-raw_df    = empirical.observed_data.to_dataframe().reset_index(drop=True)
+idatas = [az.from_netcdf(p) for p in EMPIRICAL_POST_PATHS]
+empirical = az.concat(idatas, dim="chain")
+raw_df = idatas[0].observed_data.to_dataframe().reset_index(drop=True)
 raw_df["subj_idx"] = raw_df["subj_idx"].astype(int)
 subjects = sorted(raw_df["subj_idx"].unique())
 
@@ -332,7 +340,7 @@ for rep in trange(start_rep, N_REPS, desc="parameter-recovery", unit="rep"):
 # final CSVs
 pd.DataFrame(group_records).to_csv(FIG_DIR/"true_vs_recovered_group5.csv", index=False)
 pd.DataFrame(indiv_records).to_csv(FIG_DIR/"true_vs_recovered_individual5.csv", index=False)
-pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all5.csv", index=False)  ### NEW
+pd.DataFrame(true_draw_records).to_csv(FIG_DIR/"true_subject_draws_all5.csv", index=False)  
 
 # some immediate plotting
 sns.set_style("white")
