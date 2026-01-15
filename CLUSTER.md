@@ -1,4 +1,4 @@
-# Running Veronika’s HDDM_Vero repository on the University of Hamburg cluster (I believe you guys use Hummel-2)
+# Running Veronika’s HDDM_Vero repository on the University of Hamburg cluster (I believe it is Hummel-2)
 Steps involved:
 
 1. Repository: https://github.com/VeronikaWendler/HDDM_Vero (public, no special access needed from Veronika)
