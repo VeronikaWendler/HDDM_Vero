@@ -1,18 +1,21 @@
-# Running Veronika’s HDDM_Vero repository on the University of Hamburg cluster (I believe you guys use Hummel-2)
+Running Veronika’s HDDM_Vero repository on the University of Hamburg cluster (I believe you guys use Hummel-2)
 
 Steps involved:
 
-1. Repository: https://github.com/VeronikaWendler/HDDM_Vero (public, no special access needed from Veronika)
+Repository: https://github.com/VeronikaWendler/HDDM_Vero
+ (public, no special access needed from Veronika)
 
 If you want to change code, you can do it locally in your clone without ever pushing. Forking is optional and only needed if you want your own GitHub copy.
 
-2. Make sure you have a UHH HPC account. You need an account that is enabled for the Hamburg HPC (Hummel-2 I believe). If you can’t log in, none of the later steps matter
+Make sure you have a UHH HPC account. You need an account that is enabled for the Hamburg HPC (Hummel-2 I believe). If you can’t log in, none of the later steps matter
 
 3.You need network access (VPN may be required) - I use BigIP Edge Client (f5). Depending on where you are connecting from, you may need the University VPN to reach the login gateways.
 
-4. Create an SSH key on your laptop (recommended if not already set up). On your laptop (Mac/Linux/Windows PowerShell with OpenSSH) do this:
-```bash
+Create an SSH key on your laptop (recommended if not already set up). On your laptop (Mac/Linux/Windows PowerShell with OpenSSH) do this:
+
 ssh-keygen -t ed25519 -C "your_email@uni-hamburg.de" (or whatever exact email you guys use)
+
+
 Press Enter to accept defaults. This creates:
 
 private key: ~/.ssh/id_ed25519
@@ -21,30 +24,26 @@ public key: ~/.ssh/id_ed25519.pub
 
 Show the public key using this command:
 
-bash
-Code kopieren
 cat ~/.ssh/id_ed25519.pub
-Add that key to the method UHH requires for SSH public key authentication (I think UHH documents public key authentication for their HPC systems: https://www.rrz.uni-hamburg.de/en/services/hpc/basics/ssh/pubkeys.html)
+
+
+Add that key to the method UHH requires for SSH public key authentication (I think UHH documents public key authentication for their HPC systems: https://www.rrz.uni-hamburg.de/en/services/hpc/basics/ssh/pubkeys.html
+)
 
 Log in (multi hop login is expected): I believe Hummel-2 uses login gateway nodes and then front-end nodes for actual work (prepare jobs, submit jobs)From your laptop do:
 
-bash
-Code kopieren
 ssh "UHH name"@hummel3.rrz.uni-hamburg.de or something like that.
-After you are on the gateway, go to a front end node:
 
-bash
-Code kopieren
-ssh front1 (or ssh front2).
-You should be on a front-end node where you can load modules, pull containers, and submit Slurm jobs.
+
+After you are on the gateway, go to a front end node: ssh front1 (or ssh front2). You should be on a front-end node where you can load modules, pull containers, and submit Slurm jobs.
 
 Now, create a folder layout on the cluster. On the front-end node do for example:
 
-bash
-Code kopieren
 mkdir -p $HOME/projects
 mkdir -p $HOME/containers
 mkdir -p $HOME/projects/HDDM_Vero/logs
+
+
 Explanation:
 
 projects holds code + outputs
@@ -55,83 +54,85 @@ logs holds Slurm stdout/stderr
 
 Get my repository onto the cluster (no permissions needed): Go to your projects directory and clone:
 
-bash
-Code kopieren
 cd $HOME/projects
 git clone https://github.com/VeronikaWendler/HDDM_Vero.git
 cd HDDM_Vero
+
+
 Check the repo contents:
 
-bash
-Code kopieren
 ls -lah
+
+
 If git is not available:
 
-bash
-Code kopieren
 module avail git
 module load git
+
+
 Note on permissions:
 
 Cloning a public repo does not require any GitHub access from me.
 
-Only pushing back to my repo would require her to grant write permissions (not needed for running). Hence, what you could do alternatively to step 11. (alternatively to this: git clone https://github.com/VeronikaWendler/HDDM_Vero.git you could simply fork the repostory first so you would have your own version on your GitHub and could do something like:
+Only pushing back to my repo would require her to grant write permissions (not needed for running). Hence, what you could do alternatively to step 11. (alternatively to this: git clone https://github.com/VeronikaWendler/HDDM_Vero.git
+ you could simply fork the repostory first so you would have your own version on your GitHub and could do something like:
 
-bash
-Code kopieren
 git remote -v
 git remote add myfork https://github.com/"Your name on git"/HDDM_Vero.git
 git push -u myfork hamburg_run
+
+
 (You can try both ways, I believe forking first and then running my stuff is probably better)
 
 Set up the container runtime (Apptainer or Singularity)
 
 Check what is available on your cluster by using these commands:
 
-bash
-Code kopieren
 module avail apptainer singularity
+
+
 Load one (apptainer or singularity):
 
-bash
-Code kopieren
 module load apptainer
+
+
 If Apptainer is not available, use Singularity using the command:
 
-bash
-Code kopieren
 module load singularity
-Pull the HDDM container image (one-time only; developed by Lei Zhang's student: Hu Chuan-Peng: https://github.com/hcp4715):
+
+
+Pull the HDDM container image (one-time only; developed by Lei Zhang's student: Hu Chuan-Peng: https://github.com/hcp4715
+):
 
 On the front-end node:
 
 If using Apptainer do this:
 
-bash
-Code kopieren
 apptainer pull $HOME/containers/hddm_latest.sif docker://hcp4715/hddm:latest
+
+
 If using Singularity do:
 
-bash
-Code kopieren
 singularity pull $HOME/containers/hddm_latest.sif docker://hcp4715/hddm:latest
+
+
 Verify the image exists (in the container folder that you previously created):
 
-bash
-Code kopieren
 ls -lah $HOME/containers/hddm_latest.sif
+
+
 Test that Python runs inside the container:
 
 Apptainer (use this command):
 
-bash
-Code kopieren
 apptainer exec $HOME/containers/hddm_latest.sif python -V
+
+
 Singularity (use this command):
 
-bash
-Code kopieren
 singularity exec $HOME/containers/hddm_latest.sif python -V
+
+
 If the pull fails (if this step above fails please let me know, I would be interested as it should not fail):
 This is usually because compute/login nodes may have restricted internet. The workaround is to pull the .sif on a machine that can reach Docker Hub and then copy the file to $HOME/containers using scp.
 
@@ -149,14 +150,12 @@ Create the reproducible Slurm script (Hamburg version)
 
 Go into my repo on the cluster and create a job script using (create a logs file to monitor where the code mail fail or succeed):
 
-bash
-Code kopieren
 cd $HOME/projects/HDDM_Vero
 mkdir -p logs
+
+
 Create a sulrm script (either use a modified version of my 'run_hddm.sh' or create a differently named one) like this (choose Apptainer or Singularity depending on what you loaded earlier; below is the start of the file):
 
-bash
-Code kopieren
 #!/bin/bash
 #SBATCH --job-name=hddm_fit
 #SBATCH --time=24:00:00
@@ -191,6 +190,8 @@ apptainer exec \
 
 
 (this is the end of the .sh script you must have in the repo on the cluster)
+
+
 If you must use Singularity, change only two things:
 
 module load apptainer → module load singularity
@@ -199,21 +200,21 @@ apptainer exec → singularity exec
 
 Submit the job:
 
-bash
-Code kopieren
 sbatch run_hddm_hummel2.slurm
+
+
 Check whether it is running:
 
-bash
-Code kopieren
 squeue -u $USER
+
+
 Inspect logs:
 
-bash
-Code kopieren
 ls -lah logs
 tail -n 50 logs/hddm_fit.*.err
 tail -n 50 logs/hddm_fit.*.out
+
+
 or just cd logs and do cat 'name of the job.err' or 'name of the job.out'
 
 My most common failures (data / paths) and the fix
@@ -231,8 +232,5 @@ This part is nice but Python scripts could still assume that the data files exis
 
 So, before running a full job I would check if the script expects folders that do not exist, and create them if they are absent (I think I am gitignoring them so just create them to be sure:
 
-bash
-Code kopieren
 mkdir -p models_dir_garcia
 mkdir -p models_dir_OV
-Code kopieren
