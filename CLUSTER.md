@@ -44,11 +44,15 @@ logs holds Slurm stdout/stderr
 
 Get my repository onto the cluster (no permissions needed): Go to your projects directory and clone:
 
-bash
+```bash
 Code kopieren
 cd $HOME/projects
 git clone https://github.com/VeronikaWendler/HDDM_Vero.git
 cd HDDM_Vero
+```
+
+
+
 Check the repo contents:
 
 ls -lah
