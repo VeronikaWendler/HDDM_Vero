@@ -29,11 +29,11 @@ If you want to change code, you can do it locally in your clone without ever pus
 
 10. Now, create a folder layout on the cluster. On the front-end node do for example:
 
-`bash
+```bash
 mkdir -p $HOME/projects
 mkdir -p $HOME/containers
 mkdir -p $HOME/projects/HDDM_Vero/logs
-`
+```
 Explanation:
 
 projects holds code + outputs
