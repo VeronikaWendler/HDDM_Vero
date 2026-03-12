@@ -45,7 +45,7 @@ import dill as pickle
 from copy import deepcopy   # for modfiying z to be 0.55 (like in Sebastian's Matlab)
 import argparse
 
-# warning settings
+# warning settings#
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 # Plotting
