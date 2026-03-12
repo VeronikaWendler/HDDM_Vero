@@ -59,7 +59,7 @@ from pathlib import Path
 # Import my own libraries - I don't really use it anymore 
 #current_directory = os.getcwd()    # we don't use this on the cluster
 
-PROJECT_DIR = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace"))
+PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 
 def ensure_dir(path):
     Path(path).mkdir(parents=True, exist_ok=True)
@@ -119,7 +119,9 @@ model_versions  = {
     "LE":      ["LE_1","LE_2","LE_3","LE_4"],     #"LE_5","LE_6","LE_7"
     "EE":      ["EE_0", "EE_1","EE_2","EE_3","EE_4","EE_5"],
     "LE_RL": ["LE_RL_1","LE_RL_2"],
-    "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", "For_paper_15", "For_paper_16", "For_paper_17", "For_paper_18", "For_paper_19", "For_paper_20", "For_paper_21"],
+    "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7",
+                  "For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", 
+                  "For_paper_15", "For_paper_16", "For_paper_17", "For_paper_18", "For_paper_19", "For_paper_20", "For_paper_21", "For_paper_22"],
 }
 
 
@@ -139,13 +141,27 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "For_paper"
-start_version = 20
+start_version = 21
 started = False
 
-# dir
-PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
-BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
-FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia"
+
+DATA_FILE   = Path(os.getenv(
+    "DATA_FILE",
+    (PROJECT_DIR / "data_sets" / "data_sets_Garcia" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix()
+)).resolve()
+
+BASE_MODEL_DIR = Path(os.getenv("MODEL_DIR", (PROJECT_DIR / "models_dir_garcia").as_posix())).resolve()
+FIG_DIR_ROOT   = Path(os.getenv("FIG_DIR",   (PROJECT_DIR / "figures_dir_garcia").as_posix())).resolve()
+LOG_DIR        = Path(os.getenv("LOG_DIR",   (PROJECT_DIR / "logs").as_posix())).resolve()
+
+def ensure_dir(path):
+    Path(path).mkdir(parents=True, exist_ok=True)
+
+ensure_dir(BASE_MODEL_DIR)
+ensure_dir(FIG_DIR_ROOT)
+ensure_dir(LOG_DIR)
+
+
 
 
 # reporting function
@@ -441,17 +457,19 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         elif version == 20:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+        elif version == 21:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
         else:
             raise ValueError(f"Invalid version {version}")
         
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     p_outlier=.05, 
-                                    include=['a', 't', 'v'],   #'z'
+                                    include=['a', 't', 'v','z','sz'],   #'z'
                                     depends_on=depends_on,
                                     group_only_regressors=False,
-                                    keep_regressor_trace=True,
-                                    informative=False              #can be set to true, then you've got informative priors 
+                                    keep_regressor_trace=True
                                     )
         m.find_starting_values()
         infdata = m.sample(samples,
@@ -644,7 +662,8 @@ model_dir = BASE_MODEL_DIR
 #runs every (phase, version) pairing
 if __name__ == "__main__":
 
-    data_full = pd.read_csv((PROJECT_DIR / "data_sets" / "data_sets_Garcia" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix(), sep=",")
+    print(f"Reading data from: {DATA_FILE}")
+    data_full = pd.read_csv(DATA_FILE.as_posix(), sep=",")
     # loop over phases and versions
     for phase in PHASE_RUN_ORDER:
         if phase in SKIP_PHASES:
