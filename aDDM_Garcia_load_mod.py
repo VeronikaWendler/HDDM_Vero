@@ -991,7 +991,7 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
         'a',
         't',
         "z",
-        'sz',
+        'sv',
         "v_ES_AttentionW",
         "v_ES_InattentionW_E",
         "v_ES_InattentionW_S",

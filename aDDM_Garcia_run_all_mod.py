@@ -121,7 +121,8 @@ model_versions  = {
     "LE_RL": ["LE_RL_1","LE_RL_2"],
     "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7",
                   "For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", 
-                  "For_paper_15", "For_paper_16", "For_paper_17", "For_paper_18", "For_paper_19", "For_paper_20", "For_paper_21", "For_paper_22"],
+                  "For_paper_15", "For_paper_16", "For_paper_17", "For_paper_18", "For_paper_19", "For_paper_20", "For_paper_21", 
+                  "For_paper_22", "For_paper_23"],
 }
 
 
@@ -141,7 +142,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "For_paper"
-start_version = 21
+start_version = 22
 started = False
 
 
@@ -460,13 +461,16 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         elif version == 21:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+        elif version == 22:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
         else:
             raise ValueError(f"Invalid version {version}")
         
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     p_outlier=.05, 
-                                    include=['a', 't', 'v','z','sz'],   #'z'
+                                    include=['a', 't', 'v','z','sv'],   #'z'
                                     depends_on=depends_on,
                                     group_only_regressors=False,
                                     keep_regressor_trace=True
