@@ -102,10 +102,10 @@ nr_samples = 600     # Nr of samples ->  6000 with 1000 burn-in in T&G (2025) + 
 parallel = True      
 
 # dir
-PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
+BASE_ROOT = Path("/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm")
 
-BASE_MODEL_DIR = PROJECT_DIR / "models_dir_garcia"
-FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_garcia"
+BASE_MODEL_DIR = BASE_ROOT / "models"
+FIG_DIR_ROOT   = BASE_ROOT / "figures"
 
 model_base_name = "garcia_replication_"
 
@@ -116,7 +116,7 @@ model_versions = {
     "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7",
                   "For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13","For_paper_14",
                 "For_paper_15", "For_paper_16", "For_paper_17", "For_paper_18", "For_paper_19", "For_paper_20", "For_paper_21",
-                "For_paper_21"],
+                "For_paper_22"],
 
 }
 
