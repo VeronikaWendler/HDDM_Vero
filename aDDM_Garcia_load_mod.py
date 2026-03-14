@@ -215,15 +215,27 @@ print(f"Data Shape After Filtering: {data.shape}")
 # data = hddm.utils.flip_errors(data)
     
 # Plotting RT distributions
+# fig = plt.figure(figsize=(12, 8))
+# ax  = fig.add_subplot(111, xlabel='RT', ylabel='count', title='RT distributions')
+# for _, subj_data in data.groupby('subj_idx'):
+#     subj_data.rt.hist(bins=20, histtype='step', ax=ax)
+# # instead of plt.show():
+# fig.savefig((FIG_DIR_ROOT / f"{model_base_name}{model_name}" / "diagnostics" / "rt_distributions.pdf").as_posix(),
+#             bbox_inches="tight")
+# plt.close(fig)
+
+fig_dir = FIG_DIR_ROOT / f"{model_base_name}{model_name}"
+ensure_dir(fig_dir / "diagnostics")
+
+# Plotting RT distributions
 fig = plt.figure(figsize=(12, 8))
 ax  = fig.add_subplot(111, xlabel='RT', ylabel='count', title='RT distributions')
 for _, subj_data in data.groupby('subj_idx'):
     subj_data.rt.hist(bins=20, histtype='step', ax=ax)
-# instead of plt.show():
-fig.savefig((FIG_DIR_ROOT / f"{model_base_name}{model_name}" / "diagnostics" / "rt_distributions.pdf").as_posix(),
-            bbox_inches="tight")
-plt.close(fig)
 
+rt_plot_path = fig_dir / "diagnostics" / "rt_distributions.pdf"
+fig.savefig(rt_plot_path, bbox_inches="tight")
+plt.close(fig)
 
 # Functions 
 #-------------------------------------------------------------------------------------------------------------------
@@ -294,9 +306,6 @@ def export_posterior_draws(model_name, model_dir, n_jobs=3, S=1000):
     print(f"Saved {df_all.shape[0]} draws * {df_all.shape[1]} columns to {out_csv}")
     return out_csv
 
-
-fig_dir = FIG_DIR_ROOT / f"{model_base_name}{model_name}"
-ensure_dir(fig_dir / "diagnostics")
 
 
 # try:
