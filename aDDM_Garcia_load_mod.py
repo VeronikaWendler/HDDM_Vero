@@ -988,7 +988,10 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
             return None
     
     group_params_to_plot = [
+        'a',
+        't',
         "z",
+        'sz',
         "v_ES_AttentionW",
         "v_ES_InattentionW_E",
         "v_ES_InattentionW_S",
