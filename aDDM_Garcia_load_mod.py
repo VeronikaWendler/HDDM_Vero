@@ -80,7 +80,7 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 21    # defining version #
+version = 22    # defining version #
 run = False        # if True, the the models run, if False the models load
 
 phase = ['For_paper']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
@@ -107,6 +107,30 @@ BASE_ROOT = Path("/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hd
 BASE_MODEL_DIR = BASE_ROOT / "models"
 FIG_DIR_ROOT   = BASE_ROOT / "figures"
 
+
+
+
+data   = Path(os.getenv(
+    "DATA_FILE",
+    (PROJECT_DIR / "data_sets" / "data_sets_Garcia" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix()
+)).resolve()
+
+BASE_MODEL_DIR = Path(os.getenv("MODEL_DIR", (PROJECT_DIR / "models_dir_garcia").as_posix())).resolve()
+FIG_DIR_ROOT   = Path(os.getenv("FIG_DIR",   (PROJECT_DIR / "figures_dir_garcia").as_posix())).resolve()
+LOG_DIR        = Path(os.getenv("LOG_DIR",   (PROJECT_DIR / "logs").as_posix())).resolve()
+
+def ensure_dir(path):
+    Path(path).mkdir(parents=True, exist_ok=True)
+
+ensure_dir(BASE_MODEL_DIR)
+ensure_dir(FIG_DIR_ROOT)
+ensure_dir(LOG_DIR)
+
+
+
+
+
+
 model_base_name = "garcia_replication_"
 
 model_versions = {
@@ -116,7 +140,7 @@ model_versions = {
     "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7",
                   "For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13","For_paper_14",
                 "For_paper_15", "For_paper_16", "For_paper_17", "For_paper_18", "For_paper_19", "For_paper_20", "For_paper_21",
-                "For_paper_22"],
+                "For_paper_22", "For_paper_23"],
 
 }
 
@@ -136,7 +160,6 @@ model_name = model_versions[phase][version]
 #data_path1 = os.path.join(current_directory, 'data_sets/data_sets_Garcia', 'GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv')
 #data = pd.read_csv(data_path1, sep=',')
 
-data = pd.read_csv((PROJECT_DIR / "data_sets"  / "data_sets_Garcia/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix(), sep=",")
 source_phase = PHASE_TO_SOURCE.get(phase, phase)  
 
 
