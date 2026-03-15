@@ -948,6 +948,31 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 n_jobs=nr_models,
                 S=1000
             )
+        elif version == 22:
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'sv',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'sv',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S']
+            
+            export_posterior_draws(
+                model_name="garcia_replication_For_paper_23",
+                model_dir=BASE_MODEL_DIR,
+                n_jobs=nr_models,
+                S=1000
+            )
 
             
     elif phase == "LE_RL":
