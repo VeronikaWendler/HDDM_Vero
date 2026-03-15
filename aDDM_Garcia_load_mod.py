@@ -101,19 +101,13 @@ nr_models = 3         # Nr of chains -> 5 in Ting & Gluth (2025)
 nr_samples = 600     # Nr of samples ->  6000 with 1000 burn-in in T&G (2025) + Krajbich etc...
 parallel = True      
 
-# dir
-BASE_ROOT = Path("/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm")
 
-BASE_MODEL_DIR = BASE_ROOT / "models"
-FIG_DIR_ROOT   = BASE_ROOT / "figures"
-
-
-
-
-data   = Path(os.getenv(
+DATA_FILE = Path(os.getenv(
     "DATA_FILE",
     (PROJECT_DIR / "data_sets" / "data_sets_Garcia" / "GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix()
 )).resolve()
+
+data = pd.read_csv(DATA_FILE.as_posix(), sep=",")
 
 BASE_MODEL_DIR = Path(os.getenv("MODEL_DIR", (PROJECT_DIR / "models_dir_garcia").as_posix())).resolve()
 FIG_DIR_ROOT   = Path(os.getenv("FIG_DIR",   (PROJECT_DIR / "figures_dir_garcia").as_posix())).resolve()
