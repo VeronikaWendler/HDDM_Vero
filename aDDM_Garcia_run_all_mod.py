@@ -122,7 +122,7 @@ model_versions  = {
     "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7",
                   "For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", 
                   "For_paper_15", "For_paper_16", "For_paper_17", "For_paper_18", "For_paper_19", "For_paper_20", "For_paper_21", 
-                  "For_paper_22", "For_paper_23", "For_paper_24"],
+                  "For_paper_22", "For_paper_23", "For_paper_24", "For_paper_25"],
 }
 
 
@@ -142,7 +142,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "For_paper"
-start_version = 23
+start_version = 24
 started = False
 
 
@@ -468,6 +468,10 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             sv_reg = {'model': 'sv ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg, sv_reg]
+        elif version == 24:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            a_reg = {'model': 'a ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg, a_reg]
         else:
             raise ValueError(f"Invalid version {version}")
         
