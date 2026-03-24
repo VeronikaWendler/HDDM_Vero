@@ -31,6 +31,8 @@ import arviz as az
 from joblib import Parallel, delayed
 import cloudpickle, dill
 import dill as pickle  # to create the pkl object
+import pymc as pm
+from kabuki.hierarchical import Knode
 
 cloudpickle.dump = dill.dump
 
@@ -93,6 +95,62 @@ def make_z_link(full_stimulus_vector):
     return _link
 
 
+# for modification of z 
+class HDDMRegressorZAmplified(hddm.models.HDDMRegressor):
+    def __init__(self, *args, z_gain=2.0, z_eps=1e-6, **kwargs):
+        self.z_gain = float(z_gain)
+        self.z_eps = float(z_eps)
+        super(HDDMRegressorZAmplified, self).__init__(*args, **kwargs)
+
+    def _amplify_z(self, z):
+        z_eff = 0.5 + self.z_gain * (z - 0.5)
+        return np.clip(z_eff, self.z_eps, 1.0 - self.z_eps)
+
+    def _create_stochastic_knodes(self, include):
+        knodes = super(HDDMRegressorZAmplified, self)._create_stochastic_knodes(include)
+
+        if "z_bottom" in knodes:
+            knodes["z_eff_bottom"] = Knode(
+                pm.Deterministic,
+                "z_eff",
+                doc="Amplified starting-point bias used by wfpt",
+                eval=lambda x: np.clip(
+                    0.5 + self.z_gain * (x - 0.5),
+                    self.z_eps,
+                    1.0 - self.z_eps
+                ),
+                x=knodes["z_bottom"],
+                plot=False,
+                trace=False,   # set True temporarily if you want to debug it
+                hidden=True,
+            )
+
+        return knodes
+
+    def _create_wfpt_parents_dict(self, knodes):
+        wfpt_parents = super(HDDMRegressorZAmplified, self)._create_wfpt_parents_dict(knodes)
+
+        if "z_eff_bottom" in knodes:
+            wfpt_parents["z"] = knodes["z_eff_bottom"]
+
+        return wfpt_parents
+    
+
+def print_model_debug_header(phase, version, trace_id, model_name, depends_on, reg_descr, model_cls, extra_kwargs):
+    print("\n" + "="*80)
+    print(f"run_model()")
+    print(f"phase      : {phase}")
+    print(f"version    : {version}")
+    print(f"trace_id   : {trace_id}")
+    print(f"model_name : {model_name}")
+    print(f"model_cls  : {model_cls.__name__}")
+    print(f"depends_on : {depends_on}")
+    print(f"reg_descr  : {reg_descr}")
+    if extra_kwargs:
+        print(f"extra kwargs: {extra_kwargs}")
+    print("="*80)
+
+
 #------------------------------------------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------
@@ -122,7 +180,7 @@ model_versions  = {
     "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7",
                   "For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", 
                   "For_paper_15", "For_paper_16", "For_paper_17", "For_paper_18", "For_paper_19", "For_paper_20", "For_paper_21", 
-                  "For_paper_22", "For_paper_23", "For_paper_24", "For_paper_25"],
+                  "For_paper_22", "For_paper_23", "For_paper_24", "For_paper_25", "For_paper_26", "For_paper_27", "For_paper_28"],
 }
 
 
@@ -142,7 +200,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "For_paper"
-start_version = 24
+start_version = 27
 started = False
 
 
@@ -354,8 +412,11 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
 
         
         #re-runnign the most successful models with a sampling nr that makes reviewers happy
-    elif phase ==  "For_paper":
+    elif phase == "For_paper":
         depends_on = {}
+        model_cls = hddm.models.HDDMRegressor
+        extra_model_kwargs = {}
+
         # 0 model:
         if version == 0:
             # jsut start sampling
@@ -461,6 +522,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         elif version == 21:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
+            # has sz
         elif version == 22:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
@@ -472,25 +534,90 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             a_reg = {'model': 'a ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg, a_reg]
+        elif version == 25:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_IAW_chart + ES_IAW_image', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        # try some costume prior for z (that is not too restricitive but closer to E, e.g. 0.4, 0.5 and add sz)    
+        elif version == 26:
+            def z_link(x, z0=0.4):
+                # logit(z0)
+                offset = np.log(z0 / (1.0 - z0))
+                return 1.0 / (1.0 + np.exp(-(x + offset)))
+            v_reg = {
+                'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S',
+                'link_func': lambda x: x
+            }
+            # intercept-only model for z
+            z_reg = {
+                'model': 'z ~ 1',
+                'link_func': lambda x: z_link(x, z0=0.4)
+            }
+            reg_descr = [v_reg, z_reg]
+        
+        elif version == 27:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+            model_cls = HDDMRegressorZAmplified
+            extra_model_kwargs = {'z_gain': 2.0}
+
         else:
             raise ValueError(f"Invalid version {version}")
         
-        m = hddm.models.HDDMRegressor(data, 
-                                    reg_descr,
-                                    p_outlier=.05, 
-                                    include=['a', 't', 'v','z','sv'],   #'z'
-                                    depends_on=depends_on,
-                                    group_only_regressors=False,
-                                    keep_regressor_trace=True
-                                    )
+        # ---------- shared model build / sample block ----------
+        print_model_debug_header(
+            phase=phase,
+            version=version,
+            trace_id=trace_id,
+            model_name=model_name,
+            depends_on=depends_on,
+            reg_descr=reg_descr,
+            model_cls=model_cls,
+            extra_kwargs=extra_model_kwargs
+        )
+
+        m = model_cls(
+            data,
+            reg_descr,
+            p_outlier=.05,
+            include=['a', 't', 'v', 'z', 'sv', 'sz'],
+            depends_on=depends_on,
+            group_only_regressors=False,
+            keep_regressor_trace=True,
+            **extra_model_kwargs
+        )
+
+        print("Model created.")
+        print("nodes containing 'z':", [n for n in m.nodes_db.index if 'z' in n])
+
+        if version == 27:
+            print(f"z amplification active: z_eff = 0.5 + {extra_model_kwargs['z_gain']} * (z - 0.5)")
+            test_vals = np.array([0.40, 0.45, 0.50, 0.55, 0.60])
+            z_eff_vals = 0.5 + extra_model_kwargs['z_gain'] * (test_vals - 0.5)
+            print("example mapping:")
+            for z0, z1 in zip(test_vals, z_eff_vals):
+                print(f"  z={z0:.2f} -> z_eff={z1:.2f}")
+
         m.find_starting_values()
-        infdata = m.sample(samples,
-                   burn=1000,
-                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
-                   db='pickle',
-                   return_infdata=True, loglike=True, ppc=True)
+        print("Starting values found. Beginning sampling...")
+
+        infdata = m.sample(
+            samples,
+            burn=1000,
+            dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'),
+            db='pickle',
+            return_infdata=True,
+            loglike=True,
+            ppc=True
+        )
+
+        print("Sampling finished.")
+        print("posterior vars with 'z':", [v for v in infdata.posterior.data_vars if 'z' in v])
 
         return m, infdata
+
+        
+        
+    
         
     
     
