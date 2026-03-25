@@ -2,7 +2,7 @@
 #SBATCH --job-name=hddm_garcia
 #SBATCH --time=24:00:00
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=64G
+#SBATCH --mem=128G
 #SBATCH --output=logs/hddm_%j.out
 #SBATCH --error=logs/hddm_%j.err
 #SBATCH --mail-type=ALL
@@ -40,4 +40,4 @@ apptainer exec --cleanenv \
   --env LOG_DIR="/out/logs" \
   --env N_JOBS="${SLURM_CPUS_PER_TASK}" \
   "${IMAGE}" \
-  python /workspace/aDDM_Garcia_run_all_mod.py
+  python /workspace/get_RMSE.py
