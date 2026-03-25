@@ -151,6 +151,16 @@ def print_model_debug_header(phase, version, trace_id, model_name, depends_on, r
     print("="*80)
 
 
+def zscore_column(df, col):
+    x = pd.to_numeric(df[col], errors="coerce")
+    mu = x.mean()
+    sd = x.std(ddof=1)
+    if pd.isna(sd) or np.isclose(sd, 0):
+        raise ValueError(f"Cannot z-score column '{col}' because SD is 0 or NaN.")
+    df[col + "_z"] = (x - mu) / sd
+    print(f"[z-score] {col:20s} mean={mu:.6f}, sd={sd:.6f} -> created {col + '_z'}")
+    return df
+
 #------------------------------------------------------------------------------------------------------------------
 
 #------------------------------------------------------------------------------------------------------------------
@@ -180,7 +190,7 @@ model_versions  = {
     "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7",
                   "For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", 
                   "For_paper_15", "For_paper_16", "For_paper_17", "For_paper_18", "For_paper_19", "For_paper_20", "For_paper_21", 
-                  "For_paper_22", "For_paper_23", "For_paper_24", "For_paper_25", "For_paper_26", "For_paper_27", "For_paper_28"],
+                  "For_paper_22", "For_paper_23", "For_paper_24", "For_paper_25", "For_paper_26", "For_paper_27", "For_paper_28", "For_paper_29"],
 }
 
 
@@ -200,7 +210,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "For_paper"
-start_version = 27
+start_version = 28
 started = False
 
 
@@ -559,6 +569,11 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             reg_descr = [v_reg]
             model_cls = HDDMRegressorZAmplified
             extra_model_kwargs = {'z_gain': 2.0}
+        
+
+        elif version == 28:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW_z + ES_InattentionW_E_z + ES_InattentionW_S_z + memory_precision_z + ES_AttentionW_z:memory_precision_z + ES_InattentionW_E_z:memory_precision_z + ES_InattentionW_S_z:memory_precision_z', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
 
         else:
             raise ValueError(f"Invalid version {version}")
@@ -843,6 +858,10 @@ if __name__ == "__main__":
             data["rt"]          = pd.to_numeric(data["rtime"], errors="coerce")
             data["chose_right"] = pd.to_numeric(data["chose_right"], errors="coerce")
             data["chose_left"] = pd.to_numeric(data["chose_left"], errors="coerce")
+            
+            data = zscore_column(data, "ES_AttentionW")
+            data = zscore_column(data, "ES_InattentionW_E")
+            data = zscore_column(data, "ES_InattentionW_S")
 
             data                = data[data["rt"] > 0.250]
             # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
