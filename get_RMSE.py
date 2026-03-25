@@ -72,7 +72,7 @@ print(rmse_df.head())
 # -----------------------------
 # merge into main dataframe
 # -----------------------------
-main_df["subj_id"] = pd.to_numeric(main_df["subj_id"], errors="coerce")
+main_df["sub_id"] = pd.to_numeric(main_df["sub_id"], errors="coerce")
 
 # remove old versions if script is run again
 cols_to_add = ["rmse_sp", "rmse_sp_z", "memory_precision", "memory_precision_z"]
@@ -82,7 +82,7 @@ if existing:
 
 main_df = main_df.merge(
     rmse_df[["sub_id", "rmse_sp", "rmse_sp_z", "memory_precision", "memory_precision_z"]],
-    left_on="subj_id",
+    left_on="sub_id",
     right_on="sub_id",
     how="left"
 )
@@ -91,7 +91,7 @@ main_df = main_df.merge(
 if "sub_id" in main_df.columns:
     main_df = main_df.drop(columns=["sub_id"])
 
-print(main_df[["subj_id", "rmse_sp", "memory_precision_z"]].drop_duplicates().head())
+print(main_df[["sub_id", "rmse_sp", "memory_precision_z"]].drop_duplicates().head())
 
 # -----------------------------
 # save back to same file
