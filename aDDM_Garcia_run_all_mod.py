@@ -191,7 +191,7 @@ model_versions  = {
                   "For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", 
                   "For_paper_15", "For_paper_16", "For_paper_17", "For_paper_18", "For_paper_19", "For_paper_20", "For_paper_21", 
                   "For_paper_22", "For_paper_23", "For_paper_24", "For_paper_25", "For_paper_26", "For_paper_27", "For_paper_28", "For_paper_29"],
-    "Final":    ["Final_0", "Final_1"]
+    "Final":    ["Final_0", "Final_1", "Final_2", "Final_3"]
 }
 
 
@@ -212,7 +212,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "Final"
-start_version = 0
+start_version = 2
 started = False
 
 
@@ -643,6 +643,14 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
 
+        # without z
+        elif version == 2:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 3:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+
         else:
             raise ValueError(f"Is this version correct ? ")   
         
@@ -650,7 +658,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     p_outlier=.05, 
-                                    include=['a', 't', 'v', 'z'],   #'z'
+                                    include=['a', 't', 'v'],   #'z'
                                     depends_on=depends_on,
                                     group_only_regressors=False,
                                     keep_regressor_trace=True
