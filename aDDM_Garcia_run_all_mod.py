@@ -639,7 +639,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         if version == 0:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
-        if version == 1:
+        elif version == 1:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
 
