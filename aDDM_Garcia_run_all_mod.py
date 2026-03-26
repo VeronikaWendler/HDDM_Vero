@@ -202,6 +202,7 @@ PHASE_TO_SOURCE = {
     "ES_VAL": "ES",
     "For_paper": "ES",
     "EE": "EE",
+    "Final": "ES",
 }
 
 # BATCH-RUN CONTROL
