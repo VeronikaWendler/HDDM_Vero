@@ -899,7 +899,7 @@ if __name__ == "__main__":
             # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
 
             # here, it's important to be selctive depending on whether chose_right or chose_left is the upper bound
-            if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL", "For_paper"):
+            if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL", "For_paper", "Final"):
 
                 data["response"] = pd.to_numeric(data["chose_right"], errors="coerce")
                 print("head of response mapping:")
