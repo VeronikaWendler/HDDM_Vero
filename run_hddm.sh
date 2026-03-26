@@ -40,4 +40,4 @@ apptainer exec --cleanenv \
   --env LOG_DIR="/out/logs" \
   --env N_JOBS="${SLURM_CPUS_PER_TASK}" \
   "${IMAGE}" \
-  python /workspace/param_recovery_and_correlations/aDDM_Garcia_run_all_mod.py
+  python /workspace/aDDM_Garcia_run_all_mod.py
