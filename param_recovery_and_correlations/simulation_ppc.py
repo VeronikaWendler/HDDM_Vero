@@ -21,8 +21,10 @@ import hddm
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from pandas.errors import SettingWithCopyWarning
 
 
+warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
 # =========================================================
 # USER SETTINGS
 # =========================================================
@@ -517,22 +519,38 @@ def save_post_pred_stats(best_model, obs_df, ppc_samples, model_name, output_dir
         print(f"Could not generate posterior predictive summary statistics: {e}")
 
 
-def find_merge_keys(obs_df, ppc_df):
+def attach_observed_bin_by_row_order(obs_df, ppc_df, sample_col, bin_col):
     """
-    Choose merge keys for attaching observed trial-wise dwell bins to PPC data.
-    Prefers ['subj_idx', 'trial_idx'] if available.
-    """
-    preferred = ["subj_idx", "trial_idx"]
-    merge_keys = [c for c in preferred if c in obs_df.columns and c in ppc_df.columns]
+    Attach an observed trial-wise bin label (e.g. dwell quintile) to PPC rows
+    by within-draw row order.
 
-    if len(merge_keys) == 0:
+    This avoids relying on subj_idx/trial_idx being unique.
+    Assumes append_data=True preserved original row order within each PPC draw.
+    """
+    obs_map = obs_df[[bin_col]].copy().reset_index(drop=True)
+    obs_map["_orig_row"] = np.arange(len(obs_map))
+
+    ppc_df = ppc_df.copy()
+    ppc_df["_orig_row"] = ppc_df.groupby(sample_col, sort=False).cumcount()
+
+    # sanity check: each PPC draw should contain exactly len(obs_df) rows
+    rows_per_draw = ppc_df.groupby(sample_col, sort=False)["_orig_row"].max() + 1
+    expected_n = len(obs_map)
+
+    if not (rows_per_draw == expected_n).all():
         raise ValueError(
-            "Could not find merge keys for attaching observed dwell bins to PPC data. "
-            "Expected columns like 'subj_idx' and/or 'trial_idx'."
+            "PPC draws do not all have the same number of rows as the observed dataset.\n"
+            f"Expected {expected_n} rows per draw, got:\n{rows_per_draw.describe()}"
         )
 
-    return merge_keys
+    ppc_df = ppc_df.drop(columns=[bin_col], errors="ignore").merge(
+        obs_map,
+        on="_orig_row",
+        how="left",
+        validate="many_to_one"
+    )
 
+    return ppc_df
 
 # =========================================================
 # MODEL SELECTION
@@ -640,29 +658,25 @@ if n_dwell_bins != 5:
     )
     dwell_labels = [f"Q{i}" for i in range(1, n_dwell_bins + 1)]
 
-# Assign dwell bins in the observed data only
+# Assign dwell bins in observed data
 obs_df["dwell_quintile"] = assign_bins_from_edges(
     obs_df[DWELL_COL],
     dwell_edges,
     dwell_labels
 )
 
-# Merge observed dwell-bin labels into PPC data using trial identifiers
-merge_keys = find_merge_keys(obs_df, ppc_df)
-
-obs_bin_map = obs_df[merge_keys + ["dwell_quintile"]].drop_duplicates()
-
-ppc_df = ppc_df.drop(columns=["dwell_quintile"], errors="ignore").merge(
-    obs_bin_map,
-    on=merge_keys,
-    how="left",
-    validate="many_to_one"
+# Attach observed dwell bins to PPC rows by original row position within each draw
+ppc_df = attach_observed_bin_by_row_order(
+    obs_df=obs_df,
+    ppc_df=ppc_df,
+    sample_col=sample_col,
+    bin_col="dwell_quintile"
 )
 
 print("\nObserved dwell quintile counts:")
 print(obs_df["dwell_quintile"].value_counts(dropna=False).sort_index())
 
-print("\nPPC dwell quintile counts after merge:")
+print("\nPPC dwell quintile counts after row-order mapping:")
 print(ppc_df["dwell_quintile"].value_counts(dropna=False).sort_index())
 
 print("\nNumber of missing PPC dwell quintiles:")
@@ -706,7 +720,6 @@ plot_choice_bars_and_ppc_lines(
     error_mode="sem",
     y_as_percent=True
 )
-
 
 # =========================================================
 # 3) P(choose S) BY RT QUINTILE
@@ -752,6 +765,7 @@ print(obs_rt)
 
 print("\nFirst rows of simulated RT summary:")
 print(sim_rt.head(15))
+
 
 plot_choice_bars_and_ppc_lines(
     observed_series=obs_rt,
