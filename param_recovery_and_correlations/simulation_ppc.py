@@ -82,6 +82,34 @@ def detect_sample_column(ppc_df):
     )
 
 
+def safe_reset_index(df):
+    """
+    Reset index without crashing when an index level name already exists
+    as a dataframe column (e.g., trial_idx).
+    """
+    df = df.copy()
+
+    old_index_names = list(df.index.names)
+    new_index_names = []
+
+    for i, name in enumerate(old_index_names):
+        base_name = name if name is not None else f"index_level_{i}"
+        new_name = base_name
+
+        # If index name already exists as a column, rename the index level
+        if new_name in df.columns or new_name in new_index_names:
+            new_name = f"idx_{base_name}"
+            counter = 1
+            while new_name in df.columns or new_name in new_index_names:
+                new_name = f"idx_{base_name}_{counter}"
+                counter += 1
+
+        new_index_names.append(new_name)
+
+    df.index = df.index.set_names(new_index_names)
+    return df.reset_index()
+
+
 def get_observed_and_ppc_data(best_model, ppc_samples=1000):
     """
     Returns:
@@ -91,14 +119,21 @@ def get_observed_and_ppc_data(best_model, ppc_samples=1000):
     """
     print(f"Generating posterior predictive data with {ppc_samples} samples per node...")
     ppc_df = hddm.utils.post_pred_gen(best_model, samples=ppc_samples, append_data=True)
-    ppc_df = ppc_df.reset_index()
+
+    print("\nPPC index names before reset:")
+    print(ppc_df.index.names)
+
+    print("\nPPC columns before reset:")
+    print(ppc_df.columns.tolist())
+
+    ppc_df = safe_reset_index(ppc_df)
 
     obs_df = best_model.data.copy().reset_index(drop=True)
 
     print("\nObserved data columns:")
     print(obs_df.columns.tolist())
 
-    print("\nPosterior predictive data columns:")
+    print("\nPosterior predictive data columns after reset:")
     print(ppc_df.columns.tolist())
 
     sample_col = detect_sample_column(ppc_df)
