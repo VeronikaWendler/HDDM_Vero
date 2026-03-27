@@ -5,7 +5,6 @@
 # and the 'OV' experiment, in which overall value levels were manipulated.
 # Set the paths accordingly.
 
-
 import os
 import gc
 import warnings
@@ -35,7 +34,7 @@ model_paths = [
     "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_0.hddm"
 ]
 
-output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_Final_1/ppc"
+output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_Final_0/ppc"
 os.makedirs(output_dir, exist_ok=True)
 
 # Name of dwell-time advantage column in original data
