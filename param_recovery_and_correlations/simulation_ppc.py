@@ -30,9 +30,9 @@ warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
 # =========================================================
 
 model_paths = [
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_1_2.hddm",
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_1_1.hddm",
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_1_0.hddm"
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_2.hddm",
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_1.hddm",
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_0.hddm"
 ]
 
 output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_Final_1/ppc"
@@ -40,6 +40,7 @@ os.makedirs(output_dir, exist_ok=True)
 
 # Name of dwell-time advantage column in original data
 DWELL_COL = "DwellTimeAdvantage"
+SUBJECT_COL = "subj_idx"
 
 # Posterior predictive settings
 PPC_SAMPLES = 2000
@@ -203,45 +204,57 @@ def assign_rt_quantiles_within_group(df, value_col, group_col=None, n_quantiles=
     return df.groupby(group_col)[value_col].transform(_assign_one_group)
 
 
-def summarise_observed_by_bin(df, bin_col, response_col, order):
+def summarise_observed_by_bin_subjectwise(df, subject_col, bin_col, response_col, order):
     """
-    Observed summary by bin for a binary response column.
-    Returns mean, sd, sem, n.
+    Compute observed mean and SEM by:
+    1) computing each participant's mean within each bin
+    2) averaging those participant means across participants
     """
-    out = (
-        df.groupby(bin_col, observed=False)[response_col]
-        .agg(mean="mean", sd="std", n="count")
-        .reindex(order)
-    )
-    out["sem"] = out["sd"] / np.sqrt(out["n"].replace(0, np.nan))
-    out = out.reset_index().rename(columns={bin_col: "bin"})
-    return out
-
-
-def summarise_choice_by_bin_and_sample(df, sample_col, bin_col, response_col, order):
-    """
-    Returns long-format sample-by-bin mean choice.
-    """
-    out = (
-        df.groupby([sample_col, bin_col], observed=False)[response_col]
+    subj_bin = (
+        df.groupby([subject_col, bin_col], observed=False)[response_col]
         .mean()
         .reset_index()
     )
-    out[bin_col] = pd.Categorical(out[bin_col], categories=order, ordered=True)
-    out = out.rename(columns={response_col: "p_choose_S"})
-    return out
+    subj_bin[bin_col] = pd.Categorical(subj_bin[bin_col], categories=order, ordered=True)
+
+    summary = (
+        subj_bin.groupby(bin_col, observed=False)[response_col]
+        .agg(mean="mean", sd="std", n_subjects="count")
+        .reindex(order)
+    )
+    summary["sem"] = summary["sd"] / np.sqrt(summary["n_subjects"].replace(0, np.nan))
+    summary = summary.reset_index().rename(columns={bin_col: "bin", response_col: "p_choose_S"})
+    return summary, subj_bin
+
+
+def summarise_simulated_by_bin_sample_subjectwise(df, sample_col, subject_col, bin_col, response_col, order):
+    """
+    Compute simulated P(choose S) by:
+    1) for each draw and participant, compute mean within each bin
+    2) within each draw, average participant means across participants
+    """
+    subj_bin = (
+        df.groupby([sample_col, subject_col, bin_col], observed=False)[response_col]
+        .mean()
+        .reset_index()
+    )
+    subj_bin[bin_col] = pd.Categorical(subj_bin[bin_col], categories=order, ordered=True)
+
+    draw_bin = (
+        subj_bin.groupby([sample_col, bin_col], observed=False)[response_col]
+        .mean()
+        .reset_index()
+        .rename(columns={response_col: "p_choose_S"})
+    )
+    draw_bin[bin_col] = pd.Categorical(draw_bin[bin_col], categories=order, ordered=True)
+
+    return draw_bin, subj_bin
 
 
 def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labels):
     """
-    Build a comparison table between empirical summaries and PPC summaries.
-
-    Includes:
-    - observed mean/sd/sem/n
-    - model mean/sd/sem/95% interval
-    - overlap checks
-    - approximate z-style difference test
-    - PPC two-sided tail probability
+    Comparison table using participant-level observed summaries
+    and draw-level simulated summaries.
     """
     obs = observed_summary.copy().set_index("bin").reindex(x_labels)
 
@@ -250,7 +263,7 @@ def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labe
         .agg(
             model_mean="mean",
             model_sd="std",
-            model_n="count",
+            model_n_draws="count",
             model_sem=lambda s: s.std(ddof=1) / np.sqrt(s.notna().sum()),
             model_pi95_low=lambda s: s.quantile(0.025),
             model_pi95_high=lambda s: s.quantile(0.975)
@@ -260,13 +273,11 @@ def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labe
 
     out = obs.join(sim_stats)
 
-    # SEM bands
     out["obs_sem_low"] = (out["mean"] - out["sem"]).clip(0, 1)
     out["obs_sem_high"] = (out["mean"] + out["sem"]).clip(0, 1)
     out["model_sem_low"] = (out["model_mean"] - out["model_sem"]).clip(0, 1)
     out["model_sem_high"] = (out["model_mean"] + out["model_sem"]).clip(0, 1)
 
-    # Simple overlap diagnostics
     out["sem_band_overlap"] = (
         (out["obs_sem_low"] <= out["model_sem_high"]) &
         (out["model_sem_low"] <= out["obs_sem_high"])
@@ -287,10 +298,9 @@ def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labe
         (out["mean"] <= out["model_pi95_high"])
     )
 
-    # Approximate z-style comparison using combined SEM
     out["diff_model_minus_obs"] = out["model_mean"] - out["mean"]
     out["combined_sem"] = np.sqrt(out["sem"]**2 + out["model_sem"]**2)
-    out["z_approx"] = out["diff_model_minus_obs"] / out["combined_sem"]
+    out["z_approx"] = out["diff_model_minus_obs"] / out["combined_sem"].replace(0, np.nan)
 
     def two_sided_norm_p(z):
         if pd.isna(z):
@@ -299,8 +309,6 @@ def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labe
 
     out["p_approx_2sided"] = out["z_approx"].apply(two_sided_norm_p)
 
-    # PPC two-sided tail probability:
-    # how extreme is the observed mean relative to the simulated distribution?
     ppc_pvals = []
     for b in x_labels:
         vals = simulated_long.loc[simulated_long[bin_col] == b, "p_choose_S"].dropna().values
@@ -316,7 +324,6 @@ def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labe
         ppc_pvals.append(p_two_sided)
 
     out["ppc_p_2sided"] = ppc_pvals
-
     out = out.reset_index().rename(columns={"index": "bin"})
     return out
 
@@ -333,15 +340,14 @@ def plot_choice_bars_and_ppc_lines(
     save_path,
     n_display_replications=8,
     y_limits=None,
-    error_mode="sem",      # "sem", "sd", or "pi95"
     y_as_percent=True
 ):
     """
-    Black bars = observed mean
-    Black error bars = observed SEM
-    Thin blue lines = selected PPC replications
-    Solid red line = PPC mean
-    Orange band = uncertainty around PPC mean
+    Black bars = observed participant-mean
+    Black error bars = observed participant-level SEM
+    Thin blue lines = selected PPC sample means
+    Solid red line = model mean
+    Red error bars = model mean ± SEM
     """
     rng = np.random.default_rng(RANDOM_SEED)
 
@@ -357,72 +363,49 @@ def plot_choice_bars_and_ppc_lines(
         ordered=True
     )
 
-    # Summary across all PPC samples
-    ppc_summary = (
+    model_summary = (
         simulated_long.groupby(bin_col, observed=False)["p_choose_S"]
         .agg(
             mean="mean",
             sd="std",
-            sem=lambda s: s.std(ddof=1) / np.sqrt(s.notna().sum()),
-            lo=lambda s: s.quantile(0.025),
-            hi=lambda s: s.quantile(0.975)
+            sem=lambda s: s.std(ddof=1) / np.sqrt(s.notna().sum())
         )
         .reindex(x_labels)
     )
-
-    if error_mode == "sem":
-        lower = ppc_summary["mean"] - ppc_summary["sem"]
-        upper = ppc_summary["mean"] + ppc_summary["sem"]
-        band_label = "Posterior predictive mean ± SEM"
-    elif error_mode == "sd":
-        lower = ppc_summary["mean"] - ppc_summary["sd"]
-        upper = ppc_summary["mean"] + ppc_summary["sd"]
-        band_label = "Posterior predictive mean ± SD"
-    elif error_mode == "pi95":
-        lower = ppc_summary["lo"]
-        upper = ppc_summary["hi"]
-        band_label = "Posterior predictive 95% interval"
-    else:
-        raise ValueError("error_mode must be 'sem', 'sd', or 'pi95'")
-
-    lower = lower.clip(0, 1)
-    upper = upper.clip(0, 1)
 
     scale = 100.0 if y_as_percent else 1.0
 
     obs_mean_vals = observed_summary["mean"].values.astype(float) * scale
     obs_sem_vals = observed_summary["sem"].values.astype(float) * scale
 
-    mean_vals = ppc_summary["mean"].values.astype(float) * scale
-    lower_vals = lower.values.astype(float) * scale
-    upper_vals = upper.values.astype(float) * scale
+    model_mean_vals = model_summary["mean"].values.astype(float) * scale
+    model_sem_vals = model_summary["sem"].values.astype(float) * scale
 
-    # Observed bars
+
     ax.bar(
         x,
         obs_mean_vals,
         width=0.8,
-        color="black",
-        alpha=0.95,
-        label="Observed mean",
+        facecolor="none",
+        edgecolor="black",
+        linewidth=2.2,
+        label="Empirical mean",
         zorder=1
     )
 
-    # Observed SEM
     ax.errorbar(
         x,
         obs_mean_vals,
         yerr=obs_sem_vals,
         fmt="none",
         ecolor="black",
-        elinewidth=2.0,
-        capsize=5,
-        capthick=2.0,
+        elinewidth=2.2,
+        capsize=6,
+        capthick=2.2,
         zorder=5,
         label="Observed mean ± SEM"
     )
 
-    # Selected PPC sample lines
     unique_samples = simulated_long[sample_col].dropna().unique()
     n_to_draw = min(n_display_replications, len(unique_samples))
     chosen_samples = rng.choice(unique_samples, size=n_to_draw, replace=False)
@@ -451,26 +434,27 @@ def plot_choice_bars_and_ppc_lines(
         )
         first_line = False
 
-    # Model uncertainty band
-    ax.fill_between(
-        x,
-        lower_vals,
-        upper_vals,
-        color="tab:orange",
-        alpha=0.30,
-        zorder=2,
-        label=band_label
-    )
-
-    # Model mean as solid red line
     ax.plot(
         x,
-        mean_vals,
+        model_mean_vals,
         linestyle="-",
         linewidth=3.0,
         color="tab:red",
-        zorder=4,
+        zorder=6,
         label="Posterior predictive mean"
+    )
+
+    ax.errorbar(
+        x,
+        model_mean_vals,
+        yerr=model_sem_vals,
+        fmt="none",
+        ecolor="tab:red",
+        elinewidth=2.0,
+        capsize=5,
+        capthick=2.0,
+        zorder=7,
+        label="Posterior predictive mean ± SEM"
     )
 
     ax.set_xticks(x)
@@ -483,7 +467,10 @@ def plot_choice_bars_and_ppc_lines(
     if y_limits is not None:
         ax.set_ylim(*y_limits)
     else:
-        all_vals = np.concatenate([obs_mean_vals, mean_vals, lower_vals, upper_vals])
+        all_vals = np.concatenate([
+            obs_mean_vals, obs_mean_vals - obs_sem_vals, obs_mean_vals + obs_sem_vals,
+            model_mean_vals, model_mean_vals - model_sem_vals, model_mean_vals + model_sem_vals
+        ])
         ymin = max(0, np.nanmin(all_vals) - 5)
         ymax = min(100 if y_as_percent else 1, np.nanmax(all_vals) + 5)
         ax.set_ylim(ymin, ymax)
@@ -789,30 +776,32 @@ print(ppc_df["dwell_quintile"].value_counts(dropna=False).sort_index())
 print("\nNumber of missing PPC dwell quintiles:")
 print(ppc_df["dwell_quintile"].isna().sum())
 
+
 # Observed P(choose S) summary
-obs_dwell_summary = summarise_observed_by_bin(
+obs_dwell_summary, obs_dwell_subjectwise = summarise_observed_by_bin_subjectwise(
     df=obs_df,
+    subject_col=SUBJECT_COL,
     bin_col="dwell_quintile",
     response_col="response",
     order=dwell_labels
 )
 
-# Simulated P(choose S) by sample
-sim_dwell = summarise_choice_by_bin_and_sample(
+sim_dwell, sim_dwell_subjectwise = summarise_simulated_by_bin_sample_subjectwise(
     df=ppc_df,
     sample_col=sample_col,
+    subject_col=SUBJECT_COL,
     bin_col="dwell_quintile",
     response_col="response_sampled",
     order=dwell_labels
 )
 
-# Comparison table
 dwell_comparison = build_ppc_comparison_table(
     observed_summary=obs_dwell_summary,
     simulated_long=sim_dwell,
     bin_col="dwell_quintile",
     x_labels=dwell_labels
 )
+
 
 print("\nObserved dwell summary:")
 print(obs_dwell_summary)
@@ -839,6 +828,8 @@ plot_choice_bars_and_ppc_lines(
     y_as_percent=True
 )
 
+
+
 # =========================================================
 # 3) P(choose S) BY RT QUINTILE
 # =========================================================
@@ -864,29 +855,30 @@ ppc_df["rt_quintile"] = assign_rt_quantiles_within_group(
 )
 
 # Observed P(choose S) summary
-obs_rt_summary = summarise_observed_by_bin(
+obs_rt_summary, obs_rt_subjectwise = summarise_observed_by_bin_subjectwise(
     df=obs_df,
+    subject_col=SUBJECT_COL,
     bin_col="rt_quintile",
     response_col="response",
     order=rt_labels
 )
 
-# Simulated P(choose S) by sample
-sim_rt = summarise_choice_by_bin_and_sample(
+sim_rt, sim_rt_subjectwise = summarise_simulated_by_bin_sample_subjectwise(
     df=ppc_df,
     sample_col=sample_col,
+    subject_col=SUBJECT_COL,
     bin_col="rt_quintile",
     response_col="response_sampled",
     order=rt_labels
 )
 
-# Comparison table
 rt_comparison = build_ppc_comparison_table(
     observed_summary=obs_rt_summary,
     simulated_long=sim_rt,
     bin_col="rt_quintile",
     x_labels=rt_labels
 )
+
 
 print("\nObserved RT summary:")
 print(obs_rt_summary)
