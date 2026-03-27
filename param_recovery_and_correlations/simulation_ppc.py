@@ -66,9 +66,6 @@ def save_close(fig, path):
 
 
 def detect_sample_column(ppc_df):
-    """
-    Detect posterior predictive sample column after reset_index().
-    """
     candidate_cols = ["sample", "draw", "level_1", "replication"]
     for col in candidate_cols:
         if col in ppc_df.columns:
@@ -85,10 +82,6 @@ def detect_sample_column(ppc_df):
 
 
 def safe_reset_index(df):
-    """
-    Reset index without crashing when an index level name already exists
-    as a dataframe column.
-    """
     df = df.copy()
 
     old_index_names = list(df.index.names)
@@ -112,12 +105,6 @@ def safe_reset_index(df):
 
 
 def get_observed_and_ppc_data(best_model, ppc_samples=1000):
-    """
-    Returns:
-      obs_df : original observed data
-      ppc_df : posterior predictive trial-level dataframe with appended original columns
-      sample_col : detected posterior sample column
-    """
     print(f"Generating posterior predictive data with {ppc_samples} samples per node...")
     ppc_df = hddm.utils.post_pred_gen(best_model, samples=ppc_samples, append_data=True)
 
@@ -148,10 +135,6 @@ def get_observed_and_ppc_data(best_model, ppc_samples=1000):
 
 
 def compute_quantile_edges(series, n_quantiles=5):
-    """
-    Compute value-based quantile cut edges from observed data.
-    Uses tiny jitter to reduce failures due to ties.
-    """
     s = pd.Series(series).dropna().astype(float).copy()
     if s.empty:
         raise ValueError("Series is empty after dropping NaNs.")
@@ -171,9 +154,6 @@ def compute_quantile_edges(series, n_quantiles=5):
 
 
 def assign_bins_from_edges(series, edges, labels):
-    """
-    Apply fixed edges to any series.
-    """
     return pd.cut(
         pd.to_numeric(series, errors="coerce"),
         bins=edges,
@@ -183,11 +163,6 @@ def assign_bins_from_edges(series, edges, labels):
 
 
 def assign_rt_quantiles_within_group(df, value_col, group_col=None, n_quantiles=5):
-    """
-    Assign RT quantiles based on rank.
-    If group_col is None, quantiles are assigned to the full dataframe.
-    If group_col is given, quantiles are assigned separately within each group.
-    """
     labels = [str(i) for i in range(1, n_quantiles + 1)]
 
     if group_col is None:
@@ -213,10 +188,6 @@ def assign_rt_quantiles_within_group(df, value_col, group_col=None, n_quantiles=
 
 
 def attach_observed_columns_by_row_order(obs_df, ppc_df, sample_col, cols_to_attach):
-    """
-    Attach one or more observed trial-wise columns to PPC rows by within-draw row order.
-    This is safer than trusting append_data=True for subject/bin columns when grouping later.
-    """
     obs_map = obs_df[cols_to_attach].copy().reset_index(drop=True)
     obs_map["_orig_row"] = np.arange(len(obs_map))
 
@@ -244,9 +215,8 @@ def attach_observed_columns_by_row_order(obs_df, ppc_df, sample_col, cols_to_att
 
 def summarise_observed_by_bin_subjectwise(df, subject_col, bin_col, response_col, order):
     """
-    Compute observed mean and SEM by:
-    1) computing each participant's mean within each bin
-    2) averaging those participant means across participants
+    Observed:
+    participant mean within bin -> summary across participants
     """
     tmp = df[[subject_col, bin_col, response_col]].copy()
     tmp = tmp.dropna(subset=[subject_col, bin_col, response_col])
@@ -271,28 +241,34 @@ def summarise_observed_by_bin_subjectwise(df, subject_col, bin_col, response_col
 
 def summarise_simulated_by_bin_sample_subjectwise(df, sample_col, subject_col, bin_col, response_col, order):
     """
-    Compute simulated P(choose S) by:
-    1) for each draw and participant, compute mean within each bin
-    2) within each draw, average participant means across participants
+    Simulated:
+    within each draw:
+      participant mean within bin
+      then average across participants
+    Also saves draw-specific participant SD and SEM.
     """
     tmp = df[[sample_col, subject_col, bin_col, response_col]].copy()
     tmp = tmp.dropna(subset=[sample_col, subject_col, bin_col, response_col])
-
     tmp[bin_col] = pd.Categorical(tmp[bin_col], categories=order, ordered=True)
 
     subj_bin = (
         tmp.groupby([sample_col, subject_col, bin_col], observed=False)[response_col]
         .mean()
         .reset_index()
+        .rename(columns={response_col: "subject_mean"})
     )
     subj_bin[bin_col] = pd.Categorical(subj_bin[bin_col], categories=order, ordered=True)
 
     draw_bin = (
-        subj_bin.groupby([sample_col, bin_col], observed=False)[response_col]
-        .mean()
+        subj_bin.groupby([sample_col, bin_col], observed=False)["subject_mean"]
+        .agg(
+            p_choose_S="mean",
+            draw_subject_sd="std",
+            n_subjects="count"
+        )
         .reset_index()
-        .rename(columns={response_col: "p_choose_S"})
     )
+    draw_bin["draw_subject_sem"] = draw_bin["draw_subject_sd"] / np.sqrt(draw_bin["n_subjects"].replace(0, np.nan))
     draw_bin[bin_col] = pd.Categorical(draw_bin[bin_col], categories=order, ordered=True)
 
     return draw_bin, subj_bin
@@ -300,20 +276,30 @@ def summarise_simulated_by_bin_sample_subjectwise(df, sample_col, subject_col, b
 
 def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labels):
     """
-    Comparison table using participant-level observed summaries
-    and draw-level simulated summaries.
+    observed_summary: empirical participant-based mean/SEM
+    simulated_long: one row per draw per bin with:
+      p_choose_S
+      draw_subject_sd
+      draw_subject_sem
     """
     obs = observed_summary.copy().set_index("bin").reindex(x_labels)
 
     sim_stats = (
-        simulated_long.groupby(bin_col, observed=False)["p_choose_S"]
+        simulated_long.groupby(bin_col, observed=False)
         .agg(
-            model_mean="mean",
-            model_sd="std",
-            model_n_draws="count",
-            model_sem=lambda s: s.std(ddof=1) / np.sqrt(s.notna().sum()),
-            model_pi95_low=lambda s: s.quantile(0.025),
-            model_pi95_high=lambda s: s.quantile(0.975)
+            model_mean=("p_choose_S", "mean"),
+            model_sd=("p_choose_S", "std"),
+            model_n_draws=("p_choose_S", "count"),
+            model_pi50_low=("p_choose_S", lambda s: s.quantile(0.25)),
+            model_pi50_high=("p_choose_S", lambda s: s.quantile(0.75)),
+            model_pi95_low=("p_choose_S", lambda s: s.quantile(0.025)),
+            model_pi95_high=("p_choose_S", lambda s: s.quantile(0.975)),
+            mean_draw_subject_sd=("draw_subject_sd", "mean"),
+            mean_draw_subject_sem=("draw_subject_sem", "mean"),
+            pi95_draw_subject_sd_low=("draw_subject_sd", lambda s: s.quantile(0.025)),
+            pi95_draw_subject_sd_high=("draw_subject_sd", lambda s: s.quantile(0.975)),
+            pi95_draw_subject_sem_low=("draw_subject_sem", lambda s: s.quantile(0.025)),
+            pi95_draw_subject_sem_high=("draw_subject_sem", lambda s: s.quantile(0.975)),
         )
         .reindex(x_labels)
     )
@@ -322,39 +308,34 @@ def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labe
 
     out["obs_sem_low"] = (out["mean"] - out["sem"]).clip(0, 1)
     out["obs_sem_high"] = (out["mean"] + out["sem"]).clip(0, 1)
-    out["model_sem_low"] = (out["model_mean"] - out["model_sem"]).clip(0, 1)
-    out["model_sem_high"] = (out["model_mean"] + out["model_sem"]).clip(0, 1)
-
-    out["sem_band_overlap"] = (
-        (out["obs_sem_low"] <= out["model_sem_high"]) &
-        (out["model_sem_low"] <= out["obs_sem_high"])
-    )
-
-    out["obs_mean_in_model_sem_band"] = (
-        (out["mean"] >= out["model_sem_low"]) &
-        (out["mean"] <= out["model_sem_high"])
-    )
-
-    out["model_mean_in_obs_sem_band"] = (
-        (out["model_mean"] >= out["obs_sem_low"]) &
-        (out["model_mean"] <= out["obs_sem_high"])
-    )
 
     out["obs_mean_in_model_pi95"] = (
         (out["mean"] >= out["model_pi95_low"]) &
         (out["mean"] <= out["model_pi95_high"])
     )
 
+    out["obs_mean_in_model_pi50"] = (
+        (out["mean"] >= out["model_pi50_low"]) &
+        (out["mean"] <= out["model_pi50_high"])
+    )
+
     out["diff_model_minus_obs"] = out["model_mean"] - out["mean"]
-    out["combined_sem"] = np.sqrt(out["sem"]**2 + out["model_sem"]**2)
-    out["z_approx"] = out["diff_model_minus_obs"] / out["combined_sem"].replace(0, np.nan)
+
+    # approximate inferential comparison using empirical SEM and draw-level mean participant SEM
+    out["combined_sem_emp_vs_modelsubjectsem"] = np.sqrt(
+        out["sem"]**2 + out["mean_draw_subject_sem"]**2
+    )
+    out["z_approx_emp_vs_modelsubjectsem"] = (
+        out["diff_model_minus_obs"] /
+        out["combined_sem_emp_vs_modelsubjectsem"].replace(0, np.nan)
+    )
 
     def two_sided_norm_p(z):
         if pd.isna(z):
             return np.nan
         return math.erfc(abs(z) / np.sqrt(2.0))
 
-    out["p_approx_2sided"] = out["z_approx"].apply(two_sided_norm_p)
+    out["p_approx_2sided_emp_vs_modelsubjectsem"] = out["z_approx_emp_vs_modelsubjectsem"].apply(two_sided_norm_p)
 
     ppc_pvals = []
     for b in x_labels:
@@ -371,6 +352,7 @@ def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labe
         ppc_pvals.append(p_two_sided)
 
     out["ppc_p_2sided"] = ppc_pvals
+
     out = out.reset_index().rename(columns={"index": "bin"})
     return out
 
@@ -392,9 +374,10 @@ def plot_choice_bars_and_ppc_lines(
     """
     Hollow black bars = empirical mean
     Black error bars = empirical mean ± SEM
-    Thin blue lines = selected posterior predictive sample means
-    Solid red line = posterior predictive mean
-    Red error bars = posterior predictive mean ± SEM
+    Blue lines = selected PPC sample means
+    Red line = PPC mean
+    Dark red band = 50% predictive interval
+    Light red band = 95% predictive interval
     """
     rng = np.random.default_rng(RANDOM_SEED)
     fig, ax = plt.subplots(figsize=(9, 6.5))
@@ -430,9 +413,6 @@ def plot_choice_bars_and_ppc_lines(
         label="Empirical mean ± SEM"
     )
 
-    model_mean_vals = np.full(len(x_labels), np.nan)
-    model_sem_vals = np.full(len(x_labels), np.nan)
-
     if simulated_long is not None and len(simulated_long) > 0:
         simulated_long = simulated_long.copy()
         simulated_long[bin_col] = pd.Categorical(
@@ -445,14 +425,19 @@ def plot_choice_bars_and_ppc_lines(
             simulated_long.groupby(bin_col, observed=False)["p_choose_S"]
             .agg(
                 mean="mean",
-                sd="std",
-                sem=lambda s: s.std(ddof=1) / np.sqrt(s.notna().sum())
+                pi50_low=lambda s: s.quantile(0.25),
+                pi50_high=lambda s: s.quantile(0.75),
+                pi95_low=lambda s: s.quantile(0.025),
+                pi95_high=lambda s: s.quantile(0.975),
             )
             .reindex(x_labels)
         )
 
         model_mean_vals = model_summary["mean"].values.astype(float) * scale
-        model_sem_vals = model_summary["sem"].values.astype(float) * scale
+        model_pi50_low = model_summary["pi50_low"].values.astype(float) * scale
+        model_pi50_high = model_summary["pi50_high"].values.astype(float) * scale
+        model_pi95_low = model_summary["pi95_low"].values.astype(float) * scale
+        model_pi95_high = model_summary["pi95_high"].values.astype(float) * scale
 
         unique_samples = simulated_long[sample_col].dropna().unique()
         n_to_draw = min(n_display_replications, len(unique_samples))
@@ -476,12 +461,34 @@ def plot_choice_bars_and_ppc_lines(
                     marker="o",
                     markersize=4,
                     linewidth=1.3,
-                    alpha=0.35,
+                    alpha=0.30,
                     color="tab:blue",
                     zorder=3,
                     label="Posterior predictive samples" if first_line else None
                 )
                 first_line = False
+
+        # 95% interval
+        ax.fill_between(
+            x,
+            model_pi95_low,
+            model_pi95_high,
+            color="tab:red",
+            alpha=0.15,
+            zorder=2,
+            label="Posterior predictive 95% interval"
+        )
+
+        # 50% interval
+        ax.fill_between(
+            x,
+            model_pi50_low,
+            model_pi50_high,
+            color="tab:red",
+            alpha=0.30,
+            zorder=4,
+            label="Posterior predictive 50% interval"
+        )
 
         ax.plot(
             x,
@@ -491,19 +498,6 @@ def plot_choice_bars_and_ppc_lines(
             color="tab:red",
             zorder=6,
             label="Posterior predictive mean"
-        )
-
-        ax.errorbar(
-            x,
-            model_mean_vals,
-            yerr=model_sem_vals,
-            fmt="none",
-            ecolor="tab:red",
-            elinewidth=2.0,
-            capsize=5,
-            capthick=2.0,
-            zorder=7,
-            label="Posterior predictive mean ± SEM"
         )
 
     ax.set_xticks(x)
@@ -519,15 +513,11 @@ def plot_choice_bars_and_ppc_lines(
         all_vals = np.concatenate([
             obs_mean_vals,
             obs_mean_vals - obs_sem_vals,
-            obs_mean_vals + obs_sem_vals,
-            model_mean_vals[~np.isnan(model_mean_vals)],
-            (model_mean_vals - model_sem_vals)[~np.isnan(model_mean_vals)],
-            (model_mean_vals + model_sem_vals)[~np.isnan(model_mean_vals)],
+            obs_mean_vals + obs_sem_vals
         ])
-        if len(all_vals) > 0:
-            ymin = max(0, np.nanmin(all_vals) - 5)
-            ymax = min(100 if y_as_percent else 1, np.nanmax(all_vals) + 5)
-            ax.set_ylim(ymin, ymax)
+        ymin = max(0, np.nanmin(all_vals) - 5)
+        ymax = min(100 if y_as_percent else 1, np.nanmax(all_vals) + 5)
+        ax.set_ylim(ymin, ymax)
 
     if y_as_percent:
         ax.set_yticks(np.arange(0, 101, 10))
@@ -538,9 +528,6 @@ def plot_choice_bars_and_ppc_lines(
 
 
 def plot_rt_distribution(obs_df, ppc_df, model_name, save_path):
-    """
-    Observed RT distribution vs sampled RT distribution.
-    """
     all_rt = pd.concat([obs_df["rt"], ppc_df["rt_sampled"]], axis=0).dropna()
     bins = np.histogram_bin_edges(all_rt, bins=50)
 
@@ -574,9 +561,6 @@ def plot_rt_distribution(obs_df, ppc_df, model_name, save_path):
 
 
 def plot_response_distribution(obs_df, ppc_df, model_name, save_path):
-    """
-    Response proportion plot with explicit S/E labels.
-    """
     obs_prop = obs_df["response"].value_counts(normalize=True).sort_index()
     sim_prop = ppc_df["response_sampled"].value_counts(normalize=True).sort_index()
 
@@ -604,9 +588,6 @@ def plot_response_distribution(obs_df, ppc_df, model_name, save_path):
 
 
 def save_parameter_summary(best_model, save_path):
-    """
-    Save HDDM parameter summary statistics.
-    """
     try:
         stats_df = best_model.gen_stats()
         stats_df.to_csv(save_path)
@@ -616,9 +597,6 @@ def save_parameter_summary(best_model, save_path):
 
 
 def save_builtin_hddm_plots(best_model, model_name, output_dir):
-    """
-    Try to save built-in HDDM PPC plots.
-    """
     try:
         best_model.plot_posterior_predictive(figsize=(12, 10))
         plt.suptitle(f"Built-in HDDM posterior predictive plot\n{model_name}", fontsize=14)
@@ -649,9 +627,6 @@ def save_builtin_hddm_plots(best_model, model_name, output_dir):
 
 
 def save_post_pred_stats(best_model, obs_df, ppc_samples, model_name, output_dir):
-    """
-    Save HDDM posterior predictive summary stats.
-    """
     try:
         print(f"Generating summary statistics with {ppc_samples} samples per node...")
         ppc_data_stats = hddm.utils.post_pred_gen(best_model, samples=ppc_samples)
@@ -717,21 +692,13 @@ if DWELL_COL not in obs_df.columns:
         f"Available observed columns: {list(obs_df.columns)}"
     )
 
-# IMPORTANT: overwrite subject IDs in PPC by row-order mapping from the observed data
-# so participant-first grouping is guaranteed to work.
+# overwrite subject IDs in PPC by row-order mapping
 ppc_df = attach_observed_columns_by_row_order(
     obs_df=obs_df,
     ppc_df=ppc_df,
     sample_col=sample_col,
     cols_to_attach=[SUBJECT_COL]
 )
-
-print("\nPPC subject counts after row-order mapping:")
-print(ppc_df[SUBJECT_COL].value_counts(dropna=False).sort_index().head(25))
-
-print("\nPPC subj_idx missing after row-order mapping:")
-print(ppc_df[SUBJECT_COL].isna().sum())
-
 
 # =========================================================
 # 1) STANDARD PPC PLOTS
@@ -770,7 +737,6 @@ save_post_pred_stats(
     output_dir=output_dir
 )
 
-
 # =========================================================
 # 2) P(choose S) BY DWELL QUINTILE
 # =========================================================
@@ -782,8 +748,7 @@ n_dwell_bins = len(dwell_edges) - 1
 
 if n_dwell_bins != 5:
     warnings.warn(
-        f"Dwell variable produced {n_dwell_bins} bins instead of 5 because of ties. "
-        "Using generic labels."
+        f"Dwell variable produced {n_dwell_bins} bins instead of 5 because of ties. Using generic labels."
     )
     dwell_labels = [f"Q{i}" for i in range(1, n_dwell_bins + 1)]
 
@@ -799,21 +764,6 @@ ppc_df = attach_observed_columns_by_row_order(
     sample_col=sample_col,
     cols_to_attach=["dwell_quintile"]
 )
-
-print("\nObserved dwell quintile counts:")
-print(obs_df["dwell_quintile"].value_counts(dropna=False).sort_index())
-
-print("\nPPC dwell quintile counts after row-order mapping:")
-print(ppc_df["dwell_quintile"].value_counts(dropna=False).sort_index())
-
-print("\nNumber of missing PPC dwell quintiles:")
-print(ppc_df["dwell_quintile"].isna().sum())
-
-print("\nPPC response_sampled missing:")
-print(ppc_df["response_sampled"].isna().sum())
-
-print("\nExample PPC rows for dwell:")
-print(ppc_df[[sample_col, SUBJECT_COL, "dwell_quintile", "response_sampled"]].head(20))
 
 obs_dwell_summary, obs_dwell_subjectwise = summarise_observed_by_bin_subjectwise(
     df=obs_df,
@@ -839,15 +789,6 @@ dwell_comparison = build_ppc_comparison_table(
     x_labels=dwell_labels
 )
 
-print("\nObserved dwell summary:")
-print(obs_dwell_summary)
-
-print("\nFirst rows of simulated dwell summary:")
-print(sim_dwell.head(15))
-
-print("\nDwell comparison table:")
-print(dwell_comparison)
-
 plot_choice_bars_and_ppc_lines(
     observed_summary=obs_dwell_summary,
     simulated_long=sim_dwell,
@@ -862,7 +803,6 @@ plot_choice_bars_and_ppc_lines(
     y_limits=(30, 70),
     y_as_percent=True
 )
-
 
 # =========================================================
 # 3) P(choose S) BY RT QUINTILE
@@ -886,9 +826,6 @@ ppc_df["rt_quintile"] = assign_rt_quantiles_within_group(
     group_col=sample_col,
     n_quantiles=N_QUANTILES
 )
-
-print("\nExample PPC rows for RT:")
-print(ppc_df[[sample_col, SUBJECT_COL, "rt_quintile", "response_sampled"]].head(20))
 
 obs_rt_summary, obs_rt_subjectwise = summarise_observed_by_bin_subjectwise(
     df=obs_df,
@@ -914,15 +851,6 @@ rt_comparison = build_ppc_comparison_table(
     x_labels=rt_labels
 )
 
-print("\nObserved RT summary:")
-print(obs_rt_summary)
-
-print("\nFirst rows of simulated RT summary:")
-print(sim_rt.head(15))
-
-print("\nRT comparison table:")
-print(rt_comparison)
-
 plot_choice_bars_and_ppc_lines(
     observed_summary=obs_rt_summary,
     simulated_long=sim_rt,
@@ -937,7 +865,6 @@ plot_choice_bars_and_ppc_lines(
     y_limits=(0, 100),
     y_as_percent=True
 )
-
 
 # =========================================================
 # 4) SAVE UNDERLYING SUMMARIES AS CSV
@@ -954,7 +881,7 @@ obs_dwell_subjectwise.to_csv(
 )
 
 sim_dwell.to_csv(
-    os.path.join(output_dir, f"Simulated_Dwell_BySample_{best_model_name}.csv"),
+    os.path.join(output_dir, f"Simulated_Dwell_ByDraw_{best_model_name}.csv"),
     index=False
 )
 
@@ -979,7 +906,7 @@ obs_rt_subjectwise.to_csv(
 )
 
 sim_rt.to_csv(
-    os.path.join(output_dir, f"Simulated_RT_BySample_{best_model_name}.csv"),
+    os.path.join(output_dir, f"Simulated_RT_ByDraw_{best_model_name}.csv"),
     index=False
 )
 
@@ -995,14 +922,12 @@ rt_comparison.to_csv(
 
 print("\nAll requested PPC plots and summaries were saved successfully.")
 
-
 # =========================================================
 # CLEANUP
 # =========================================================
 
 del best_model, obs_df, ppc_df
 gc.collect()
-
 
 
 
