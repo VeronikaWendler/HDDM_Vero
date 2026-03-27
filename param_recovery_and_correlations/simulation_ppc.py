@@ -9,7 +9,7 @@
 import os
 import gc
 import warnings
-
+import math
 # ---------------------------------------------------------
 # Matplotlib cache fix for cluster environments
 # ---------------------------------------------------------
@@ -30,12 +30,12 @@ warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
 # =========================================================
 
 model_paths = [
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_For_paper_23_2.hddm",
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_For_paper_23_1.hddm",
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_For_paper_23_0.hddm"
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_2.hddm",
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_1.hddm",
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_0.hddm"
 ]
 
-output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_For_paper_23"
+output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_Final_0/ppc"
 os.makedirs(output_dir, exist_ok=True)
 
 # Name of dwell-time advantage column in original data
@@ -203,15 +203,18 @@ def assign_rt_quantiles_within_group(df, value_col, group_col=None, n_quantiles=
     return df.groupby(group_col)[value_col].transform(_assign_one_group)
 
 
-def summarise_choice_by_bin(df, bin_col, response_col, order):
+def summarise_observed_by_bin(df, bin_col, response_col, order):
     """
-    Returns mean choice per bin, reindexed to desired order.
+    Observed summary by bin for a binary response column.
+    Returns mean, sd, sem, n.
     """
     out = (
         df.groupby(bin_col, observed=False)[response_col]
-        .mean()
+        .agg(mean="mean", sd="std", n="count")
         .reindex(order)
     )
+    out["sem"] = out["sd"] / np.sqrt(out["n"].replace(0, np.nan))
+    out = out.reset_index().rename(columns={bin_col: "bin"})
     return out
 
 
@@ -225,11 +228,101 @@ def summarise_choice_by_bin_and_sample(df, sample_col, bin_col, response_col, or
         .reset_index()
     )
     out[bin_col] = pd.Categorical(out[bin_col], categories=order, ordered=True)
+    out = out.rename(columns={response_col: "p_choose_S"})
+    return out
+
+
+def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labels):
+    """
+    Build a comparison table between empirical summaries and PPC summaries.
+
+    Includes:
+    - observed mean/sd/sem/n
+    - model mean/sd/sem/95% interval
+    - overlap checks
+    - approximate z-style difference test
+    - PPC two-sided tail probability
+    """
+    obs = observed_summary.copy().set_index("bin").reindex(x_labels)
+
+    sim_stats = (
+        simulated_long.groupby(bin_col, observed=False)["p_choose_S"]
+        .agg(
+            model_mean="mean",
+            model_sd="std",
+            model_n="count",
+            model_sem=lambda s: s.std(ddof=1) / np.sqrt(s.notna().sum()),
+            model_pi95_low=lambda s: s.quantile(0.025),
+            model_pi95_high=lambda s: s.quantile(0.975)
+        )
+        .reindex(x_labels)
+    )
+
+    out = obs.join(sim_stats)
+
+    # SEM bands
+    out["obs_sem_low"] = (out["mean"] - out["sem"]).clip(0, 1)
+    out["obs_sem_high"] = (out["mean"] + out["sem"]).clip(0, 1)
+    out["model_sem_low"] = (out["model_mean"] - out["model_sem"]).clip(0, 1)
+    out["model_sem_high"] = (out["model_mean"] + out["model_sem"]).clip(0, 1)
+
+    # Simple overlap diagnostics
+    out["sem_band_overlap"] = (
+        (out["obs_sem_low"] <= out["model_sem_high"]) &
+        (out["model_sem_low"] <= out["obs_sem_high"])
+    )
+
+    out["obs_mean_in_model_sem_band"] = (
+        (out["mean"] >= out["model_sem_low"]) &
+        (out["mean"] <= out["model_sem_high"])
+    )
+
+    out["model_mean_in_obs_sem_band"] = (
+        (out["model_mean"] >= out["obs_sem_low"]) &
+        (out["model_mean"] <= out["obs_sem_high"])
+    )
+
+    out["obs_mean_in_model_pi95"] = (
+        (out["mean"] >= out["model_pi95_low"]) &
+        (out["mean"] <= out["model_pi95_high"])
+    )
+
+    # Approximate z-style comparison using combined SEM
+    out["diff_model_minus_obs"] = out["model_mean"] - out["mean"]
+    out["combined_sem"] = np.sqrt(out["sem"]**2 + out["model_sem"]**2)
+    out["z_approx"] = out["diff_model_minus_obs"] / out["combined_sem"]
+
+    def two_sided_norm_p(z):
+        if pd.isna(z):
+            return np.nan
+        return math.erfc(abs(z) / np.sqrt(2.0))
+
+    out["p_approx_2sided"] = out["z_approx"].apply(two_sided_norm_p)
+
+    # PPC two-sided tail probability:
+    # how extreme is the observed mean relative to the simulated distribution?
+    ppc_pvals = []
+    for b in x_labels:
+        vals = simulated_long.loc[simulated_long[bin_col] == b, "p_choose_S"].dropna().values
+        obs_mean = out.loc[b, "mean"]
+
+        if len(vals) == 0 or pd.isna(obs_mean):
+            ppc_pvals.append(np.nan)
+            continue
+
+        p_lower = np.mean(vals <= obs_mean)
+        p_upper = np.mean(vals >= obs_mean)
+        p_two_sided = min(1.0, 2.0 * min(p_lower, p_upper))
+        ppc_pvals.append(p_two_sided)
+
+    out["ppc_p_2sided"] = ppc_pvals
+
+    out = out.reset_index().rename(columns={"index": "bin"})
     return out
 
 
 def plot_choice_bars_and_ppc_lines(
-    observed_series,
+    observed_summary,
     simulated_long,
     sample_col,
     bin_col,
@@ -244,17 +337,18 @@ def plot_choice_bars_and_ppc_lines(
     y_as_percent=True
 ):
     """
-    Black bars = observed
-    Thin colored lines = selected PPC replications
-    Thick dashed line = PPC mean
-    Shaded band = uncertainty around PPC mean
+    Black bars = observed mean
+    Black error bars = observed SEM
+    Thin blue lines = selected PPC replications
+    Solid red line = PPC mean
+    Orange band = uncertainty around PPC mean
     """
     rng = np.random.default_rng(RANDOM_SEED)
 
     fig, ax = plt.subplots(figsize=(9, 6.5))
     x = np.arange(len(x_labels))
 
-    observed_series = observed_series.reindex(x_labels)
+    observed_summary = observed_summary.copy().set_index("bin").reindex(x_labels)
 
     simulated_long = simulated_long.copy()
     simulated_long[bin_col] = pd.Categorical(
@@ -296,7 +390,9 @@ def plot_choice_bars_and_ppc_lines(
 
     scale = 100.0 if y_as_percent else 1.0
 
-    obs_vals = observed_series.values.astype(float) * scale
+    obs_mean_vals = observed_summary["mean"].values.astype(float) * scale
+    obs_sem_vals = observed_summary["sem"].values.astype(float) * scale
+
     mean_vals = ppc_summary["mean"].values.astype(float) * scale
     lower_vals = lower.values.astype(float) * scale
     upper_vals = upper.values.astype(float) * scale
@@ -304,12 +400,26 @@ def plot_choice_bars_and_ppc_lines(
     # Observed bars
     ax.bar(
         x,
-        obs_vals,
+        obs_mean_vals,
         width=0.8,
         color="black",
         alpha=0.95,
-        label="Observed",
+        label="Observed mean",
         zorder=1
+    )
+
+    # Observed SEM
+    ax.errorbar(
+        x,
+        obs_mean_vals,
+        yerr=obs_sem_vals,
+        fmt="none",
+        ecolor="black",
+        elinewidth=2.0,
+        capsize=5,
+        capthick=2.0,
+        zorder=5,
+        label="Observed mean ± SEM"
     )
 
     # Selected PPC sample lines
@@ -334,36 +444,35 @@ def plot_choice_bars_and_ppc_lines(
             marker="o",
             markersize=4,
             linewidth=1.3,
-            alpha=0.45,
+            alpha=0.35,
             color="tab:blue",
             zorder=3,
             label="Posterior predictive samples" if first_line else None
         )
         first_line = False
 
-    # Uncertainty band
+    # Model uncertainty band
     ax.fill_between(
         x,
         lower_vals,
         upper_vals,
         color="tab:orange",
-        alpha=0.25,
+        alpha=0.30,
         zorder=2,
         label=band_label
     )
 
-    # PPC mean
+    # Model mean as solid red line
     ax.plot(
         x,
         mean_vals,
-        linestyle="--",
-        linewidth=2.8,
+        linestyle="-",
+        linewidth=3.0,
         color="tab:red",
         zorder=4,
         label="Posterior predictive mean"
     )
 
-    # Formatting
     ax.set_xticks(x)
     ax.set_xticklabels(x_labels, fontsize=12)
     ax.set_xlabel(xlabel, fontsize=13)
@@ -374,7 +483,7 @@ def plot_choice_bars_and_ppc_lines(
     if y_limits is not None:
         ax.set_ylim(*y_limits)
     else:
-        all_vals = np.concatenate([obs_vals, mean_vals, lower_vals, upper_vals])
+        all_vals = np.concatenate([obs_mean_vals, mean_vals, lower_vals, upper_vals])
         ymin = max(0, np.nanmin(all_vals) - 5)
         ymax = min(100 if y_as_percent else 1, np.nanmax(all_vals) + 5)
         ax.set_ylim(ymin, ymax)
@@ -384,9 +493,7 @@ def plot_choice_bars_and_ppc_lines(
 
     style_ax(ax)
     ax.legend(fontsize=10, facecolor="white", framealpha=1, edgecolor="black", loc="best")
-
     save_close(fig, save_path)
-
 
 def plot_rt_distribution(obs_df, ppc_df, model_name, save_path):
     """
@@ -682,31 +789,42 @@ print(ppc_df["dwell_quintile"].value_counts(dropna=False).sort_index())
 print("\nNumber of missing PPC dwell quintiles:")
 print(ppc_df["dwell_quintile"].isna().sum())
 
-# Observed P(choose S)
-obs_dwell = summarise_choice_by_bin(
+# Observed P(choose S) summary
+obs_dwell_summary = summarise_observed_by_bin(
     df=obs_df,
     bin_col="dwell_quintile",
     response_col="response",
     order=dwell_labels
 )
 
-# Simulated P(choose S)
+# Simulated P(choose S) by sample
 sim_dwell = summarise_choice_by_bin_and_sample(
     df=ppc_df,
     sample_col=sample_col,
     bin_col="dwell_quintile",
     response_col="response_sampled",
     order=dwell_labels
-).rename(columns={"response_sampled": "p_choose_S"})
+)
+
+# Comparison table
+dwell_comparison = build_ppc_comparison_table(
+    observed_summary=obs_dwell_summary,
+    simulated_long=sim_dwell,
+    bin_col="dwell_quintile",
+    x_labels=dwell_labels
+)
 
 print("\nObserved dwell summary:")
-print(obs_dwell)
+print(obs_dwell_summary)
 
 print("\nFirst rows of simulated dwell summary:")
 print(sim_dwell.head(15))
 
+print("\nDwell comparison table:")
+print(dwell_comparison)
+
 plot_choice_bars_and_ppc_lines(
-    observed_series=obs_dwell,
+    observed_summary=obs_dwell_summary,
     simulated_long=sim_dwell,
     sample_col=sample_col,
     bin_col="dwell_quintile",
@@ -745,30 +863,42 @@ ppc_df["rt_quintile"] = assign_rt_quantiles_within_group(
     n_quantiles=N_QUANTILES
 )
 
-obs_rt = summarise_choice_by_bin(
+# Observed P(choose S) summary
+obs_rt_summary = summarise_observed_by_bin(
     df=obs_df,
     bin_col="rt_quintile",
     response_col="response",
     order=rt_labels
 )
 
+# Simulated P(choose S) by sample
 sim_rt = summarise_choice_by_bin_and_sample(
     df=ppc_df,
     sample_col=sample_col,
     bin_col="rt_quintile",
     response_col="response_sampled",
     order=rt_labels
-).rename(columns={"response_sampled": "p_choose_S"})
+)
+
+# Comparison table
+rt_comparison = build_ppc_comparison_table(
+    observed_summary=obs_rt_summary,
+    simulated_long=sim_rt,
+    bin_col="rt_quintile",
+    x_labels=rt_labels
+)
 
 print("\nObserved RT summary:")
-print(obs_rt)
+print(obs_rt_summary)
 
 print("\nFirst rows of simulated RT summary:")
 print(sim_rt.head(15))
 
+print("\nRT comparison table:")
+print(rt_comparison)
 
 plot_choice_bars_and_ppc_lines(
-    observed_series=obs_rt,
+    observed_summary=obs_rt_summary,
     simulated_long=sim_rt,
     sample_col=sample_col,
     bin_col="rt_quintile",
@@ -783,33 +913,41 @@ plot_choice_bars_and_ppc_lines(
     y_as_percent=True
 )
 
-
 # =========================================================
 # 4) SAVE UNDERLYING SUMMARIES AS CSV
 # =========================================================
 
-obs_dwell.to_csv(
-    os.path.join(output_dir, f"Observed_PChooseS_by_DwellQuintile_{best_model_name}.csv"),
-    header=["p_choose_S"]
-)
-
-sim_dwell.to_csv(
-    os.path.join(output_dir, f"Simulated_PChooseS_by_DwellQuintile_{best_model_name}.csv"),
+obs_dwell_summary.to_csv(
+    os.path.join(output_dir, f"Observed_Dwell_Summary_{best_model_name}.csv"),
     index=False
 )
 
-obs_rt.to_csv(
-    os.path.join(output_dir, f"Observed_PChooseS_by_RTQuintile_{best_model_name}.csv"),
-    header=["p_choose_S"]
+sim_dwell.to_csv(
+    os.path.join(output_dir, f"Simulated_Dwell_BySample_{best_model_name}.csv"),
+    index=False
+)
+
+dwell_comparison.to_csv(
+    os.path.join(output_dir, f"Dwell_Model_vs_Observed_Comparison_{best_model_name}.csv"),
+    index=False
+)
+
+obs_rt_summary.to_csv(
+    os.path.join(output_dir, f"Observed_RT_Summary_{best_model_name}.csv"),
+    index=False
 )
 
 sim_rt.to_csv(
-    os.path.join(output_dir, f"Simulated_PChooseS_by_RTQuintile_{best_model_name}.csv"),
+    os.path.join(output_dir, f"Simulated_RT_BySample_{best_model_name}.csv"),
+    index=False
+)
+
+rt_comparison.to_csv(
+    os.path.join(output_dir, f"RT_Model_vs_Observed_Comparison_{best_model_name}.csv"),
     index=False
 )
 
 print("\nAll requested PPC plots and summaries were saved successfully.")
-
 
 # =========================================================
 # CLEANUP
