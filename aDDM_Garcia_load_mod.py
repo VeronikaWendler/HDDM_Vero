@@ -80,10 +80,10 @@ numba.config.CACHE_ENABLE = False
 # V_sub = value of the worse option
 
 # params:
-version = 28   # defining version #
+version = 0   # defining version #
 run = False        # if True, the the models run, if False the models load
 
-phase = ['For_paper']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
+phase = ['Final']  #['ES', 'EE']  # Defines which phase you want ('ES', 'EE', 'LE', or the combinations)
 
 # Determines whether to use a single phase or the combined ESEE model
 if set(phase) == {'ES', 'EE'}:
@@ -122,9 +122,6 @@ ensure_dir(LOG_DIR)
 
 
 
-
-
-
 model_base_name = "garcia_replication_"
 
 model_versions = {
@@ -135,17 +132,20 @@ model_versions = {
                   "For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13","For_paper_14",
                 "For_paper_15", "For_paper_16", "For_paper_17", "For_paper_18", "For_paper_19", "For_paper_20", "For_paper_21",
                 "For_paper_22", "For_paper_23", "For_paper_24", "For_paper_25", "For_paper_26", "For_paper_27", "For_paper_28", "For_paper_29"],
-
+    "Final":    ["Final_0", "Final_1", "Final_2", "Final_3"]
 }
 
 
 PHASE_TO_SOURCE = {
-    "ES_ZBIAS": "ES",     
-    "ES_quad": "ES",
+    "ES_ZBIAS": "ES", 
+    "ES_quad": "ES",    
     "LE_RL": "LE",
     "ES_VAL": "ES",
     "For_paper": "ES",
+    "EE": "EE",
+    "Final": "ES",
 }
+
 
 model_name = model_versions[phase][version]
 
