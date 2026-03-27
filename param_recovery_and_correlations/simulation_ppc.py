@@ -46,7 +46,6 @@ N_DISPLAY_REPLICATIONS = 8
 N_QUANTILES = 5
 RANDOM_SEED = 123
 
-
 # =========================================================
 # HELPER FUNCTIONS
 # =========================================================
@@ -193,16 +192,17 @@ def assign_rt_quantiles_within_group(df, value_col, group_col=None, n_quantiles=
 
     if group_col is None:
         vals = pd.to_numeric(df[value_col], errors="coerce")
-        valid = vals.notna()
         out = pd.Series(pd.NA, index=df.index, dtype="object")
-        ranks = vals[valid].rank(method="first")
-        out.loc[valid] = pd.qcut(ranks, q=n_quantiles, labels=labels, duplicates="drop").astype(str)
+        valid = vals.notna()
+        if valid.sum() > 0:
+            ranks = vals[valid].rank(method="first")
+            out.loc[valid] = pd.qcut(ranks, q=n_quantiles, labels=labels, duplicates="drop").astype(str)
         return pd.Categorical(out, categories=labels, ordered=True)
 
     def _assign_one_group(x):
         x = pd.to_numeric(x, errors="coerce")
-        valid = x.notna()
         out = pd.Series(pd.NA, index=x.index, dtype="object")
+        valid = x.notna()
         if valid.sum() > 0:
             ranks = x[valid].rank(method="first")
             out.loc[valid] = pd.qcut(ranks, q=n_quantiles, labels=labels, duplicates="drop").astype(str)
@@ -210,6 +210,36 @@ def assign_rt_quantiles_within_group(df, value_col, group_col=None, n_quantiles=
 
     result = df.groupby(group_col)[value_col].transform(_assign_one_group)
     return pd.Categorical(result, categories=labels, ordered=True)
+
+
+def attach_observed_columns_by_row_order(obs_df, ppc_df, sample_col, cols_to_attach):
+    """
+    Attach one or more observed trial-wise columns to PPC rows by within-draw row order.
+    This is safer than trusting append_data=True for subject/bin columns when grouping later.
+    """
+    obs_map = obs_df[cols_to_attach].copy().reset_index(drop=True)
+    obs_map["_orig_row"] = np.arange(len(obs_map))
+
+    ppc_df = ppc_df.copy()
+    ppc_df["_orig_row"] = ppc_df.groupby(sample_col, sort=False).cumcount()
+
+    rows_per_draw = ppc_df.groupby(sample_col, sort=False)["_orig_row"].max() + 1
+    expected_n = len(obs_map)
+
+    if not (rows_per_draw == expected_n).all():
+        raise ValueError(
+            "PPC draws do not all have the same number of rows as the observed dataset.\n"
+            f"Expected {expected_n} rows per draw, got:\n{rows_per_draw.describe()}"
+        )
+
+    ppc_df = ppc_df.drop(columns=cols_to_attach, errors="ignore").merge(
+        obs_map,
+        on="_orig_row",
+        how="left",
+        validate="many_to_one"
+    )
+
+    return ppc_df
 
 
 def summarise_observed_by_bin_subjectwise(df, subject_col, bin_col, response_col, order):
@@ -360,43 +390,21 @@ def plot_choice_bars_and_ppc_lines(
     y_as_percent=True
 ):
     """
-    Hollow black bars = observed participant-mean
-    Black error bars = observed participant-level SEM
-    Thin blue lines = selected PPC sample means
-    Solid red line = model mean
-    Red error bars = model mean ± SEM
+    Hollow black bars = empirical mean
+    Black error bars = empirical mean ± SEM
+    Thin blue lines = selected posterior predictive sample means
+    Solid red line = posterior predictive mean
+    Red error bars = posterior predictive mean ± SEM
     """
     rng = np.random.default_rng(RANDOM_SEED)
-
     fig, ax = plt.subplots(figsize=(9, 6.5))
     x = np.arange(len(x_labels))
 
     observed_summary = observed_summary.copy().set_index("bin").reindex(x_labels)
 
-    simulated_long = simulated_long.copy()
-    simulated_long[bin_col] = pd.Categorical(
-        simulated_long[bin_col],
-        categories=x_labels,
-        ordered=True
-    )
-
-    model_summary = (
-        simulated_long.groupby(bin_col, observed=False)["p_choose_S"]
-        .agg(
-            mean="mean",
-            sd="std",
-            sem=lambda s: s.std(ddof=1) / np.sqrt(s.notna().sum())
-        )
-        .reindex(x_labels)
-    )
-
     scale = 100.0 if y_as_percent else 1.0
-
     obs_mean_vals = observed_summary["mean"].values.astype(float) * scale
     obs_sem_vals = observed_summary["sem"].values.astype(float) * scale
-
-    model_mean_vals = model_summary["mean"].values.astype(float) * scale
-    model_sem_vals = model_summary["sem"].values.astype(float) * scale
 
     ax.bar(
         x,
@@ -422,58 +430,81 @@ def plot_choice_bars_and_ppc_lines(
         label="Empirical mean ± SEM"
     )
 
-    unique_samples = simulated_long[sample_col].dropna().unique()
-    n_to_draw = min(n_display_replications, len(unique_samples))
+    model_mean_vals = np.full(len(x_labels), np.nan)
+    model_sem_vals = np.full(len(x_labels), np.nan)
 
-    if n_to_draw > 0:
-        chosen_samples = rng.choice(unique_samples, size=n_to_draw, replace=False)
+    if simulated_long is not None and len(simulated_long) > 0:
+        simulated_long = simulated_long.copy()
+        simulated_long[bin_col] = pd.Categorical(
+            simulated_long[bin_col],
+            categories=x_labels,
+            ordered=True
+        )
 
-        first_line = True
-        for s in chosen_samples:
-            tmp = (
-                simulated_long.loc[simulated_long[sample_col] == s]
-                .sort_values(bin_col)
-                .set_index(bin_col)
-                .reindex(x_labels)
+        model_summary = (
+            simulated_long.groupby(bin_col, observed=False)["p_choose_S"]
+            .agg(
+                mean="mean",
+                sd="std",
+                sem=lambda s: s.std(ddof=1) / np.sqrt(s.notna().sum())
             )
+            .reindex(x_labels)
+        )
 
-            yvals = tmp["p_choose_S"].values.astype(float) * scale
+        model_mean_vals = model_summary["mean"].values.astype(float) * scale
+        model_sem_vals = model_summary["sem"].values.astype(float) * scale
 
-            ax.plot(
-                x,
-                yvals,
-                marker="o",
-                markersize=4,
-                linewidth=1.3,
-                alpha=0.35,
-                color="tab:blue",
-                zorder=3,
-                label="Posterior predictive samples" if first_line else None
-            )
-            first_line = False
+        unique_samples = simulated_long[sample_col].dropna().unique()
+        n_to_draw = min(n_display_replications, len(unique_samples))
 
-    ax.plot(
-        x,
-        model_mean_vals,
-        linestyle="-",
-        linewidth=3.0,
-        color="tab:red",
-        zorder=6,
-        label="Posterior predictive mean"
-    )
+        if n_to_draw > 0:
+            chosen_samples = rng.choice(unique_samples, size=n_to_draw, replace=False)
+            first_line = True
+            for s in chosen_samples:
+                tmp = (
+                    simulated_long.loc[simulated_long[sample_col] == s]
+                    .sort_values(bin_col)
+                    .set_index(bin_col)
+                    .reindex(x_labels)
+                )
 
-    ax.errorbar(
-        x,
-        model_mean_vals,
-        yerr=model_sem_vals,
-        fmt="none",
-        ecolor="tab:red",
-        elinewidth=2.0,
-        capsize=5,
-        capthick=2.0,
-        zorder=7,
-        label="Posterior predictive mean ± SEM"
-    )
+                yvals = tmp["p_choose_S"].values.astype(float) * scale
+
+                ax.plot(
+                    x,
+                    yvals,
+                    marker="o",
+                    markersize=4,
+                    linewidth=1.3,
+                    alpha=0.35,
+                    color="tab:blue",
+                    zorder=3,
+                    label="Posterior predictive samples" if first_line else None
+                )
+                first_line = False
+
+        ax.plot(
+            x,
+            model_mean_vals,
+            linestyle="-",
+            linewidth=3.0,
+            color="tab:red",
+            zorder=6,
+            label="Posterior predictive mean"
+        )
+
+        ax.errorbar(
+            x,
+            model_mean_vals,
+            yerr=model_sem_vals,
+            fmt="none",
+            ecolor="tab:red",
+            elinewidth=2.0,
+            capsize=5,
+            capthick=2.0,
+            zorder=7,
+            label="Posterior predictive mean ± SEM"
+        )
 
     ax.set_xticks(x)
     ax.set_xticklabels(x_labels, fontsize=12)
@@ -486,12 +517,17 @@ def plot_choice_bars_and_ppc_lines(
         ax.set_ylim(*y_limits)
     else:
         all_vals = np.concatenate([
-            obs_mean_vals, obs_mean_vals - obs_sem_vals, obs_mean_vals + obs_sem_vals,
-            model_mean_vals, model_mean_vals - model_sem_vals, model_mean_vals + model_sem_vals
+            obs_mean_vals,
+            obs_mean_vals - obs_sem_vals,
+            obs_mean_vals + obs_sem_vals,
+            model_mean_vals[~np.isnan(model_mean_vals)],
+            (model_mean_vals - model_sem_vals)[~np.isnan(model_mean_vals)],
+            (model_mean_vals + model_sem_vals)[~np.isnan(model_mean_vals)],
         ])
-        ymin = max(0, np.nanmin(all_vals) - 5)
-        ymax = min(100 if y_as_percent else 1, np.nanmax(all_vals) + 5)
-        ax.set_ylim(ymin, ymax)
+        if len(all_vals) > 0:
+            ymin = max(0, np.nanmin(all_vals) - 5)
+            ymax = min(100 if y_as_percent else 1, np.nanmax(all_vals) + 5)
+            ax.set_ylim(ymin, ymax)
 
     if y_as_percent:
         ax.set_yticks(np.arange(0, 101, 10))
@@ -632,35 +668,6 @@ def save_post_pred_stats(best_model, obs_df, ppc_samples, model_name, output_dir
         print(f"Could not generate posterior predictive summary statistics: {e}")
 
 
-def attach_observed_bin_by_row_order(obs_df, ppc_df, sample_col, bin_col):
-    """
-    Attach an observed trial-wise bin label to PPC rows by within-draw row order.
-    """
-    obs_map = obs_df[[bin_col]].copy().reset_index(drop=True)
-    obs_map["_orig_row"] = np.arange(len(obs_map))
-
-    ppc_df = ppc_df.copy()
-    ppc_df["_orig_row"] = ppc_df.groupby(sample_col, sort=False).cumcount()
-
-    rows_per_draw = ppc_df.groupby(sample_col, sort=False)["_orig_row"].max() + 1
-    expected_n = len(obs_map)
-
-    if not (rows_per_draw == expected_n).all():
-        raise ValueError(
-            "PPC draws do not all have the same number of rows as the observed dataset.\n"
-            f"Expected {expected_n} rows per draw, got:\n{rows_per_draw.describe()}"
-        )
-
-    ppc_df = ppc_df.drop(columns=[bin_col], errors="ignore").merge(
-        obs_map,
-        on="_orig_row",
-        how="left",
-        validate="many_to_one"
-    )
-
-    return ppc_df
-
-
 # =========================================================
 # MODEL SELECTION
 # =========================================================
@@ -704,23 +711,26 @@ if SUBJECT_COL not in obs_df.columns:
         f"Available observed columns: {list(obs_df.columns)}"
     )
 
-if SUBJECT_COL not in ppc_df.columns:
-    raise ValueError(
-        f"SUBJECT_COL = '{SUBJECT_COL}' was not found in the PPC dataframe.\n"
-        f"Available PPC columns: {list(ppc_df.columns)}"
-    )
-
 if DWELL_COL not in obs_df.columns:
     raise ValueError(
         f"DWELL_COL = '{DWELL_COL}' was not found in the observed data.\n"
         f"Available observed columns: {list(obs_df.columns)}"
     )
 
-if DWELL_COL not in ppc_df.columns:
-    raise ValueError(
-        f"DWELL_COL = '{DWELL_COL}' was not found in the PPC dataframe.\n"
-        "Because append_data=True was used, this usually means the column name needs to be corrected."
-    )
+# IMPORTANT: overwrite subject IDs in PPC by row-order mapping from the observed data
+# so participant-first grouping is guaranteed to work.
+ppc_df = attach_observed_columns_by_row_order(
+    obs_df=obs_df,
+    ppc_df=ppc_df,
+    sample_col=sample_col,
+    cols_to_attach=[SUBJECT_COL]
+)
+
+print("\nPPC subject counts after row-order mapping:")
+print(ppc_df[SUBJECT_COL].value_counts(dropna=False).sort_index().head(25))
+
+print("\nPPC subj_idx missing after row-order mapping:")
+print(ppc_df[SUBJECT_COL].isna().sum())
 
 
 # =========================================================
@@ -783,11 +793,11 @@ obs_df["dwell_quintile"] = assign_bins_from_edges(
     dwell_labels
 )
 
-ppc_df = attach_observed_bin_by_row_order(
+ppc_df = attach_observed_columns_by_row_order(
     obs_df=obs_df,
     ppc_df=ppc_df,
     sample_col=sample_col,
-    bin_col="dwell_quintile"
+    cols_to_attach=["dwell_quintile"]
 )
 
 print("\nObserved dwell quintile counts:")
@@ -799,11 +809,11 @@ print(ppc_df["dwell_quintile"].value_counts(dropna=False).sort_index())
 print("\nNumber of missing PPC dwell quintiles:")
 print(ppc_df["dwell_quintile"].isna().sum())
 
-print("\nPPC subj_idx missing:")
-print(ppc_df[SUBJECT_COL].isna().sum())
-
 print("\nPPC response_sampled missing:")
 print(ppc_df["response_sampled"].isna().sum())
+
+print("\nExample PPC rows for dwell:")
+print(ppc_df[[sample_col, SUBJECT_COL, "dwell_quintile", "response_sampled"]].head(20))
 
 obs_dwell_summary, obs_dwell_subjectwise = summarise_observed_by_bin_subjectwise(
     df=obs_df,
@@ -876,6 +886,9 @@ ppc_df["rt_quintile"] = assign_rt_quantiles_within_group(
     group_col=sample_col,
     n_quantiles=N_QUANTILES
 )
+
+print("\nExample PPC rows for RT:")
+print(ppc_df[[sample_col, SUBJECT_COL, "rt_quintile", "response_sampled"]].head(20))
 
 obs_rt_summary, obs_rt_subjectwise = summarise_observed_by_bin_subjectwise(
     df=obs_df,
@@ -989,7 +1002,6 @@ print("\nAll requested PPC plots and summaries were saved successfully.")
 
 del best_model, obs_df, ppc_df
 gc.collect()
-
 
 
 
