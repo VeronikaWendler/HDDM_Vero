@@ -1101,6 +1101,98 @@ def analyze_model(models, fig_dir, nr_models, version, phase):
                 n_jobs=nr_models,
                 S=1000
             )
+    elif phase == "Final":
+        if version == 0:   
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW'
+                ]
+            export_posterior_draws(
+                model_name="garcia_replication_Final_0",
+                model_dir=BASE_MODEL_DIR,
+                n_jobs=nr_models,
+                S=1000
+            )
+        
+        elif version == 1:
+            params_of_interest = [    
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'z',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S'
+                ]
+            export_posterior_draws(
+                model_name="garcia_replication_Final_1",
+                model_dir=BASE_MODEL_DIR,
+                n_jobs=nr_models,
+                S=1000
+            )
+
+        elif version == 2:
+            params_of_interest = [    
+                'a',
+                't',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW'
+                ]
+            export_posterior_draws(
+                model_name="garcia_replication_Final_2",
+                model_dir=BASE_MODEL_DIR,
+                n_jobs=nr_models,
+                S=1000
+            )
+
+        elif version == 3:
+            params_of_interest = [    
+                'a',
+                't',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S'
+                ]
+            params_of_interest_s = [p + "_subj" for p in params_of_interest]
+            titles = [
+                'a',
+                't',
+                'v_ES_AttentionW',
+                'v_ES_InattentionW_E',
+                'v_ES_InattentionW_S'
+                ]
+            export_posterior_draws(
+                model_name="garcia_replication_Final_3",
+                model_dir=BASE_MODEL_DIR,
+                n_jobs=nr_models,
+                S=1000
+            )
 
             
     elif phase == "LE_RL":

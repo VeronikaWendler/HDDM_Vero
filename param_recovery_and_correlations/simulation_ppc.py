@@ -30,12 +30,12 @@ warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
 # =========================================================
 
 model_paths = [
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_2.hddm",
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_1.hddm",
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_0.hddm"
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_1_2.hddm",
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_1_1.hddm",
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_1_0.hddm"
 ]
 
-output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_Final_0/ppc"
+output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_Final_1/ppc"
 os.makedirs(output_dir, exist_ok=True)
 
 # Name of dwell-time advantage column in original data
