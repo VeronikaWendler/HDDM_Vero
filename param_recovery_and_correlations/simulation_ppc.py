@@ -8,7 +8,6 @@
 import os
 import gc
 import warnings
-import math
 
 # ---------------------------------------------------------
 # Matplotlib cache fix for cluster environments
@@ -30,21 +29,24 @@ warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
 # =========================================================
 
 model_paths = [
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_3_2.hddm",
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_3_1.hddm",
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_3_0.hddm"
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_2.hddm",
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_1.hddm",
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_0.hddm"
 ]
 
-output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_Final_3/ppc"
+output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_Final_0/ppc"
 os.makedirs(output_dir, exist_ok=True)
 
 DWELL_COL = "DwellTimeAdvantage"
 SUBJECT_COL = "subj_idx"
 
 PPC_SAMPLES = 2000
-#N_DISPLAY_REPLICATIONS = 8
 N_QUANTILES = 5
-#RANDOM_SEED = 123
+
+# bootstrap settings for empirical CI
+BOOTSTRAP_SAMPLES = 5000
+BOOTSTRAP_CI = 0.95
+RANDOM_SEED = 123
 
 # =========================================================
 # HELPER FUNCTIONS
@@ -171,7 +173,9 @@ def assign_rt_quantiles_within_group(df, value_col, group_col=None, n_quantiles=
         valid = vals.notna()
         if valid.sum() > 0:
             ranks = vals[valid].rank(method="first")
-            out.loc[valid] = pd.qcut(ranks, q=n_quantiles, labels=labels, duplicates="drop").astype(str)
+            out.loc[valid] = pd.qcut(
+                ranks, q=n_quantiles, labels=labels, duplicates="drop"
+            ).astype(str)
         return pd.Categorical(out, categories=labels, ordered=True)
 
     def _assign_one_group(x):
@@ -180,7 +184,9 @@ def assign_rt_quantiles_within_group(df, value_col, group_col=None, n_quantiles=
         valid = x.notna()
         if valid.sum() > 0:
             ranks = x[valid].rank(method="first")
-            out.loc[valid] = pd.qcut(ranks, q=n_quantiles, labels=labels, duplicates="drop").astype(str)
+            out.loc[valid] = pd.qcut(
+                ranks, q=n_quantiles, labels=labels, duplicates="drop"
+            ).astype(str)
         return out
 
     result = df.groupby(group_col)[value_col].transform(_assign_one_group)
@@ -213,10 +219,47 @@ def attach_observed_columns_by_row_order(obs_df, ppc_df, sample_col, cols_to_att
     return ppc_df
 
 
-def summarise_observed_by_bin_subjectwise(df, subject_col, bin_col, response_col, order):
+def bootstrap_mean_ci(values, n_boot=5000, ci=0.95, seed=123):
+    values = np.asarray(values, dtype=float)
+    values = values[~np.isnan(values)]
+
+    if len(values) == 0:
+        return np.nan, np.nan, np.nan
+
+    if len(values) == 1:
+        return values[0], values[0], values[0]
+
+    rng = np.random.default_rng(seed)
+    boot_means = np.empty(n_boot, dtype=float)
+
+    n = len(values)
+    for i in range(n_boot):
+        sample = rng.choice(values, size=n, replace=True)
+        boot_means[i] = np.mean(sample)
+
+    alpha = 1.0 - ci
+    lower = np.quantile(boot_means, alpha / 2.0)
+    upper = np.quantile(boot_means, 1.0 - alpha / 2.0)
+    mean_val = np.mean(values)
+
+    return mean_val, lower, upper
+
+
+def summarise_observed_by_bin_subjectwise_bootstrap(
+    df,
+    subject_col,
+    bin_col,
+    response_col,
+    order,
+    n_boot=5000,
+    ci=0.95,
+    seed=123
+):
     """
     Observed:
-    participant mean within bin -> summary across participants
+    1) compute each participant's mean within each bin
+    2) summarise across participants
+    3) empirical uncertainty = bootstrap CI across participant means
     """
     tmp = df[[subject_col, bin_col, response_col]].copy()
     tmp = tmp.dropna(subset=[subject_col, bin_col, response_col])
@@ -226,16 +269,31 @@ def summarise_observed_by_bin_subjectwise(df, subject_col, bin_col, response_col
         tmp.groupby([subject_col, bin_col], observed=False)[response_col]
         .mean()
         .reset_index()
+        .rename(columns={response_col: "subject_mean"})
     )
     subj_bin[bin_col] = pd.Categorical(subj_bin[bin_col], categories=order, ordered=True)
 
-    summary = (
-        subj_bin.groupby(bin_col, observed=False)[response_col]
-        .agg(mean="mean", sd="std", n_subjects="count")
-        .reindex(order)
-    )
-    summary["sem"] = summary["sd"] / np.sqrt(summary["n_subjects"].replace(0, np.nan))
-    summary = summary.reset_index().rename(columns={bin_col: "bin"})
+    rows = []
+    for i, b in enumerate(order):
+        vals = subj_bin.loc[subj_bin[bin_col] == b, "subject_mean"].dropna().values
+        mean_val, boot_low, boot_high = bootstrap_mean_ci(
+            vals, n_boot=n_boot, ci=ci, seed=seed + i
+        )
+
+        sd_val = np.std(vals, ddof=1) if len(vals) > 1 else np.nan
+        sem_val = sd_val / np.sqrt(len(vals)) if len(vals) > 1 else np.nan
+
+        rows.append({
+            "bin": b,
+            "mean": mean_val,
+            "sd": sd_val,
+            "n_subjects": len(vals),
+            "sem": sem_val,
+            "boot_ci_low": boot_low,
+            "boot_ci_high": boot_high,
+        })
+
+    summary = pd.DataFrame(rows)
     return summary, subj_bin
 
 
@@ -245,7 +303,8 @@ def summarise_simulated_by_bin_sample_subjectwise(df, sample_col, subject_col, b
     within each draw:
       participant mean within bin
       then average across participants
-    Also saves draw-specific participant SD and SEM.
+
+    Saves draw-specific participant SD and SEM too.
     """
     tmp = df[[sample_col, subject_col, bin_col, response_col]].copy()
     tmp = tmp.dropna(subset=[sample_col, subject_col, bin_col, response_col])
@@ -268,7 +327,9 @@ def summarise_simulated_by_bin_sample_subjectwise(df, sample_col, subject_col, b
         )
         .reset_index()
     )
-    draw_bin["draw_subject_sem"] = draw_bin["draw_subject_sd"] / np.sqrt(draw_bin["n_subjects"].replace(0, np.nan))
+    draw_bin["draw_subject_sem"] = draw_bin["draw_subject_sd"] / np.sqrt(
+        draw_bin["n_subjects"].replace(0, np.nan)
+    )
     draw_bin[bin_col] = pd.Categorical(draw_bin[bin_col], categories=order, ordered=True)
 
     return draw_bin, subj_bin
@@ -276,7 +337,7 @@ def summarise_simulated_by_bin_sample_subjectwise(df, sample_col, subject_col, b
 
 def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labels):
     """
-    observed_summary: empirical participant-based mean/SEM
+    observed_summary: empirical participant-based mean + bootstrap CI
     simulated_long: one row per draw per bin with:
       p_choose_S
       draw_subject_sd
@@ -290,8 +351,6 @@ def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labe
             model_mean=("p_choose_S", "mean"),
             model_sd=("p_choose_S", "std"),
             model_n_draws=("p_choose_S", "count"),
-            model_pi50_low=("p_choose_S", lambda s: s.quantile(0.25)),
-            model_pi50_high=("p_choose_S", lambda s: s.quantile(0.75)),
             model_pi95_low=("p_choose_S", lambda s: s.quantile(0.025)),
             model_pi95_high=("p_choose_S", lambda s: s.quantile(0.975)),
             mean_draw_subject_sd=("draw_subject_sd", "mean"),
@@ -306,37 +365,24 @@ def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labe
 
     out = obs.join(sim_stats)
 
-    out["obs_sem_low"] = (out["mean"] - out["sem"]).clip(0, 1)
-    out["obs_sem_high"] = (out["mean"] + out["sem"]).clip(0, 1)
-
     out["obs_mean_in_model_pi95"] = (
         (out["mean"] >= out["model_pi95_low"]) &
         (out["mean"] <= out["model_pi95_high"])
     )
 
-    out["obs_mean_in_model_pi50"] = (
-        (out["mean"] >= out["model_pi50_low"]) &
-        (out["mean"] <= out["model_pi50_high"])
+    out["model_mean_in_obs_boot95"] = (
+        (out["model_mean"] >= out["boot_ci_low"]) &
+        (out["model_mean"] <= out["boot_ci_high"])
+    )
+
+    out["obs_boot95_overlaps_model_pi95"] = (
+        (out["boot_ci_low"] <= out["model_pi95_high"]) &
+        (out["model_pi95_low"] <= out["boot_ci_high"])
     )
 
     out["diff_model_minus_obs"] = out["model_mean"] - out["mean"]
 
-    # approximate inferential comparison using empirical SEM and draw-level mean participant SEM
-    out["combined_sem_emp_vs_modelsubjectsem"] = np.sqrt(
-        out["sem"]**2 + out["mean_draw_subject_sem"]**2
-    )
-    out["z_approx_emp_vs_modelsubjectsem"] = (
-        out["diff_model_minus_obs"] /
-        out["combined_sem_emp_vs_modelsubjectsem"].replace(0, np.nan)
-    )
-
-    def two_sided_norm_p(z):
-        if pd.isna(z):
-            return np.nan
-        return math.erfc(abs(z) / np.sqrt(2.0))
-
-    out["p_approx_2sided_emp_vs_modelsubjectsem"] = out["z_approx_emp_vs_modelsubjectsem"].apply(two_sided_norm_p)
-
+    # PPC two-sided tail probability based on draw distribution
     ppc_pvals = []
     for b in x_labels:
         vals = simulated_long.loc[simulated_long[bin_col] == b, "p_choose_S"].dropna().values
@@ -356,10 +402,10 @@ def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labe
     out = out.reset_index().rename(columns={"index": "bin"})
     return out
 
+
 def plot_choice_bars_and_ppc_lines(
     observed_summary,
     simulated_long,
-    sample_col,
     bin_col,
     x_labels,
     title,
@@ -370,21 +416,26 @@ def plot_choice_bars_and_ppc_lines(
     y_as_percent=True
 ):
     """
-    Hollow black bars + black error bars = empirical mean ± SEM
+    Hollow black bars + black error bars = empirical mean ± 95% bootstrap CI
     Red line = posterior predictive mean
     Light red band = posterior predictive 95% interval
     """
-
     fig, ax = plt.subplots(figsize=(9, 6.5))
     x = np.arange(len(x_labels))
 
     observed_summary = observed_summary.copy().set_index("bin").reindex(x_labels)
 
     scale = 100.0 if y_as_percent else 1.0
-    obs_mean_vals = observed_summary["mean"].values.astype(float) * scale
-    obs_sem_vals = observed_summary["sem"].values.astype(float) * scale
 
-    # Empirical mean as hollow bars
+    obs_mean_vals = observed_summary["mean"].values.astype(float) * scale
+    obs_low_vals = observed_summary["boot_ci_low"].values.astype(float) * scale
+    obs_high_vals = observed_summary["boot_ci_high"].values.astype(float) * scale
+
+    obs_yerr = np.vstack([
+        obs_mean_vals - obs_low_vals,
+        obs_high_vals - obs_mean_vals
+    ])
+
     ax.bar(
         x,
         obs_mean_vals,
@@ -395,11 +446,10 @@ def plot_choice_bars_and_ppc_lines(
         zorder=1
     )
 
-    # Empirical SEM
     ax.errorbar(
         x,
         obs_mean_vals,
-        yerr=obs_sem_vals,
+        yerr=obs_yerr,
         fmt="none",
         ecolor="black",
         elinewidth=2.2,
@@ -411,7 +461,6 @@ def plot_choice_bars_and_ppc_lines(
     legend_handles = []
     legend_labels = []
 
-    # single combined legend handle for empirical mean ± SEM
     empirical_handle = ax.errorbar(
         [], [], yerr=[[1], [1]],
         fmt='s',
@@ -425,7 +474,7 @@ def plot_choice_bars_and_ppc_lines(
         capthick=2.2
     )
     legend_handles.append(empirical_handle)
-    legend_labels.append("Empirical mean ± SEM")
+    legend_labels.append("Empirical mean ± 95% bootstrap CI")
 
     if simulated_long is not None and len(simulated_long) > 0:
         simulated_long = simulated_long.copy()
@@ -449,7 +498,6 @@ def plot_choice_bars_and_ppc_lines(
         model_pi95_low = model_summary["pi95_low"].values.astype(float) * scale
         model_pi95_high = model_summary["pi95_high"].values.astype(float) * scale
 
-        # 95% interval band
         ppc_band = ax.fill_between(
             x,
             model_pi95_low,
@@ -459,7 +507,6 @@ def plot_choice_bars_and_ppc_lines(
             zorder=2
         )
 
-        # PPC mean
         ppc_line, = ax.plot(
             x,
             model_mean_vals,
@@ -486,8 +533,8 @@ def plot_choice_bars_and_ppc_lines(
     else:
         all_vals = np.concatenate([
             obs_mean_vals,
-            obs_mean_vals - obs_sem_vals,
-            obs_mean_vals + obs_sem_vals
+            obs_low_vals,
+            obs_high_vals
         ])
         if simulated_long is not None and len(simulated_long) > 0:
             all_vals = np.concatenate([
@@ -663,7 +710,6 @@ for path in model_paths:
 
 print(f"\nBest model selected: {best_model_name} with DIC = {best_dic}")
 
-
 # =========================================================
 # LOAD OBSERVED + PPC DATA
 # =========================================================
@@ -755,12 +801,15 @@ ppc_df = attach_observed_columns_by_row_order(
     cols_to_attach=["dwell_quintile"]
 )
 
-obs_dwell_summary, obs_dwell_subjectwise = summarise_observed_by_bin_subjectwise(
+obs_dwell_summary, obs_dwell_subjectwise = summarise_observed_by_bin_subjectwise_bootstrap(
     df=obs_df,
     subject_col=SUBJECT_COL,
     bin_col="dwell_quintile",
     response_col="response",
-    order=dwell_labels
+    order=dwell_labels,
+    n_boot=BOOTSTRAP_SAMPLES,
+    ci=BOOTSTRAP_CI,
+    seed=RANDOM_SEED
 )
 
 sim_dwell, sim_dwell_subjectwise = summarise_simulated_by_bin_sample_subjectwise(
@@ -779,11 +828,9 @@ dwell_comparison = build_ppc_comparison_table(
     x_labels=dwell_labels
 )
 
-
 plot_choice_bars_and_ppc_lines(
     observed_summary=obs_dwell_summary,
     simulated_long=sim_dwell,
-    sample_col=sample_col,
     bin_col="dwell_quintile",
     x_labels=dwell_labels,
     title=f"P(choose S) by dwell quintile\n{best_model_name}",
@@ -817,12 +864,15 @@ ppc_df["rt_quintile"] = assign_rt_quantiles_within_group(
     n_quantiles=N_QUANTILES
 )
 
-obs_rt_summary, obs_rt_subjectwise = summarise_observed_by_bin_subjectwise(
+obs_rt_summary, obs_rt_subjectwise = summarise_observed_by_bin_subjectwise_bootstrap(
     df=obs_df,
     subject_col=SUBJECT_COL,
     bin_col="rt_quintile",
     response_col="response",
-    order=rt_labels
+    order=rt_labels,
+    n_boot=BOOTSTRAP_SAMPLES,
+    ci=BOOTSTRAP_CI,
+    seed=RANDOM_SEED
 )
 
 sim_rt, sim_rt_subjectwise = summarise_simulated_by_bin_sample_subjectwise(
@@ -844,7 +894,6 @@ rt_comparison = build_ppc_comparison_table(
 plot_choice_bars_and_ppc_lines(
     observed_summary=obs_rt_summary,
     simulated_long=sim_rt,
-    sample_col=sample_col,
     bin_col="rt_quintile",
     x_labels=rt_labels,
     title=f"P(choose S) by RT quintile\n{best_model_name}",
@@ -854,8 +903,6 @@ plot_choice_bars_and_ppc_lines(
     y_limits=(0, 100),
     y_as_percent=True
 )
-
-
 
 # =========================================================
 # 4) SAVE UNDERLYING SUMMARIES AS CSV
@@ -919,152 +966,3 @@ print("\nAll requested PPC plots and summaries were saved successfully.")
 
 del best_model, obs_df, ppc_df
 gc.collect()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# # libraries
-# import os
-# import gc
-# import hddm
-# import matplotlib.pyplot as plt
-# import numpy as np
-# import pandas as pd
-# import arviz as az
-
-# model_paths = [
-#     "/home/jovyan/OfficialTutorials/For_Linux/models_dir_OV/OV_replication_EE_5_4.hddm",
-#     "/home/jovyan/OfficialTutorials/For_Linux/models_dir_OV/OV_replication_EE_5_3.hddm",
-#     "/home/jovyan/OfficialTutorials/For_Linux/models_dir_OV/OV_replication_EE_5_2.hddm",
-#     "/home/jovyan/OfficialTutorials/For_Linux/models_dir_OV/OV_replication_EE_5_1.hddm",
-#     "/home/jovyan/OfficialTutorials/For_Linux/models_dir_OV/OV_replication_EE_5_0.hddm"
-# ]
-
-# # initialize variables for selecting the best model (lowest DIC) 
-# best_model = None
-# best_model_path = None
-# best_dic = float('inf')
-# best_model_name = None
-
-# for path in model_paths:
-#     print(f"Loading model from: {path}")
-#     m = hddm.load(path)
-#     current_dic = m.dic
-#     print(f"Model DIC: {current_dic}")
-    
-#     if current_dic < best_dic:
-#         best_dic = current_dic
-#         best_model = m
-#         best_model_path = path  
-#         best_model_name = os.path.basename(path).replace(".hddm", "")
-#     else:
-#         del m
-#         gc.collect()
-
-# print("Best model selected:", best_model_name, "with DIC =", best_dic)
-
-
-# # Posterior Predictive Data
-# print("Generating posterior predictive data with (nr of samples) samples per node...")
-# ppc_data = hddm.utils.post_pred_gen(best_model, samples=2000, append_data=True)     #samples=500
-# print("Posterior predictive data (first few rows):")
-# print(ppc_data.head())
-# output_dir = "/home/jovyan/OfficialTutorials/For_Linux/figures_dir_OV/OV_replication_EE_5/diagnostics"
-# os.makedirs(output_dir, exist_ok=True)
-
-# # RT Distribution
-# bins = np.histogram_bin_edges(best_model.data['rt'], bins=50)
-# fig, ax = plt.subplots(figsize=(8,6))
-# ax.hist(best_model.data['rt'], bins=bins, alpha=0.8, color='blue', label='Real RTs',
-#         density=True, edgecolor='black', linewidth=0.5)
-# ax.hist(ppc_data['rt_sampled'], bins=bins, alpha=0.8, color='red', label='Simulated RTs',
-#         density=True, edgecolor='black', linewidth=0.5)
-# ax.set_xlim(-10, 10)
-# ax.set_xlabel("Reaction Time (RT)", fontsize=13)
-# ax.set_ylabel("Frequency", fontsize=13)
-# ax.set_title(f"Posterior Predictive Check - {best_model_name} - RT Distribution", fontsize=15)
-# ax.tick_params(axis='both', which='major', labelsize=11)
-# ax.legend(fontsize=11, facecolor='white', framealpha=1, edgecolor='black')
-# ax.set_facecolor("white")
-# ax.spines['top'].set_visible(False)
-# ax.spines['right'].set_visible(False)
-# ax.spines['bottom'].set_color('black')
-# ax.spines['left'].set_color('black')
-# rt_plot_path = os.path.join(output_dir, f"RT_Distribution_{best_model_name}.png")
-# plt.savefig(rt_plot_path, dpi=300, bbox_inches='tight')
-# plt.close(fig) 
-
-# # Response Distribution
-# real_response_counts = best_model.data['response'].value_counts(normalize=True).sort_index()
-# simulated_response_counts = ppc_data['response_sampled'].value_counts(normalize=True).sort_index()
-
-# fig, ax = plt.subplots(figsize=(8,6))
-# ax.bar(real_response_counts.index - 0.2, real_response_counts.values, width=0.4, color='blue', label='Real Responses')
-# ax.bar(simulated_response_counts.index + 0.2, simulated_response_counts.values, width=0.4, color='red', label='Simulated Responses')
-# ax.legend(fontsize=11, facecolor='white', framealpha=1, edgecolor='black')
-# ax.tick_params(axis='both', which='major', labelsize=11)
-# ax.set_facecolor("white")
-# ax.spines['top'].set_visible(False)
-# ax.spines['right'].set_visible(False)
-# ax.spines['bottom'].set_color('black')
-# ax.spines['left'].set_color('black')
-# ax.set_xticks([0, 1])
-# ax.set_xticklabels(["Response 0", "Response 1"], fontsize=13)
-# ax.set_ylabel("Proportion", fontsize=13)
-# ax.set_title(f"Posterior Predictive Check - {best_model_name} - Response Proportions", fontsize=14)
-# response_plot_path = os.path.join(output_dir, f"Response_Proportions_{best_model_name}.png")
-# plt.savefig(response_plot_path, dpi=300, bbox_inches='tight')
-# plt.close(fig)
-
-# # Generate and Save Summary Statistics
-# print("Generating summary statistics with 800 samples per node...")
-# ppc_data_2 = hddm.utils.post_pred_gen(best_model, samples=2000)        # , samples=500
-# ppc_stats = hddm.utils.post_pred_stats(best_model.data, ppc_data_2)
-
-# print("Posterior predictive summary statistics:")
-# print(ppc_stats)
-
-# summary_stats_path = os.path.join(output_dir, f"posterior_predictive_summary_{best_model_name}.csv")
-# ppc_stats.to_csv(summary_stats_path)
-# print(f"Summary statistics saved to {summary_stats_path}")
-
-# del best_model, ppc_data, ppc_data_2
-# gc.collect()
-
-
-
