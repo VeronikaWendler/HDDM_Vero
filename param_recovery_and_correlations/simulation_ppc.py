@@ -29,18 +29,18 @@ warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
 # =========================================================
 
 model_paths = [
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_3_2.hddm",
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_3_1.hddm",
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_3_0.hddm"
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_2.hddm",
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_1.hddm",
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_0_0.hddm"
 ]
 
-output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_Final_3/ppc"
+output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_Final_0/ppc"
 os.makedirs(output_dir, exist_ok=True)
 
 DWELL_COL = "DwellTimeAdvantage"
 SUBJECT_COL = "subj_idx"
 
-PPC_SAMPLES = 5000
+PPC_SAMPLES = 2000
 N_QUANTILES = 5
 
 # bootstrap settings for empirical CI
