@@ -9,6 +9,7 @@ import os
 import gc
 import warnings
 
+#
 # ---------------------------------------------------------
 # Matplotlib cache fix for cluster environments
 # ---------------------------------------------------------
@@ -24,9 +25,9 @@ from pandas.errors import SettingWithCopyWarning
 
 warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
 
-# =========================================================
+# ==========================================================
 # USER SETTINGS
-# =========================================================
+# ==========================================================
 
 model_paths = [
     "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_3_2.hddm",

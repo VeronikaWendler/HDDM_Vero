@@ -1,4 +1,4 @@
-subj_idx,rt_quintile,response
+subj_idx,rt_quintile,subject_mean
 2,1,0.45161290322580644
 2,2,0.38961038961038963
 2,3,0.5068493150684932
