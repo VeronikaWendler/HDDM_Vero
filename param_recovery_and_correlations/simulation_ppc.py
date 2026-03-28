@@ -929,8 +929,6 @@ print("\nAll requested PPC plots and summaries were saved successfully.")
 del best_model, obs_df, ppc_df
 gc.collect()
 
-
-
 # # libraries
 # import os
 # import gc
