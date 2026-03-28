@@ -42,9 +42,9 @@ DWELL_COL = "DwellTimeAdvantage"
 SUBJECT_COL = "subj_idx"
 
 PPC_SAMPLES = 2000
-N_DISPLAY_REPLICATIONS = 8
+#N_DISPLAY_REPLICATIONS = 8
 N_QUANTILES = 5
-RANDOM_SEED = 123
+#RANDOM_SEED = 123
 
 # =========================================================
 # HELPER FUNCTIONS
@@ -356,7 +356,6 @@ def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labe
     out = out.reset_index().rename(columns={"index": "bin"})
     return out
 
-
 def plot_choice_bars_and_ppc_lines(
     observed_summary,
     simulated_long,
@@ -367,19 +366,15 @@ def plot_choice_bars_and_ppc_lines(
     xlabel,
     ylabel,
     save_path,
-    n_display_replications=8,
     y_limits=None,
     y_as_percent=True
 ):
     """
-    Hollow black bars = empirical mean
-    Black error bars = empirical mean ± SEM
-    Blue lines = selected PPC sample means
-    Red line = PPC mean
-    Dark red band = 50% predictive interval
-    Light red band = 95% predictive interval
+    Hollow black bars + black error bars = empirical mean ± SEM
+    Red line = posterior predictive mean
+    Light red band = posterior predictive 95% interval
     """
-    rng = np.random.default_rng(RANDOM_SEED)
+
     fig, ax = plt.subplots(figsize=(9, 6.5))
     x = np.arange(len(x_labels))
 
@@ -389,6 +384,7 @@ def plot_choice_bars_and_ppc_lines(
     obs_mean_vals = observed_summary["mean"].values.astype(float) * scale
     obs_sem_vals = observed_summary["sem"].values.astype(float) * scale
 
+    # Empirical mean as hollow bars
     ax.bar(
         x,
         obs_mean_vals,
@@ -396,10 +392,10 @@ def plot_choice_bars_and_ppc_lines(
         facecolor="none",
         edgecolor="black",
         linewidth=2.2,
-        label="Empirical mean",
         zorder=1
     )
 
+    # Empirical SEM
     ax.errorbar(
         x,
         obs_mean_vals,
@@ -409,9 +405,27 @@ def plot_choice_bars_and_ppc_lines(
         elinewidth=2.2,
         capsize=6,
         capthick=2.2,
-        zorder=5,
-        label="Empirical mean ± SEM"
+        zorder=5
     )
+
+    legend_handles = []
+    legend_labels = []
+
+    # single combined legend handle for empirical mean ± SEM
+    empirical_handle = ax.errorbar(
+        [], [], yerr=[[1], [1]],
+        fmt='s',
+        mfc='white',
+        mec='black',
+        mew=2.0,
+        ms=10,
+        ecolor='black',
+        elinewidth=2.2,
+        capsize=6,
+        capthick=2.2
+    )
+    legend_handles.append(empirical_handle)
+    legend_labels.append("Empirical mean ± SEM")
 
     if simulated_long is not None and len(simulated_long) > 0:
         simulated_long = simulated_long.copy()
@@ -425,8 +439,6 @@ def plot_choice_bars_and_ppc_lines(
             simulated_long.groupby(bin_col, observed=False)["p_choose_S"]
             .agg(
                 mean="mean",
-                pi50_low=lambda s: s.quantile(0.25),
-                pi50_high=lambda s: s.quantile(0.75),
                 pi95_low=lambda s: s.quantile(0.025),
                 pi95_high=lambda s: s.quantile(0.975),
             )
@@ -434,71 +446,33 @@ def plot_choice_bars_and_ppc_lines(
         )
 
         model_mean_vals = model_summary["mean"].values.astype(float) * scale
-        model_pi50_low = model_summary["pi50_low"].values.astype(float) * scale
-        model_pi50_high = model_summary["pi50_high"].values.astype(float) * scale
         model_pi95_low = model_summary["pi95_low"].values.astype(float) * scale
         model_pi95_high = model_summary["pi95_high"].values.astype(float) * scale
 
-        unique_samples = simulated_long[sample_col].dropna().unique()
-        n_to_draw = min(n_display_replications, len(unique_samples))
-
-        if n_to_draw > 0:
-            chosen_samples = rng.choice(unique_samples, size=n_to_draw, replace=False)
-            first_line = True
-            for s in chosen_samples:
-                tmp = (
-                    simulated_long.loc[simulated_long[sample_col] == s]
-                    .sort_values(bin_col)
-                    .set_index(bin_col)
-                    .reindex(x_labels)
-                )
-
-                yvals = tmp["p_choose_S"].values.astype(float) * scale
-
-                ax.plot(
-                    x,
-                    yvals,
-                    marker="o",
-                    markersize=4,
-                    linewidth=1.3,
-                    alpha=0.30,
-                    color="tab:blue",
-                    zorder=3,
-                    label="Posterior predictive samples" if first_line else None
-                )
-                first_line = False
-
-        # 95% interval
-        ax.fill_between(
+        # 95% interval band
+        ppc_band = ax.fill_between(
             x,
             model_pi95_low,
             model_pi95_high,
             color="tab:red",
-            alpha=0.15,
-            zorder=2,
-            label="Posterior predictive 95% interval"
+            alpha=0.18,
+            zorder=2
         )
 
-        # 50% interval
-        ax.fill_between(
-            x,
-            model_pi50_low,
-            model_pi50_high,
-            color="tab:red",
-            alpha=0.30,
-            zorder=4,
-            label="Posterior predictive 50% interval"
-        )
-
-        ax.plot(
+        # PPC mean
+        ppc_line, = ax.plot(
             x,
             model_mean_vals,
             linestyle="-",
             linewidth=3.0,
             color="tab:red",
-            zorder=6,
-            label="Posterior predictive mean"
+            zorder=6
         )
+
+        legend_handles.append(ppc_line)
+        legend_labels.append("Posterior predictive mean")
+        legend_handles.append(ppc_band)
+        legend_labels.append("Posterior predictive 95% interval")
 
     ax.set_xticks(x)
     ax.set_xticklabels(x_labels, fontsize=12)
@@ -515,6 +489,13 @@ def plot_choice_bars_and_ppc_lines(
             obs_mean_vals - obs_sem_vals,
             obs_mean_vals + obs_sem_vals
         ])
+        if simulated_long is not None and len(simulated_long) > 0:
+            all_vals = np.concatenate([
+                all_vals,
+                model_mean_vals,
+                model_pi95_low,
+                model_pi95_high
+            ])
         ymin = max(0, np.nanmin(all_vals) - 5)
         ymax = min(100 if y_as_percent else 1, np.nanmax(all_vals) + 5)
         ax.set_ylim(ymin, ymax)
@@ -523,7 +504,16 @@ def plot_choice_bars_and_ppc_lines(
         ax.set_yticks(np.arange(0, 101, 10))
 
     style_ax(ax)
-    ax.legend(fontsize=10, facecolor="white", framealpha=1, edgecolor="black", loc="best")
+    ax.legend(
+        legend_handles,
+        legend_labels,
+        fontsize=10,
+        facecolor="white",
+        framealpha=1,
+        edgecolor="black",
+        loc="best"
+    )
+
     save_close(fig, save_path)
 
 
@@ -789,6 +779,7 @@ dwell_comparison = build_ppc_comparison_table(
     x_labels=dwell_labels
 )
 
+
 plot_choice_bars_and_ppc_lines(
     observed_summary=obs_dwell_summary,
     simulated_long=sim_dwell,
@@ -799,7 +790,6 @@ plot_choice_bars_and_ppc_lines(
     xlabel="Dwell-time advantage quintile",
     ylabel="P(choose S) in %",
     save_path=os.path.join(output_dir, f"P_ChooseS_by_DwellQuintile_{best_model_name}.png"),
-    n_display_replications=N_DISPLAY_REPLICATIONS,
     y_limits=(30, 70),
     y_as_percent=True
 )
@@ -861,10 +851,11 @@ plot_choice_bars_and_ppc_lines(
     xlabel="RT quintile",
     ylabel="P(choose S) in %",
     save_path=os.path.join(output_dir, f"P_ChooseS_by_RTQuintile_{best_model_name}.png"),
-    n_display_replications=N_DISPLAY_REPLICATIONS,
     y_limits=(0, 100),
     y_as_percent=True
 )
+
+
 
 # =========================================================
 # 4) SAVE UNDERLYING SUMMARIES AS CSV
@@ -928,6 +919,44 @@ print("\nAll requested PPC plots and summaries were saved successfully.")
 
 del best_model, obs_df, ppc_df
 gc.collect()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # # libraries
 # import os
