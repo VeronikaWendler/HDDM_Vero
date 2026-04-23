@@ -109,7 +109,7 @@ def make_z_link(full_stimulus_vector):
 
 # hard-coded 
 nr_models       = 3         # number of MCMC chains
-nr_samples      = 3000       # samples per chain - do 11000 but for now for a quick one we do 600
+nr_samples      = 6000       # samples per chain - do 11000 but for now for a quick one we do 600
 parallel        = True      # parallel
 model_base_name = "OV_replication_"
 model_versions  = {
@@ -117,20 +117,24 @@ model_versions  = {
     "EE":     ["EE_0", "EE_1","EE_2","EE_3","EE_4","EE_5"],
     "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", "For_paper_15", "For_paper_16"],
     "LE_RL": ["LE_RL_1", "LE_RL_2"],
+    "Final":    ["Final_0", "Final_1"]
+
 }
 
 PHASE_TO_SOURCE = {
     "LE_RL": "LE",
     "For_paper": "ES",
+    "Final": "ES",
+
 }
 
-PHASE_RUN_ORDER = ["For_paper"]                                         # order
-SKIP_PHASES     = {"LE","EE", "LE_RL"}                 # ignored this phase
+PHASE_RUN_ORDER = ["Final"]                                         # order
+SKIP_PHASES     = {"LE","EE", "LE_RL", "For_paper"}                 # ignored this phase
 RUN_ALL_MODELS  = True                                           # False = just load existing fits
 
 # selectivity
-start_phase = "For_paper"
-start_version = 11
+start_phase = "Final"
+start_version = 0
 started = False
 
 # dir
@@ -372,6 +376,43 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=200
                    return_infdata=True, loglike=True, ppc=True)
 
         return m, infdata
+    
+    elif phase == "Final":
+        depends_on = {}
+        if version == 0:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 1:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+
+        # without z
+        # elif version == 2:
+        #     v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+        #     reg_descr = [v_reg]
+        # elif version == 3:
+        #     v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+        #     reg_descr = [v_reg]
+
+        else:
+            raise ValueError(f"Invalid version {version}")
+       
+        m = hddm.models.HDDMRegressor(data, 
+                                    reg_descr,
+                                    p_outlier=.05, 
+                                    include=['a', 't', 'v', 'z'],   #'z'
+                                    depends_on=depends_on,
+                                    group_only_regressors=False,
+                                    keep_regressor_trace=True
+                                    )
+        m.find_starting_values()
+        infdata = m.sample(samples,
+                   burn=1000,
+                   dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
+                   db='pickle',
+                   return_infdata=True, loglike=True, ppc=True)
+        return m, infdata
+        
         
     elif phase == 'LE_RL':
         if version == 0:
@@ -384,9 +425,8 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=200
                                return_infdata=True, loglike=True, ppc=False)
 
             return m, infdata
-        else:
-            raise ValueError(f"Invalid version {version}")
         
+
         
 ###############################################################################################################    
 #----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -597,7 +637,7 @@ if __name__ == "__main__":
 
             data                = data[data["rt"] > 0.250]
             # data["response"]    = pd.to_numeric(data["corr"], errors="coerce")
-            if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL", "For_paper"):
+            if phase in ("ES_ZBIAS", "ES_quad", "ES_VAL", "For_paper", "Final"):
                 data["response"] = pd.to_numeric(data["chose_right"], errors="coerce")
                 print("head of response mapping:")
                 print(data[["chose_right","corr","response"]].head(10).to_string(index=False))
@@ -664,15 +704,16 @@ if __name__ == "__main__":
                 phase=phase,
                 accuracy_coding=True
             )
-            #only when running RL in the LE phase
-            drift_diffusion_hddmRL(
-                data=data,
-                samples=nr_samples,
-                n_jobs=nr_models,
-                run=RUN_ALL_MODELS,
-                parallel=parallel,
-                model_name=full_model_name,
-                model_dir=BASE_MODEL_DIR,        
-                version=version,
-                phase=phase,
-            )s
+            
+            # #only when running RL in the LE phase
+            # drift_diffusion_hddmRL(
+            #     data=data,
+            #     samples=nr_samples,
+            #     n_jobs=nr_models,
+            #     run=RUN_ALL_MODELS,
+            #     parallel=parallel,
+            #     model_name=full_model_name,
+            #     model_dir=BASE_MODEL_DIR,        
+            #     version=version,
+            #     phase=phase,
+            # )
