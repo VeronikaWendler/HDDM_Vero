@@ -1,4 +1,9 @@
-# import libraries  
+# Veronika Wendler
+# 22.01.25
+# code for the attentional drift diffusion model
+# originally, I used this in summer 2024 in Quebec and was inspired by Jan WIllem De Gee's framework somewhere on his GitHub; but this version is pretty much my creation
+
+# import libraries  #
 import pandas as pd
 import numpy as np
 import hddm
@@ -26,23 +31,23 @@ import arviz as az
 from joblib import Parallel, delayed
 import cloudpickle, dill
 import dill as pickle  # to create the pkl object
-from joblib import Parallel, delayed
+import pymc as pm
+from kabuki.hierarchical import Knode
+
 cloudpickle.dump = dill.dump
 
-
-# -------------------------------------------------------------------------
+# for running on the cluster
+#dummy _gdbm module so “import _gdbm” never fails
 import types, sys
 sys.modules.setdefault('winreg', types.ModuleType('winreg'))
-
 sys.modules.setdefault('_gdbm', types.ModuleType('_gdbm'))
 # -------------------------------------------------------------------------
 
-
 import dill as pickle
-from copy import deepcopy   # can be used for modfiying z to be 0.55 (like in Sebastian's Matlab)
+from copy import deepcopy   # for modfiying z to be 0.55 (like in Sebastian's Matlab)
 import argparse
 
-# warning settings
+# warning settings#
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 # Plotting
@@ -54,9 +59,9 @@ from hddm.simulators.hddm_dataset_generators import simulator_h_c
 from pathlib import Path
 
 # Import my own libraries - I don't really use it anymore 
-#current_directory = os.getcwd()    # we don't use this on the cluster; used it when running locally
+#current_directory = os.getcwd()    # we don't use this on the cluster
 
-PROJECT_DIR = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace"))
+PROJECT_DIR = Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
 
 def ensure_dir(path):
     Path(path).mkdir(parents=True, exist_ok=True)
@@ -65,9 +70,10 @@ def ensure_dir(path):
 #import compact_models
 
 # for Z bias coding
-from scipy.special import expit   # for inverse‑logit treans
+from scipy.special import expit   # for inverse‑logit 
 
-# from hddm toolbox (don't use)
+
+# This was an attempt to code a z-link function
 def make_z_link(full_stimulus_vector):
     stim = np.asarray(full_stimulus_vector, dtype=int)
 
@@ -79,16 +85,81 @@ def make_z_link(full_stimulus_vector):
             stim_aligned = stim[:len(x)]
 
         z = np.where(stim_aligned == 0,
-                     1.0 - expit(x),   # flip for stimulus==0
-                     expit(x))         # usual inverse‑logit
+                     1.0 - expit(x),  
+                     expit(x)) 
 
-        # preserve the incoming container type
-        if hasattr(x, "index"):            # it's a pandas Series
+        if hasattr(x, "index"):            
             return pd.Series(z, index=x.index, name="z")
-        return z                           # plain NumPy array
+        return z                       
 
     return _link
 
+
+# for modification of z 
+class HDDMRegressorZAmplified(hddm.models.HDDMRegressor):
+    def __init__(self, *args, z_gain=2.0, z_eps=1e-6, **kwargs):
+        self.z_gain = float(z_gain)
+        self.z_eps = float(z_eps)
+        super(HDDMRegressorZAmplified, self).__init__(*args, **kwargs)
+
+    def _amplify_z(self, z):
+        z_eff = 0.5 + self.z_gain * (z - 0.5)
+        return np.clip(z_eff, self.z_eps, 1.0 - self.z_eps)
+
+    def _create_stochastic_knodes(self, include):
+        knodes = super(HDDMRegressorZAmplified, self)._create_stochastic_knodes(include)
+
+        if "z_bottom" in knodes:
+            knodes["z_eff_bottom"] = Knode(
+                pm.Deterministic,
+                "z_eff",
+                doc="Amplified starting-point bias used by wfpt",
+                eval=lambda x: np.clip(
+                    0.5 + self.z_gain * (x - 0.5),
+                    self.z_eps,
+                    1.0 - self.z_eps
+                ),
+                x=knodes["z_bottom"],
+                plot=False,
+                trace=False,   # set True temporarily if you want to debug it
+                hidden=True,
+            )
+
+        return knodes
+
+    def _create_wfpt_parents_dict(self, knodes):
+        wfpt_parents = super(HDDMRegressorZAmplified, self)._create_wfpt_parents_dict(knodes)
+
+        if "z_eff_bottom" in knodes:
+            wfpt_parents["z"] = knodes["z_eff_bottom"]
+
+        return wfpt_parents
+    
+
+def print_model_debug_header(phase, version, trace_id, model_name, depends_on, reg_descr, model_cls, extra_kwargs):
+    print("\n" + "="*80)
+    print(f"run_model()")
+    print(f"phase      : {phase}")
+    print(f"version    : {version}")
+    print(f"trace_id   : {trace_id}")
+    print(f"model_name : {model_name}")
+    print(f"model_cls  : {model_cls.__name__}")
+    print(f"depends_on : {depends_on}")
+    print(f"reg_descr  : {reg_descr}")
+    if extra_kwargs:
+        print(f"extra kwargs: {extra_kwargs}")
+    print("="*80)
+
+
+def zscore_column(df, col):
+    x = pd.to_numeric(df[col], errors="coerce")
+    mu = x.mean()
+    sd = x.std(ddof=1)
+    if pd.isna(sd) or np.isclose(sd, 0):
+        raise ValueError(f"Cannot z-score column '{col}' because SD is 0 or NaN.")
+    df[col + "_z"] = (x - mu) / sd
+    print(f"[z-score] {col:20s} mean={mu:.6f}, sd={sd:.6f} -> created {col + '_z'}")
+    return df
 
 #------------------------------------------------------------------------------------------------------------------
 
@@ -138,32 +209,43 @@ start_version = 0
 started = False
 
 # dir
-PROJECT_DIR   = pathlib.Path(os.getenv("PROJECT_DIR", "/workspace")).resolve()
+DATA_FILE   = Path(os.getenv(
+    "DATA_FILE",
+    (PROJECT_DIR / "data_sets" / "data_sets_OV" / "OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix()
+)).resolve()
 
-BASE_MODEL_DIR = PROJECT_DIR / "models_dir_OV"
-FIG_DIR_ROOT   = PROJECT_DIR / "figures_dir_OV"
+BASE_MODEL_DIR = Path(os.getenv("MODEL_DIR", (PROJECT_DIR / "models_dir_OV").as_posix())).resolve()
+FIG_DIR_ROOT   = Path(os.getenv("FIG_DIR",   (PROJECT_DIR / "figures_dir_OV").as_posix())).resolve()
+LOG_DIR        = Path(os.getenv("LOG_DIR",   (PROJECT_DIR / "logs").as_posix())).resolve()
 
 # ------------------------------------------------------------------
 
+def ensure_dir(path):
+    Path(path).mkdir(parents=True, exist_ok=True)
+
+ensure_dir(BASE_MODEL_DIR)
+ensure_dir(FIG_DIR_ROOT)
+ensure_dir(LOG_DIR)
+
 # reporting function
+# can be seen in the cluster output
 def quick_report(data, phase, version, model_name, phase_key):
-    """Lightweight console & plotting diagnostics per (phase,version)."""
     print(f"\n Phase = {phase}   Version = {version}")
     print(f"Model name          : {model_name}")
     print(f"Selected phase_key  : {phase_key}")
     print(f"N trials            : {len(data):,}")
     print(f"Participants        : {sorted(data['subj_idx'].unique())}")
     print("OVcate counts:\n", data['OVcate'].value_counts(dropna=False))
+
     fig, ax = plt.subplots(figsize=(6,4))
     for _, d in data.groupby('subj_idx'):
         d['rt'].hist(bins=20, histtype='step', ax=ax, alpha=.4)
     ax.set(
-        title=f"RT distribution - {phase} v{version}",
+        title=f"RT distribution – {phase} v{version}",
         xlabel="RT (s)",
         ylabel="count"
     )
     plt.show()
-
 
 # ensure directory
 #def ensure_dir(directory):
@@ -171,8 +253,8 @@ def quick_report(data, phase, version, model_name, phase_key):
 #        os.makedirs(directory)
 
 
+# function to clean bits of the data that have not been cleaned yet, for instance remaining NAN's and so on
 def sanitize_infdata(infdata):
-    """Convert pd.NA values to np.nan in all groups of the InferenceData object (important if you have columns which we don't use, at least now, for example, particular RL cols)."""
     for group in infdata._groups_all:
         if hasattr(infdata, group):
             dataset = getattr(infdata, group)
@@ -193,7 +275,7 @@ def sanitize_infdata(infdata):
 #------------------------------------------------------------------------------------------------------------------
 # function that runs/defines the different versions/models of DDM regressions for the selected phase or phases
 
-def run_model(trace_id, data, model_dir, model_name, version, phase, samples=2000, accuracy_coding=True): 
+def run_model(trace_id, data, model_dir, model_name, version, phase, samples=6000, accuracy_coding=True): 
     import os
     import numpy as np
     import hddm
@@ -454,8 +536,8 @@ def run_and_save(trace_id, data, model_dir, model_name, version, phase, samples)
 
 
 def drift_diffusion_hddm(data, 
-                         samples=3000,
-                         n_jobs=3,
+                         samples=6000,
+                         n_jobs=5,
                          run=True,
                          parallel=True,
                          model_name='model',
@@ -489,7 +571,7 @@ def drift_diffusion_hddm(data,
                 
                 with open(os.path.join(model_dir, f"{model_name}_{i}.pkl"), "wb") as f:
                     pickle.dump(model, f)
-                infdata = sanitize_infdata(infdata) 
+                infdata = sanitize_infdata(infdata)  # clean before saving
                 az.to_netcdf(infdata, os.path.join(model_dir, f"{model_name}_{i}.nc"))
 
 
@@ -587,31 +669,30 @@ def drift_diffusion_hddmRL(
 #ensure_dir(model_dir)
 
 model_dir = BASE_MODEL_DIR
-
+#runs every (phase, version) pairing
 if __name__ == "__main__":
 
-    data_full = pd.read_csv((PROJECT_DIR / "data_sets" / "data_sets_OV" / "OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv").as_posix(), sep=",")
-    
+    print(f"Reading data from: {DATA_FILE}")
+    data_full = pd.read_csv(DATA_FILE.as_posix(), sep=",")
     # loop over phases and versions
     for phase in PHASE_RUN_ORDER:
         if phase in SKIP_PHASES:
             continue                    
         
         phase_key = phase
+
         for version, model_name in enumerate(model_versions[phase]):
-            
-            # Start Version
             if not started:
                 if phase == start_phase and version >= start_version:
                     started = True
                 elif PHASE_RUN_ORDER.index(phase) > PHASE_RUN_ORDER.index(start_phase):
                     started = True
                 else:
-                    continue #skip
-
+                    continue 
             
             full_model_name = model_base_name + model_name
             print(f"\n PHASE {phase} : {model_name}  ===")
+
 
             # filter data for this phase
             source_phase = PHASE_TO_SOURCE.get(phase, phase)  
@@ -704,7 +785,7 @@ if __name__ == "__main__":
                 phase=phase,
                 accuracy_coding=True
             )
-            
+
             # #only when running RL in the LE phase
             # drift_diffusion_hddmRL(
             #     data=data,
