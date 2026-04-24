@@ -2,6 +2,15 @@
 # Can be used for both experiments, the 'garcia' quasi-replication (Exp1)
 # and the 'OV' experiment, in which overall value levels were manipulated.
 
+# Posterior predictive checks for the aDDM
+# Can be used for both experiments, the 'garcia' quasi-replication (exp1)
+# and the 'ov' experiment, in which overall value levels were manipulated.
+#
+# Important:
+# This version combines posterior predictive draws across all listed .hddm files.
+# Only do this if the files are chains/runs of the same model fitted to the same data.
+# Do not combine files if they are different model variants.
+
 import os
 import gc
 import warnings
@@ -19,43 +28,82 @@ from pandas.errors import SettingWithCopyWarning
 warnings.filterwarnings("ignore", category=SettingWithCopyWarning)
 
 # ==========================================================
-# Paths
+# paths
 # ==========================================================
 
-# here, you can just adjsut this to your path (whichever you uesd to fit the models and which contains the .hddm files)
-# the requirement is that you have run the models and can use the .hddm files for ppc
-# I tested 0.aDDM + z, 1. ESaDDM + z, 2. aDDM without z, 3.ESaDDM witout z 
 model_paths = [
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_3_2.hddm",
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_3_1.hddm",
-    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_3_0.hddm"
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_1_2.hddm",
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_1_1.hddm",
+    "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/models/garcia_replication_Final_1_0.hddm"
 ]
 
-output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_Final_3/ppc"
+output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_Final_1/ppc"
 os.makedirs(output_dir, exist_ok=True)
 
-Dwell_col = "DwellTimeAdvantage"
+analysis_name = "combined_chains"
+
+dwell_col = "DwellTimeAdvantage"
 sub_col = "subj_idx"
 
-ppc_sampel = 2000
+ppc_sample = 2000
 quintiles = 5
 
-# bootstrap settings for empirical CI
 bootstrap_samp = 5000
-bootstrap_CI = 0.95
+bootstrap_ci = 0.95
 rand_seed = 123
 
-# =========================================================
-# Helpers
-# =========================================================
+# optional:
+# if true, this also saves parameter summaries and built-in HDDM plots separately
+# for every chain/model file. The combined custom PPC plots are always produced.
+run_single_chain_extras = False
+
+# ==========================================================
+# plot style
+# ==========================================================
+
+font_tick = 20
+font_label = 24
+font_title = 26
+font_legend = 18
+
+plt.rcParams.update({
+    "font.size": font_tick,
+    "axes.labelsize": font_label,
+    "axes.titlesize": font_title,
+    "xtick.labelsize": font_tick,
+    "ytick.labelsize": font_tick,
+    "legend.fontsize": font_legend,
+    "figure.titlesize": font_title,
+})
+
+# colors
+observed_color = "black"
+simulated_color = "red"
+bar_face_color = "white"
+
+# ==========================================================
+# helpers
+# ==========================================================
 
 def style_ax(ax):
     ax.set_facecolor("white")
+
     ax.spines["top"].set_visible(False)
     ax.spines["right"].set_visible(False)
     ax.spines["bottom"].set_color("black")
     ax.spines["left"].set_color("black")
-    ax.tick_params(axis="both", which="major", labelsize=11)
+
+    ax.tick_params(
+        axis="both",
+        which="major",
+        labelsize=font_tick,
+        width=1.8,
+        length=7
+    )
+
+    ax.xaxis.label.set_size(font_label)
+    ax.yaxis.label.set_size(font_label)
+    ax.title.set_size(font_title)
 
 
 def save_close(fig, path):
@@ -63,9 +111,10 @@ def save_close(fig, path):
     fig.savefig(path, dpi=300, bbox_inches="tight")
     plt.close(fig)
 
-# forgot the exact ppc col name
+
 def detect_sample_column(ppc_df):
     cols = ["sample", "draw"]
+
     for col in cols:
         if col in ppc_df.columns:
             return col
@@ -75,7 +124,7 @@ def detect_sample_column(ppc_df):
             return col
 
     raise ValueError(
-        "Could not detect posterior predictive sample column. "
+        "Could not detect posterior predictive sample column."
     )
 
 
@@ -92,6 +141,7 @@ def safe_reset_index(df):
         if new_name in df.columns or new_name in new_index_names:
             new_name = f"idx_{base_name}"
             counter = 1
+
             while new_name in df.columns or new_name in new_index_names:
                 new_name = f"idx_{base_name}_{counter}"
                 counter += 1
@@ -101,41 +151,123 @@ def safe_reset_index(df):
     df.index = df.index.set_names(new_index_names)
     return df.reset_index()
 
-# change here the nr of samples
-def get_observed_and_ppc_data(best_model, ppc_samples=1000):
-    print(f"Generating posterior predictive data with {ppc_samples} samples per node...")
-    ppc_df = hddm.utils.post_pred_gen(best_model, samples=ppc_samples, append_data=True)
 
-    print("\nPPC index names before reset:")
-    print(ppc_df.index.names)
+def check_observed_data_match(reference_df, current_df, chain_name, check_cols):
+    if len(reference_df) != len(current_df):
+        raise ValueError(
+            f"Observed data length differs for {chain_name}.\n"
+            f"First file had {len(reference_df)} rows, but this file has {len(current_df)} rows.\n"
+            "Only concatenate files if they are chains of the same model fitted to the same data."
+        )
 
-    print("\nPPC columns before reset:")
-    print(ppc_df.columns.tolist())
+    for col in check_cols:
+        if col not in reference_df.columns or col not in current_df.columns:
+            continue
 
-    ppc_df = safe_reset_index(ppc_df)
-    obs_df = best_model.data.copy().reset_index(drop=True)
+        reference_values = reference_df[col].reset_index(drop=True)
+        current_values = current_df[col].reset_index(drop=True)
+
+        if not reference_values.equals(current_values):
+            raise ValueError(
+                f"Observed column '{col}' differs for {chain_name}.\n"
+                "Only concatenate files if they are chains of the same model fitted to the same data."
+            )
+
+
+def get_observed_and_ppc_data_from_all_chains(model_paths, ppc_samples=1000, check_cols=None):
+    all_ppc = []
+    obs_df = None
+
+    if check_cols is None:
+        check_cols = ["rt", "response"]
+
+    for chain_idx, path in enumerate(model_paths, start=1):
+        chain_name = os.path.basename(path).replace(".hddm", "")
+
+        print(f"\nLoading file {chain_idx}: {path}")
+        model = hddm.load(path)
+
+        try:
+            print(f"DIC for this file: {model.dic}")
+        except Exception:
+            print("Could not read DIC for this file.")
+
+        current_obs = model.data.copy().reset_index(drop=True)
+
+        if obs_df is None:
+            obs_df = current_obs
+        else:
+            check_observed_data_match(
+                reference_df=obs_df,
+                current_df=current_obs,
+                chain_name=chain_name,
+                check_cols=check_cols
+            )
+
+        print(f"Generating posterior predictive data for {chain_name} with {ppc_samples} samples per node...")
+
+        chain_ppc = hddm.utils.post_pred_gen(
+            model,
+            samples=ppc_samples,
+            append_data=True
+        )
+
+        print("\nPPC index names before reset:")
+        print(chain_ppc.index.names)
+
+        print("\nPPC columns before reset:")
+        print(chain_ppc.columns.tolist())
+
+        chain_ppc = safe_reset_index(chain_ppc)
+
+        print("\nPPC columns after reset:")
+        print(chain_ppc.columns.tolist())
+
+        draw_col = detect_sample_column(chain_ppc)
+        print(f"Detected PPC sample column for this file: {draw_col}")
+
+        if "response_sampled" not in chain_ppc.columns:
+            raise ValueError("Expected column 'response_sampled' not found in posterior predictive data.")
+
+        if "rt_sampled" not in chain_ppc.columns:
+            raise ValueError("Expected column 'rt_sampled' not found in posterior predictive data.")
+
+        chain_ppc = chain_ppc.rename(columns={draw_col: "draw_within_chain"})
+
+        chain_ppc["chain"] = chain_idx
+        chain_ppc["chain_name"] = chain_name
+
+        chain_ppc["ppc_draw"] = (
+            "chain_"
+            + chain_ppc["chain"].astype(str)
+            + "_draw_"
+            + chain_ppc["draw_within_chain"].astype(str)
+        )
+
+        all_ppc.append(chain_ppc)
+
+        del model
+        gc.collect()
+
+    ppc_df = pd.concat(all_ppc, ignore_index=True)
+    sample_col = "ppc_draw"
+
+    print("\nCombined posterior predictive data created.")
+    print(f"Number of files combined: {len(model_paths)}")
+    print(f"Number of PPC rows: {len(ppc_df)}")
+    print(f"Number of unique posterior predictive draws: {ppc_df[sample_col].nunique()}")
 
     print("\nObserved data columns:")
     print(obs_df.columns.tolist())
-
-    print("\nPosterior predictive data columns after reset:")
-    print(ppc_df.columns.tolist())
-
-    sample_col = detect_sample_column(ppc_df)
-    print(f"\nDetected PPC sample column: {sample_col}")
-
-    if "response_sampled" not in ppc_df.columns:
-        raise ValueError("Expected column 'response_sampled' not found in posterior predictive data.")
-    if "rt_sampled" not in ppc_df.columns:
-        raise ValueError("Expected column 'rt_sampled' not found in posterior predictive data.")
 
     return obs_df, ppc_df, sample_col
 
 
 def compute_quantile_edges(series, n_quantiles=5):
     s = pd.Series(series).dropna().astype(float).copy()
+
     if s.empty:
-        raise ValueError("Series is empty")
+        raise ValueError("Series is empty.")
 
     jitter = np.linspace(0, 1e-10, len(s))
     s_jittered = s + jitter
@@ -167,37 +299,47 @@ def assign_rt_quantiles_within_group(df, value_col, group_col=None, n_quantiles=
         vals = pd.to_numeric(df[value_col], errors="coerce")
         out = pd.Series(pd.NA, index=df.index, dtype="object")
         valid = vals.notna()
+
         if valid.sum() > 0:
             ranks = vals[valid].rank(method="first")
             out.loc[valid] = pd.qcut(
-                ranks, q=n_quantiles, labels=labels, duplicates="drop"
+                ranks,
+                q=n_quantiles,
+                labels=labels,
+                duplicates="drop"
             ).astype(str)
+
         return pd.Categorical(out, categories=labels, ordered=True)
 
-    def _assign_one_group(x):
+    def assign_one_group(x):
         x = pd.to_numeric(x, errors="coerce")
         out = pd.Series(pd.NA, index=x.index, dtype="object")
         valid = x.notna()
+
         if valid.sum() > 0:
             ranks = x[valid].rank(method="first")
             out.loc[valid] = pd.qcut(
-                ranks, q=n_quantiles, labels=labels, duplicates="drop"
+                ranks,
+                q=n_quantiles,
+                labels=labels,
+                duplicates="drop"
             ).astype(str)
+
         return out
 
-    result = df.groupby(group_col)[value_col].transform(_assign_one_group)
+    result = df.groupby(group_col)[value_col].transform(assign_one_group)
+
     return pd.Categorical(result, categories=labels, ordered=True)
 
 
-# so we can compare empirical and simulated data
 def attach_observed_columns_by_row_order(obs_df, ppc_df, sample_col, cols_to_attach):
     obs_map = obs_df[cols_to_attach].copy().reset_index(drop=True)
-    obs_map["_orig_row"] = np.arange(len(obs_map))
+    obs_map["orig_row"] = np.arange(len(obs_map))
 
     ppc_df = ppc_df.copy()
-    ppc_df["_orig_row"] = ppc_df.groupby(sample_col, sort=False).cumcount()
+    ppc_df["orig_row"] = ppc_df.groupby(sample_col, sort=False).cumcount()
 
-    rows_per_draw = ppc_df.groupby(sample_col, sort=False)["_orig_row"].max() + 1
+    rows_per_draw = ppc_df.groupby(sample_col, sort=False)["orig_row"].max() + 1
     expected_n = len(obs_map)
 
     if not (rows_per_draw == expected_n).all():
@@ -208,14 +350,14 @@ def attach_observed_columns_by_row_order(obs_df, ppc_df, sample_col, cols_to_att
 
     ppc_df = ppc_df.drop(columns=cols_to_attach, errors="ignore").merge(
         obs_map,
-        on="_orig_row",
+        on="orig_row",
         how="left",
         validate="many_to_one"
     )
 
     return ppc_df
 
-# to compare ppc and empirical variance better
+
 def bootstrap_mean_ci(values, n_boot=5000, ci=0.95, seed=123):
     values = np.asarray(values, dtype=float)
     values = values[~np.isnan(values)]
@@ -230,6 +372,7 @@ def bootstrap_mean_ci(values, n_boot=5000, ci=0.95, seed=123):
     boot_means = np.empty(n_boot, dtype=float)
 
     n = len(values)
+
     for i in range(n_boot):
         sample = rng.choice(values, size=n, replace=True)
         boot_means[i] = np.mean(sample)
@@ -242,8 +385,6 @@ def bootstrap_mean_ci(values, n_boot=5000, ci=0.95, seed=123):
     return mean_val, lower, upper
 
 
-
-# computing the subject's mean in each bin, averaging across participants
 def summarise_observed_by_bin_subjectwise_bootstrap(
     df,
     subject_col,
@@ -254,7 +395,6 @@ def summarise_observed_by_bin_subjectwise_bootstrap(
     ci=0.95,
     seed=123
 ):
-
     tmp = df[[subject_col, bin_col, response_col]].copy()
     tmp = tmp.dropna(subset=[subject_col, bin_col, response_col])
     tmp[bin_col] = pd.Categorical(tmp[bin_col], categories=order, ordered=True)
@@ -265,13 +405,23 @@ def summarise_observed_by_bin_subjectwise_bootstrap(
         .reset_index()
         .rename(columns={response_col: "subject_mean"})
     )
-    subj_bin[bin_col] = pd.Categorical(subj_bin[bin_col], categories=order, ordered=True)
+
+    subj_bin[bin_col] = pd.Categorical(
+        subj_bin[bin_col],
+        categories=order,
+        ordered=True
+    )
 
     rows = []
+
     for i, b in enumerate(order):
         vals = subj_bin.loc[subj_bin[bin_col] == b, "subject_mean"].dropna().values
+
         mean_val, boot_low, boot_high = bootstrap_mean_ci(
-            vals, n_boot=n_boot, ci=ci, seed=seed + i
+            vals,
+            n_boot=n_boot,
+            ci=ci,
+            seed=seed + i
         )
 
         sd_val = np.std(vals, ddof=1) if len(vals) > 1 else np.nan
@@ -288,12 +438,18 @@ def summarise_observed_by_bin_subjectwise_bootstrap(
         })
 
     summary = pd.DataFrame(rows)
+
     return summary, subj_bin
 
 
-# within each draw, within each bin, get the subject's mean and then average across subjects
-def summarise_simulated_by_bin_sample_subjectwise(df, sample_col, subject_col, bin_col, response_col, order):
-
+def summarise_simulated_by_bin_sample_subjectwise(
+    df,
+    sample_col,
+    subject_col,
+    bin_col,
+    response_col,
+    order
+):
     tmp = df[[sample_col, subject_col, bin_col, response_col]].copy()
     tmp = tmp.dropna(subset=[sample_col, subject_col, bin_col, response_col])
     tmp[bin_col] = pd.Categorical(tmp[bin_col], categories=order, ordered=True)
@@ -304,39 +460,47 @@ def summarise_simulated_by_bin_sample_subjectwise(df, sample_col, subject_col, b
         .reset_index()
         .rename(columns={response_col: "subject_mean"})
     )
-    subj_bin[bin_col] = pd.Categorical(subj_bin[bin_col], categories=order, ordered=True)
+
+    subj_bin[bin_col] = pd.Categorical(
+        subj_bin[bin_col],
+        categories=order,
+        ordered=True
+    )
 
     draw_bin = (
         subj_bin.groupby([sample_col, bin_col], observed=False)["subject_mean"]
         .agg(
-            p_choose_S="mean",
+            p_choose_s="mean",
             draw_subject_sd="std",
             n_subjects="count"
         )
         .reset_index()
     )
+
     draw_bin["draw_subject_sem"] = draw_bin["draw_subject_sd"] / np.sqrt(
         draw_bin["n_subjects"].replace(0, np.nan)
     )
-    draw_bin[bin_col] = pd.Categorical(draw_bin[bin_col], categories=order, ordered=True)
+
+    draw_bin[bin_col] = pd.Categorical(
+        draw_bin[bin_col],
+        categories=order,
+        ordered=True
+    )
 
     return draw_bin, subj_bin
 
 
-#  observed_summary: empirical data participant-based mean + bootstrap CI
-#  simulated_long: one row per draw per bin with p_choose_S + draw_subject_sd + draw_subject_sem
 def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labels):
-
     obs = observed_summary.copy().set_index("bin").reindex(x_labels)
 
     sim_stats = (
         simulated_long.groupby(bin_col, observed=False)
         .agg(
-            model_mean=("p_choose_S", "mean"),
-            model_sd=("p_choose_S", "std"),
-            model_n_draws=("p_choose_S", "count"),
-            model_pi95_low=("p_choose_S", lambda s: s.quantile(0.025)),
-            model_pi95_high=("p_choose_S", lambda s: s.quantile(0.975)),
+            model_mean=("p_choose_s", "mean"),
+            model_sd=("p_choose_s", "std"),
+            model_n_draws=("p_choose_s", "count"),
+            model_pi95_low=("p_choose_s", lambda s: s.quantile(0.025)),
+            model_pi95_high=("p_choose_s", lambda s: s.quantile(0.975)),
             mean_draw_subject_sd=("draw_subject_sd", "mean"),
             mean_draw_subject_sem=("draw_subject_sem", "mean"),
             pi95_draw_subject_sd_low=("draw_subject_sd", lambda s: s.quantile(0.025)),
@@ -350,26 +514,30 @@ def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labe
     out = obs.join(sim_stats)
 
     out["obs_mean_in_model_pi95"] = (
-        (out["mean"] >= out["model_pi95_low"]) &
-        (out["mean"] <= out["model_pi95_high"])
+        (out["mean"] >= out["model_pi95_low"])
+        & (out["mean"] <= out["model_pi95_high"])
     )
 
     out["model_mean_in_obs_boot95"] = (
-        (out["model_mean"] >= out["boot_ci_low"]) &
-        (out["model_mean"] <= out["boot_ci_high"])
+        (out["model_mean"] >= out["boot_ci_low"])
+        & (out["model_mean"] <= out["boot_ci_high"])
     )
 
     out["obs_boot95_overlaps_model_pi95"] = (
-        (out["boot_ci_low"] <= out["model_pi95_high"]) &
-        (out["model_pi95_low"] <= out["boot_ci_high"])
+        (out["boot_ci_low"] <= out["model_pi95_high"])
+        & (out["model_pi95_low"] <= out["boot_ci_high"])
     )
 
     out["diff_model_minus_obs"] = out["model_mean"] - out["mean"]
 
-    # PPC two-sided tail probability based on the distribution of draw
     ppc_pvals = []
+
     for b in x_labels:
-        vals = simulated_long.loc[simulated_long[bin_col] == b, "p_choose_S"].dropna().values
+        vals = simulated_long.loc[
+            simulated_long[bin_col] == b,
+            "p_choose_s"
+        ].dropna().values
+
         obs_mean = out.loc[b, "mean"]
 
         if len(vals) == 0 or pd.isna(obs_mean):
@@ -379,18 +547,16 @@ def build_ppc_comparison_table(observed_summary, simulated_long, bin_col, x_labe
         p_lower = np.mean(vals <= obs_mean)
         p_upper = np.mean(vals >= obs_mean)
         p_two_sided = min(1.0, 2.0 * min(p_lower, p_upper))
+
         ppc_pvals.append(p_two_sided)
 
     out["ppc_p_2sided"] = ppc_pvals
 
     out = out.reset_index().rename(columns={"index": "bin"})
+
     return out
 
 
-# this builds: 
-#    black bars + black error bars = empirical mean ± 95% bootstrap CI
-#    Red line = posterior predictive mean
-#    Light red band = posterior predictive 95% interval
 def plot_choice_bars_and_ppc_lines(
     observed_summary,
     simulated_long,
@@ -403,7 +569,7 @@ def plot_choice_bars_and_ppc_lines(
     y_limits=None,
     y_as_percent=True
 ):
-    fig, ax = plt.subplots(figsize=(9, 6.5))
+    fig, ax = plt.subplots(figsize=(10.5, 7.5))
     x = np.arange(len(x_labels))
 
     observed_summary = observed_summary.copy().set_index("bin").reindex(x_labels)
@@ -423,9 +589,9 @@ def plot_choice_bars_and_ppc_lines(
         x,
         obs_mean_vals,
         width=0.8,
-        facecolor="none",
-        edgecolor="black",
-        linewidth=2.2,
+        facecolor=bar_face_color,
+        edgecolor=observed_color,
+        linewidth=2.6,
         zorder=1
     )
 
@@ -434,10 +600,10 @@ def plot_choice_bars_and_ppc_lines(
         obs_mean_vals,
         yerr=obs_yerr,
         fmt="none",
-        ecolor="black",
-        elinewidth=2.2,
-        capsize=6,
-        capthick=2.2,
+        ecolor=observed_color,
+        elinewidth=2.6,
+        capsize=7,
+        capthick=2.6,
         zorder=5
     )
 
@@ -445,22 +611,26 @@ def plot_choice_bars_and_ppc_lines(
     legend_labels = []
 
     empirical_handle = ax.errorbar(
-        [], [], yerr=[[1], [1]],
-        fmt='s',
-        mfc='white',
-        mec='black',
-        mew=2.0,
-        ms=10,
-        ecolor='black',
-        elinewidth=2.2,
-        capsize=6,
-        capthick=2.2
+        [],
+        [],
+        yerr=[[1], [1]],
+        fmt="s",
+        mfc=bar_face_color,
+        mec=observed_color,
+        mew=2.2,
+        ms=12,
+        ecolor=observed_color,
+        elinewidth=2.4,
+        capsize=7,
+        capthick=2.4
     )
+
     legend_handles.append(empirical_handle)
     legend_labels.append("Empirical mean ± 95% bootstrap CI")
 
     if simulated_long is not None and len(simulated_long) > 0:
         simulated_long = simulated_long.copy()
+
         simulated_long[bin_col] = pd.Categorical(
             simulated_long[bin_col],
             categories=x_labels,
@@ -468,7 +638,7 @@ def plot_choice_bars_and_ppc_lines(
         )
 
         model_summary = (
-            simulated_long.groupby(bin_col, observed=False)["p_choose_S"]
+            simulated_long.groupby(bin_col, observed=False)["p_choose_s"]
             .agg(
                 mean="mean",
                 pi95_low=lambda s: s.quantile(0.025),
@@ -485,7 +655,7 @@ def plot_choice_bars_and_ppc_lines(
             x,
             model_pi95_low,
             model_pi95_high,
-            color="tab:red",
+            color=simulated_color,
             alpha=0.18,
             zorder=2
         )
@@ -494,8 +664,8 @@ def plot_choice_bars_and_ppc_lines(
             x,
             model_mean_vals,
             linestyle="-",
-            linewidth=3.0,
-            color="tab:red",
+            linewidth=3.5,
+            color=simulated_color,
             zorder=6
         )
 
@@ -505,10 +675,10 @@ def plot_choice_bars_and_ppc_lines(
         legend_labels.append("Posterior predictive 95% interval")
 
     ax.set_xticks(x)
-    ax.set_xticklabels(x_labels, fontsize=12)
-    ax.set_xlabel(xlabel, fontsize=13)
-    ax.set_ylabel(ylabel, fontsize=13)
-    ax.set_title(title, fontsize=14)
+    ax.set_xticklabels(x_labels, fontsize=font_tick)
+    ax.set_xlabel(xlabel, fontsize=font_label)
+    ax.set_ylabel(ylabel, fontsize=font_label)
+    ax.set_title(title, fontsize=font_title)
     ax.set_xlim(-0.5, len(x_labels) - 0.5)
 
     if y_limits is not None:
@@ -519,6 +689,7 @@ def plot_choice_bars_and_ppc_lines(
             obs_low_vals,
             obs_high_vals
         ])
+
         if simulated_long is not None and len(simulated_long) > 0:
             all_vals = np.concatenate([
                 all_vals,
@@ -526,18 +697,21 @@ def plot_choice_bars_and_ppc_lines(
                 model_pi95_low,
                 model_pi95_high
             ])
+
         ymin = max(0, np.nanmin(all_vals) - 5)
         ymax = min(100 if y_as_percent else 1, np.nanmax(all_vals) + 5)
+
         ax.set_ylim(ymin, ymax)
 
     if y_as_percent:
         ax.set_yticks(np.arange(0, 101, 10))
 
     style_ax(ax)
+
     ax.legend(
         legend_handles,
         legend_labels,
-        fontsize=10,
+        fontsize=font_legend,
         facecolor="white",
         framealpha=1,
         edgecolor="black",
@@ -546,159 +720,235 @@ def plot_choice_bars_and_ppc_lines(
 
     save_close(fig, save_path)
 
-# this plots the RT distribution
-def plot_rt_distribution(obs_df, ppc_df, model_name, save_path):
+
+def plot_rt_distribution(obs_df, ppc_df, save_path):
     all_rt = pd.concat([obs_df["rt"], ppc_df["rt_sampled"]], axis=0).dropna()
     bins = np.histogram_bin_edges(all_rt, bins=50)
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(10, 7.5))
+
     ax.hist(
         obs_df["rt"],
         bins=bins,
         alpha=0.6,
         density=True,
         edgecolor="black",
-        linewidth=0.5,
+        linewidth=0.7,
         label="Observed RTs"
     )
+
     ax.hist(
         ppc_df["rt_sampled"],
         bins=bins,
         alpha=0.6,
         density=True,
         edgecolor="black",
-        linewidth=0.5,
+        linewidth=0.7,
         label="Simulated RTs"
     )
 
-    ax.set_xlabel("Reaction time (signed RT, s)", fontsize=13)
-    ax.set_ylabel("Density", fontsize=13)
-    ax.set_title(f"Posterior predictive check: RT distribution\n{model_name}", fontsize=14)
+    ax.set_xlabel("Reaction time (signed RT, s)", fontsize=font_label)
+    ax.set_ylabel("Density", fontsize=font_label)
+    ax.set_title("Posterior predictive check: RT distribution", fontsize=font_title)
 
     style_ax(ax)
-    ax.legend(fontsize=11, facecolor="white", framealpha=1, edgecolor="black")
+
+    ax.legend(
+        fontsize=font_legend,
+        facecolor="white",
+        framealpha=1,
+        edgecolor="black"
+    )
+
     save_close(fig, save_path)
 
 
-# plots the choice distribution
-def plot_response_distribution(obs_df, ppc_df, model_name, save_path):
+def plot_response_distribution(obs_df, ppc_df, save_path):
     obs_prop = obs_df["response"].value_counts(normalize=True).sort_index()
     sim_prop = ppc_df["response_sampled"].value_counts(normalize=True).sort_index()
 
     all_levels = [0, 1]
+
     obs_prop = obs_prop.reindex(all_levels, fill_value=0)
     sim_prop = sim_prop.reindex(all_levels, fill_value=0)
 
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig, ax = plt.subplots(figsize=(10, 7.5))
     x = np.arange(len(all_levels))
 
-    ax.bar(x - 0.2, obs_prop.values, width=0.4, label="Observed")
-    ax.bar(x + 0.2, sim_prop.values, width=0.4, label="Simulated")
+    ax.bar(
+        x - 0.2,
+        obs_prop.values,
+        width=0.4,
+        facecolor=bar_face_color,
+        edgecolor=observed_color,
+        linewidth=2.6,
+        label="Observed"
+    )
+
+    ax.bar(
+        x + 0.2,
+        sim_prop.values,
+        width=0.4,
+        facecolor=bar_face_color,
+        edgecolor=simulated_color,
+        linewidth=2.6,
+        label="Simulated"
+    )
 
     ax.set_xticks(x)
+
     ax.set_xticklabels(
-        ["E (response = 0, lower bound)", "S (response = 1, upper bound)"],
-        fontsize=11
+        ["E\nresponse = 0\nlower bound", "S\nresponse = 1\nupper bound"],
+        fontsize=font_tick
     )
-    ax.set_ylabel("Proportion", fontsize=13)
-    ax.set_title(f"Posterior predictive check: response proportions\n{model_name}", fontsize=14)
+
+    ax.set_ylabel("Proportion", fontsize=font_label)
+    ax.set_title("Posterior predictive check: response proportions", fontsize=font_title)
 
     style_ax(ax)
-    ax.legend(fontsize=11, facecolor="white", framealpha=1, edgecolor="black")
+
+    ax.legend(
+        fontsize=font_legend,
+        facecolor="white",
+        framealpha=1,
+        edgecolor="black"
+    )
+
     save_close(fig, save_path)
 
 
-def save_parameter_summary(best_model, save_path):
+def save_parameter_summary(model, save_path):
     try:
-        stats_df = best_model.gen_stats()
+        stats_df = model.gen_stats()
         stats_df.to_csv(save_path)
         print(f"Parameter summary saved to {save_path}")
+
     except Exception as e:
         print(f"Could not save parameter summary: {e}")
 
-# the typical hddm ppc plots 
-def save_builtin_hddm_plots(best_model, model_name, output_dir):
+
+def save_builtin_hddm_plots(model, model_name, output_dir):
     try:
-        best_model.plot_posterior_predictive(figsize=(12, 10))
-        plt.suptitle(f"Built-in HDDM posterior predictive plot\n{model_name}", fontsize=14)
+        model.plot_posterior_predictive(figsize=(12, 10))
+
+        plt.suptitle(
+            "Built-in HDDM posterior predictive plot",
+            fontsize=font_title
+        )
+
+        for ax in plt.gcf().axes:
+            style_ax(ax)
+
         plt.tight_layout()
+
         plt.savefig(
-            os.path.join(output_dir, f"BuiltIn_PosteriorPredictive_{model_name}.png"),
+            os.path.join(output_dir, f"builtin_posterior_predictive_{model_name}.png"),
             dpi=300,
             bbox_inches="tight"
         )
+
         plt.close()
         print("Saved built-in posterior predictive plot.")
+
     except Exception as e:
         print(f"Could not save built-in posterior predictive plot: {e}")
 
     try:
-        best_model.plot_posterior_quantiles(columns=3, hexbin=True)
-        plt.suptitle(f"Built-in HDDM posterior quantiles\n{model_name}", fontsize=14)
+        model.plot_posterior_quantiles(columns=3, hexbin=True)
+
+        plt.suptitle(
+            "Built-in HDDM posterior quantiles",
+            fontsize=font_title
+        )
+
+        for ax in plt.gcf().axes:
+            style_ax(ax)
+
         plt.tight_layout()
+
         plt.savefig(
-            os.path.join(output_dir, f"BuiltIn_PosteriorQuantiles_{model_name}.png"),
+            os.path.join(output_dir, f"builtin_posterior_quantiles_{model_name}.png"),
             dpi=300,
             bbox_inches="tight"
         )
+
         plt.close()
         print("Saved built-in posterior quantiles plot.")
+
     except Exception as e:
         print(f"Could not save built-in posterior quantiles plot: {e}")
 
 
-def save_post_pred_stats(best_model, obs_df, ppc_samples, model_name, output_dir):
+def save_post_pred_stats(model, obs_df, ppc_samples, model_name, output_dir):
     try:
         print(f"Generating summary statistics with {ppc_samples} samples per node...")
-        ppc_data_stats = hddm.utils.post_pred_gen(best_model, samples=ppc_samples)
+
+        ppc_data_stats = hddm.utils.post_pred_gen(
+            model,
+            samples=ppc_samples
+        )
+
         ppc_stats = hddm.utils.post_pred_stats(obs_df, ppc_data_stats)
 
         print("\nPosterior predictive summary statistics:")
         print(ppc_stats)
 
-        save_path = os.path.join(output_dir, f"posterior_predictive_summary_{model_name}.csv")
+        save_path = os.path.join(
+            output_dir,
+            f"posterior_predictive_summary_{model_name}.csv"
+        )
+
         ppc_stats.to_csv(save_path)
+
         print(f"Summary statistics saved to {save_path}")
 
     except Exception as e:
         print(f"Could not generate posterior predictive summary statistics: {e}")
 
 
-# =========================================================
-# model selection
-# =========================================================
+def save_single_chain_extras(model_paths, output_dir, ppc_samples):
+    for path in model_paths:
+        model_name = os.path.basename(path).replace(".hddm", "")
 
-best_model = None
-best_model_path = None
-best_model_name = None
-best_dic = float("inf")
+        print(f"\nSaving optional single-chain extras for {model_name}")
 
-for path in model_paths:
-    print(f"Loading model from: {path}")
-    m = hddm.load(path)
-    current_dic = m.dic
-    print(f"Model DIC: {current_dic}")
+        model = hddm.load(path)
+        obs_df = model.data.copy().reset_index(drop=True)
 
-    if current_dic < best_dic:
-        if best_model is not None:
-            del best_model
-            gc.collect()
+        save_builtin_hddm_plots(
+            model=model,
+            model_name=model_name,
+            output_dir=output_dir
+        )
 
-        best_dic = current_dic
-        best_model = m
-        best_model_path = path
-        best_model_name = os.path.basename(path).replace(".hddm", "")
-    else:
-        del m
+        save_parameter_summary(
+            model=model,
+            save_path=os.path.join(output_dir, f"parameter_summary_{model_name}.csv")
+        )
+
+        save_post_pred_stats(
+            model=model,
+            obs_df=obs_df,
+            ppc_samples=ppc_samples,
+            model_name=model_name,
+            output_dir=output_dir
+        )
+
+        del model, obs_df
         gc.collect()
 
-print(f"\nBest model selected: {best_model_name} with DIC = {best_dic}")
 
-# =========================================================
-# Load observed (empirical) + PPC data
-# =========================================================
+# ==========================================================
+# load observed data and combined posterior predictive data
+# ==========================================================
 
-obs_df, ppc_df, sample_col = get_observed_and_ppc_data(best_model, ppc_samples=ppc_sampel)
+check_cols = ["rt", "response", sub_col, dwell_col]
+
+obs_df, ppc_df, sample_col = get_observed_and_ppc_data_from_all_chains(
+    model_paths=model_paths,
+    ppc_samples=ppc_sample,
+    check_cols=check_cols
+)
 
 if sub_col not in obs_df.columns:
     raise ValueError(
@@ -706,12 +956,12 @@ if sub_col not in obs_df.columns:
         f"Available observed columns: {list(obs_df.columns)}"
     )
 
-if Dwell_col not in obs_df.columns:
+if dwell_col not in obs_df.columns:
     raise ValueError(
-        f"Dwell_col = '{Dwell_col}' was not found in the observed data.\n"
+        f"dwell_col = '{dwell_col}' was not found in the observed data.\n"
+        f"Available observed columns: {list(obs_df.columns)}"
     )
 
-# overwrite subject IDs in PPC by row-order mapping
 ppc_df = attach_observed_columns_by_row_order(
     obs_df=obs_df,
     ppc_df=ppc_df,
@@ -719,59 +969,55 @@ ppc_df = attach_observed_columns_by_row_order(
     cols_to_attach=[sub_col]
 )
 
-# =========================================================
-# normal hddm PPC plots
-# =========================================================
+# ==========================================================
+# optional single-chain extras
+# ==========================================================
+
+if run_single_chain_extras:
+    save_single_chain_extras(
+        model_paths=model_paths,
+        output_dir=output_dir,
+        ppc_samples=ppc_sample
+    )
+
+# ==========================================================
+# general PPC plots using combined chains
+# ==========================================================
 
 plot_rt_distribution(
     obs_df=obs_df,
     ppc_df=ppc_df,
-    model_name=best_model_name,
-    save_path=os.path.join(output_dir, f"RT_Distribution_{best_model_name}.png")
+    save_path=os.path.join(output_dir, f"rt_distribution_{analysis_name}.png")
 )
 
 plot_response_distribution(
     obs_df=obs_df,
     ppc_df=ppc_df,
-    model_name=best_model_name,
-    save_path=os.path.join(output_dir, f"Response_Proportions_{best_model_name}.png")
+    save_path=os.path.join(output_dir, f"response_proportions_{analysis_name}.png")
 )
 
-save_builtin_hddm_plots(
-    best_model=best_model,
-    model_name=best_model_name,
-    output_dir=output_dir
-)
-
-save_parameter_summary(
-    best_model=best_model,
-    save_path=os.path.join(output_dir, f"Parameter_Summary_{best_model_name}.csv")
-)
-
-save_post_pred_stats(
-    best_model=best_model,
-    obs_df=obs_df,
-    ppc_samples=ppc_sampel,
-    model_name=best_model_name,
-    output_dir=output_dir
-)
-
-# =========================================================
-# P(choose S) by dwell-time bin
-# =========================================================
+# ==========================================================
+# p(choose s) by dwell-time bin
+# ==========================================================
 
 dwell_labels = ["E>>S", "E>S", "S~E", "S>E", "S>>E"]
-dwell_edges = compute_quantile_edges(obs_df[Dwell_col], n_quantiles=quintiles)
+
+dwell_edges = compute_quantile_edges(
+    obs_df[dwell_col],
+    n_quantiles=quintiles
+)
+
 n_dwell_bins = len(dwell_edges) - 1
 
 if n_dwell_bins != 5:
     warnings.warn(
         f"Dwell variable produced {n_dwell_bins} bins."
     )
+
     dwell_labels = [f"Q{i}" for i in range(1, n_dwell_bins + 1)]
 
 obs_df["dwell_quintile"] = assign_bins_from_edges(
-    obs_df[Dwell_col],
+    obs_df[dwell_col],
     dwell_edges,
     dwell_labels
 )
@@ -790,7 +1036,7 @@ obs_dwell_summary, obs_dwell_subjectwise = summarise_observed_by_bin_subjectwise
     response_col="response",
     order=dwell_labels,
     n_boot=bootstrap_samp,
-    ci=bootstrap_CI,
+    ci=bootstrap_ci,
     seed=rand_seed
 )
 
@@ -815,22 +1061,29 @@ plot_choice_bars_and_ppc_lines(
     simulated_long=sim_dwell,
     bin_col="dwell_quintile",
     x_labels=dwell_labels,
-    title=f"P(choose S) by dwell quintile\n{best_model_name}",
+    title="P(choose S) by dwell quintile",
     xlabel="Dwell-time advantage quintile",
     ylabel="P(choose S) in %",
-    save_path=os.path.join(output_dir, f"P_ChooseS_by_DwellQuintile_{best_model_name}.png"),
+    save_path=os.path.join(output_dir, f"p_choose_s_by_dwell_quintile_{analysis_name}.png"),
     y_limits=(30, 70),
     y_as_percent=True
 )
 
-# =========================================================
-# P(choose S) by RT quintile
-# =========================================================
+# ==========================================================
+# p(choose s) by RT quintile
+# ==========================================================
 
 rt_labels = [str(i) for i in range(1, quintiles + 1)]
 
-obs_df["rt_abs"] = pd.to_numeric(obs_df["rt"], errors="coerce").abs()
-ppc_df["rt_abs_sampled"] = pd.to_numeric(ppc_df["rt_sampled"], errors="coerce").abs()
+obs_df["rt_abs"] = pd.to_numeric(
+    obs_df["rt"],
+    errors="coerce"
+).abs()
+
+ppc_df["rt_abs_sampled"] = pd.to_numeric(
+    ppc_df["rt_sampled"],
+    errors="coerce"
+).abs()
 
 obs_df["rt_quintile"] = assign_rt_quantiles_within_group(
     df=obs_df,
@@ -853,7 +1106,7 @@ obs_rt_summary, obs_rt_subjectwise = summarise_observed_by_bin_subjectwise_boots
     response_col="response",
     order=rt_labels,
     n_boot=bootstrap_samp,
-    ci=bootstrap_CI,
+    ci=bootstrap_ci,
     seed=rand_seed
 )
 
@@ -878,73 +1131,73 @@ plot_choice_bars_and_ppc_lines(
     simulated_long=sim_rt,
     bin_col="rt_quintile",
     x_labels=rt_labels,
-    title=f"P(choose S) by RT quintile\n{best_model_name}",
+    title="P(choose S) by RT quintile",
     xlabel="RT quintile",
     ylabel="P(choose S) in %",
-    save_path=os.path.join(output_dir, f"P_ChooseS_by_RTQuintile_{best_model_name}.png"),
+    save_path=os.path.join(output_dir, f"p_choose_s_by_rt_quintile_{analysis_name}.png"),
     y_limits=(0, 100),
     y_as_percent=True
 )
 
-# =========================================================
+# ==========================================================
 # save summaries as csv
-# =========================================================
+# ==========================================================
 
 obs_dwell_summary.to_csv(
-    os.path.join(output_dir, f"Observed_Dwell_Summary_{best_model_name}.csv"),
+    os.path.join(output_dir, f"observed_dwell_summary_{analysis_name}.csv"),
     index=False
 )
 
 obs_dwell_subjectwise.to_csv(
-    os.path.join(output_dir, f"Observed_Dwell_Subjectwise_{best_model_name}.csv"),
+    os.path.join(output_dir, f"observed_dwell_subjectwise_{analysis_name}.csv"),
     index=False
 )
 
 sim_dwell.to_csv(
-    os.path.join(output_dir, f"Simulated_Dwell_ByDraw_{best_model_name}.csv"),
+    os.path.join(output_dir, f"simulated_dwell_by_draw_{analysis_name}.csv"),
     index=False
 )
 
 sim_dwell_subjectwise.to_csv(
-    os.path.join(output_dir, f"Simulated_Dwell_Subjectwise_{best_model_name}.csv"),
+    os.path.join(output_dir, f"simulated_dwell_subjectwise_{analysis_name}.csv"),
     index=False
 )
 
 dwell_comparison.to_csv(
-    os.path.join(output_dir, f"Dwell_Model_vs_Observed_Comparison_{best_model_name}.csv"),
+    os.path.join(output_dir, f"dwell_model_vs_observed_comparison_{analysis_name}.csv"),
     index=False
 )
 
 obs_rt_summary.to_csv(
-    os.path.join(output_dir, f"Observed_RT_Summary_{best_model_name}.csv"),
+    os.path.join(output_dir, f"observed_rt_summary_{analysis_name}.csv"),
     index=False
 )
 
 obs_rt_subjectwise.to_csv(
-    os.path.join(output_dir, f"Observed_RT_Subjectwise_{best_model_name}.csv"),
+    os.path.join(output_dir, f"observed_rt_subjectwise_{analysis_name}.csv"),
     index=False
 )
 
 sim_rt.to_csv(
-    os.path.join(output_dir, f"Simulated_RT_ByDraw_{best_model_name}.csv"),
+    os.path.join(output_dir, f"simulated_rt_by_draw_{analysis_name}.csv"),
     index=False
 )
 
 sim_rt_subjectwise.to_csv(
-    os.path.join(output_dir, f"Simulated_RT_Subjectwise_{best_model_name}.csv"),
+    os.path.join(output_dir, f"simulated_rt_subjectwise_{analysis_name}.csv"),
     index=False
 )
 
 rt_comparison.to_csv(
-    os.path.join(output_dir, f"RT_Model_vs_Observed_Comparison_{best_model_name}.csv"),
+    os.path.join(output_dir, f"rt_model_vs_observed_comparison_{analysis_name}.csv"),
     index=False
 )
 
-print("\nAll requested PPC plots and summaries were saved successfully.")
+print("\nAll requested combined-chain PPC plots and summaries were saved successfully.")
 
-# =========================================================
-# close 
-# =========================================================
+# ==========================================================
+# close
+# ==========================================================
 
-del best_model, obs_df, ppc_df
+del obs_df, ppc_df
 gc.collect()
