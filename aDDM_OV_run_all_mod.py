@@ -188,7 +188,7 @@ model_versions  = {
     "EE":     ["EE_0", "EE_1","EE_2","EE_3","EE_4","EE_5"],
     "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", "For_paper_15", "For_paper_16"],
     "LE_RL": ["LE_RL_1", "LE_RL_2"],
-    "Final":    ["Final_0", "Final_1"]
+    "Final":    ["Final_0", "Final_1", "Final_2", "Final_3"]
 
 }
 
@@ -205,7 +205,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "Final"
-start_version = 0
+start_version = 2
 started = False
 
 # dir
@@ -469,12 +469,12 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             reg_descr = [v_reg]
 
         # without z
-        # elif version == 2:
-        #     v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
-        #     reg_descr = [v_reg]
-        # elif version == 3:
-        #     v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
-        #     reg_descr = [v_reg]
+        elif version == 2:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 3:
+            v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
 
         else:
             raise ValueError(f"Invalid version {version}")
@@ -482,7 +482,7 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     p_outlier=.05, 
-                                    include=['a', 't', 'v', 'z'],   #'z'
+                                    include=['a', 't', 'v'],   #'z'
                                     depends_on=depends_on,
                                     group_only_regressors=False,
                                     keep_regressor_trace=True
