@@ -24,7 +24,7 @@ mkdir -p "$MPLCONFIGDIR"
 
 IMAGE="$HOME/containers/hddm_latest.sif"
 CODE_DIR="$HOME/projects/HDDM_Vero"
-DATA_DIR_HOST="/rds/homes/v/vaw508/projects/HDDM_Vero/data_sets/data_sets_garcia"
+DATA_DIR_HOST="/rds/homes/v/vaw508/projects/HDDM_Vero/data_sets/data_sets_Garcia"
 OUT_DIR_HOST="/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm"
 
 mkdir -p "${OUT_DIR_HOST}"/{models,figures,logs}
