@@ -1,15 +1,9 @@
-# Posterior Predictive Checks for the aDDM
-# Can be used for both experiments, the 'garcia' quasi-replication (Exp1)
-# and the 'OV' experiment, in which overall value levels were manipulated.
-
 # Posterior predictive checks for the aDDM
 # Can be used for both experiments, the 'garcia' quasi-replication (exp1)
 # and the 'ov' experiment, in which overall value levels were manipulated.
 #
-# Important:
-# This version combines posterior predictive draws across all listed .hddm files.
-# Only do this if the files are chains/runs of the same model fitted to the same data.
-# Do not combine files if they are different model variants.
+# This version selects the best .hddm file by lowest DIC and only uses that
+# selected model for posterior predictive checks and plotting.
 
 import os
 import gc
@@ -40,7 +34,7 @@ model_paths = [
 output_dir = "/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm/figures/garcia_replication_Final_1/ppc"
 os.makedirs(output_dir, exist_ok=True)
 
-analysis_name = "combined_chains"
+analysis_name = "best_chain"
 
 dwell_col = "DwellTimeAdvantage"
 sub_col = "subj_idx"
@@ -51,11 +45,6 @@ quintiles = 5
 bootstrap_samp = 5000
 bootstrap_ci = 0.95
 rand_seed = 123
-
-# optional:
-# if true, this also saves parameter summaries and built-in HDDM plots separately
-# for every chain/model file. The combined custom PPC plots are always produced.
-run_single_chain_extras = False
 
 # ==========================================================
 # plot style
@@ -76,7 +65,6 @@ plt.rcParams.update({
     "figure.titlesize": font_title,
 })
 
-# colors
 observed_color = "black"
 simulated_color = "red"
 bar_face_color = "white"
@@ -152,113 +140,73 @@ def safe_reset_index(df):
     return df.reset_index()
 
 
-def check_observed_data_match(reference_df, current_df, chain_name, check_cols):
-    if len(reference_df) != len(current_df):
-        raise ValueError(
-            f"Observed data length differs for {chain_name}.\n"
-            f"First file had {len(reference_df)} rows, but this file has {len(current_df)} rows.\n"
-            "Only concatenate files if they are chains of the same model fitted to the same data."
-        )
+def select_best_model_by_dic(model_paths):
+    best_model = None
+    best_model_path = None
+    best_model_name = None
+    best_dic = float("inf")
 
-    for col in check_cols:
-        if col not in reference_df.columns or col not in current_df.columns:
-            continue
+    for path in model_paths:
+        print(f"Loading model from: {path}")
 
-        reference_values = reference_df[col].reset_index(drop=True)
-        current_values = current_df[col].reset_index(drop=True)
-
-        if not reference_values.equals(current_values):
-            raise ValueError(
-                f"Observed column '{col}' differs for {chain_name}.\n"
-                "Only concatenate files if they are chains of the same model fitted to the same data."
-            )
-
-
-def get_observed_and_ppc_data_from_all_chains(model_paths, ppc_samples=1000, check_cols=None):
-    all_ppc = []
-    obs_df = None
-
-    if check_cols is None:
-        check_cols = ["rt", "response"]
-
-    for chain_idx, path in enumerate(model_paths, start=1):
-        chain_name = os.path.basename(path).replace(".hddm", "")
-
-        print(f"\nLoading file {chain_idx}: {path}")
         model = hddm.load(path)
+        current_dic = model.dic
 
-        try:
-            print(f"DIC for this file: {model.dic}")
-        except Exception:
-            print("Could not read DIC for this file.")
+        print(f"Model DIC: {current_dic}")
 
-        current_obs = model.data.copy().reset_index(drop=True)
+        if current_dic < best_dic:
+            if best_model is not None:
+                del best_model
+                gc.collect()
 
-        if obs_df is None:
-            obs_df = current_obs
+            best_model = model
+            best_model_path = path
+            best_model_name = os.path.basename(path).replace(".hddm", "")
+            best_dic = current_dic
+
         else:
-            check_observed_data_match(
-                reference_df=obs_df,
-                current_df=current_obs,
-                chain_name=chain_name,
-                check_cols=check_cols
-            )
+            del model
+            gc.collect()
 
-        print(f"Generating posterior predictive data for {chain_name} with {ppc_samples} samples per node...")
+    print(f"\nBest model selected: {best_model_name}")
+    print(f"Best DIC: {best_dic}")
+    print(f"Best model path: {best_model_path}")
 
-        chain_ppc = hddm.utils.post_pred_gen(
-            model,
-            samples=ppc_samples,
-            append_data=True
-        )
+    return best_model, best_model_name, best_dic
 
-        print("\nPPC index names before reset:")
-        print(chain_ppc.index.names)
 
-        print("\nPPC columns before reset:")
-        print(chain_ppc.columns.tolist())
+def get_observed_and_ppc_data(model, ppc_samples=1000):
+    print(f"Generating posterior predictive data with {ppc_samples} samples per node...")
 
-        chain_ppc = safe_reset_index(chain_ppc)
+    ppc_df = hddm.utils.post_pred_gen(
+        model,
+        samples=ppc_samples,
+        append_data=True
+    )
 
-        print("\nPPC columns after reset:")
-        print(chain_ppc.columns.tolist())
+    print("\nPPC index names before reset:")
+    print(ppc_df.index.names)
 
-        draw_col = detect_sample_column(chain_ppc)
-        print(f"Detected PPC sample column for this file: {draw_col}")
+    print("\nPPC columns before reset:")
+    print(ppc_df.columns.tolist())
 
-        if "response_sampled" not in chain_ppc.columns:
-            raise ValueError("Expected column 'response_sampled' not found in posterior predictive data.")
-
-        if "rt_sampled" not in chain_ppc.columns:
-            raise ValueError("Expected column 'rt_sampled' not found in posterior predictive data.")
-
-        chain_ppc = chain_ppc.rename(columns={draw_col: "draw_within_chain"})
-
-        chain_ppc["chain"] = chain_idx
-        chain_ppc["chain_name"] = chain_name
-
-        chain_ppc["ppc_draw"] = (
-            "chain_"
-            + chain_ppc["chain"].astype(str)
-            + "_draw_"
-            + chain_ppc["draw_within_chain"].astype(str)
-        )
-
-        all_ppc.append(chain_ppc)
-
-        del model
-        gc.collect()
-
-    ppc_df = pd.concat(all_ppc, ignore_index=True)
-    sample_col = "ppc_draw"
-
-    print("\nCombined posterior predictive data created.")
-    print(f"Number of files combined: {len(model_paths)}")
-    print(f"Number of PPC rows: {len(ppc_df)}")
-    print(f"Number of unique posterior predictive draws: {ppc_df[sample_col].nunique()}")
+    ppc_df = safe_reset_index(ppc_df)
+    obs_df = model.data.copy().reset_index(drop=True)
 
     print("\nObserved data columns:")
     print(obs_df.columns.tolist())
+
+    print("\nPosterior predictive data columns after reset:")
+    print(ppc_df.columns.tolist())
+
+    sample_col = detect_sample_column(ppc_df)
+    print(f"\nDetected PPC sample column: {sample_col}")
+
+    if "response_sampled" not in ppc_df.columns:
+        raise ValueError("Expected column 'response_sampled' not found in posterior predictive data.")
+
+    if "rt_sampled" not in ppc_df.columns:
+        raise ValueError("Expected column 'rt_sampled' not found in posterior predictive data.")
 
     return obs_df, ppc_df, sample_col
 
@@ -280,6 +228,7 @@ def compute_quantile_edges(series, n_quantiles=5):
     )
 
     edges = np.unique(edges)
+
     return edges
 
 
@@ -730,20 +679,20 @@ def plot_rt_distribution(obs_df, ppc_df, save_path):
     ax.hist(
         obs_df["rt"],
         bins=bins,
-        alpha=0.6,
         density=True,
-        edgecolor="black",
-        linewidth=0.7,
+        histtype="step",
+        color=observed_color,
+        linewidth=2.6,
         label="Observed RTs"
     )
 
     ax.hist(
         ppc_df["rt_sampled"],
         bins=bins,
-        alpha=0.6,
         density=True,
-        edgecolor="black",
-        linewidth=0.7,
+        histtype="step",
+        color=simulated_color,
+        linewidth=2.6,
         label="Simulated RTs"
     )
 
@@ -827,7 +776,7 @@ def save_parameter_summary(model, save_path):
         print(f"Could not save parameter summary: {e}")
 
 
-def save_builtin_hddm_plots(model, model_name, output_dir):
+def save_builtin_hddm_plots(model, output_dir):
     try:
         model.plot_posterior_predictive(figsize=(12, 10))
 
@@ -842,7 +791,7 @@ def save_builtin_hddm_plots(model, model_name, output_dir):
         plt.tight_layout()
 
         plt.savefig(
-            os.path.join(output_dir, f"builtin_posterior_predictive_{model_name}.png"),
+            os.path.join(output_dir, f"builtin_posterior_predictive_{analysis_name}.png"),
             dpi=300,
             bbox_inches="tight"
         )
@@ -867,7 +816,7 @@ def save_builtin_hddm_plots(model, model_name, output_dir):
         plt.tight_layout()
 
         plt.savefig(
-            os.path.join(output_dir, f"builtin_posterior_quantiles_{model_name}.png"),
+            os.path.join(output_dir, f"builtin_posterior_quantiles_{analysis_name}.png"),
             dpi=300,
             bbox_inches="tight"
         )
@@ -879,7 +828,7 @@ def save_builtin_hddm_plots(model, model_name, output_dir):
         print(f"Could not save built-in posterior quantiles plot: {e}")
 
 
-def save_post_pred_stats(model, obs_df, ppc_samples, model_name, output_dir):
+def save_post_pred_stats(model, obs_df, ppc_samples, output_dir):
     try:
         print(f"Generating summary statistics with {ppc_samples} samples per node...")
 
@@ -895,7 +844,7 @@ def save_post_pred_stats(model, obs_df, ppc_samples, model_name, output_dir):
 
         save_path = os.path.join(
             output_dir,
-            f"posterior_predictive_summary_{model_name}.csv"
+            f"posterior_predictive_summary_{analysis_name}.csv"
         )
 
         ppc_stats.to_csv(save_path)
@@ -906,48 +855,19 @@ def save_post_pred_stats(model, obs_df, ppc_samples, model_name, output_dir):
         print(f"Could not generate posterior predictive summary statistics: {e}")
 
 
-def save_single_chain_extras(model_paths, output_dir, ppc_samples):
-    for path in model_paths:
-        model_name = os.path.basename(path).replace(".hddm", "")
-
-        print(f"\nSaving optional single-chain extras for {model_name}")
-
-        model = hddm.load(path)
-        obs_df = model.data.copy().reset_index(drop=True)
-
-        save_builtin_hddm_plots(
-            model=model,
-            model_name=model_name,
-            output_dir=output_dir
-        )
-
-        save_parameter_summary(
-            model=model,
-            save_path=os.path.join(output_dir, f"parameter_summary_{model_name}.csv")
-        )
-
-        save_post_pred_stats(
-            model=model,
-            obs_df=obs_df,
-            ppc_samples=ppc_samples,
-            model_name=model_name,
-            output_dir=output_dir
-        )
-
-        del model, obs_df
-        gc.collect()
-
-
 # ==========================================================
-# load observed data and combined posterior predictive data
+# model selection
 # ==========================================================
 
-check_cols = ["rt", "response", sub_col, dwell_col]
+best_model, best_model_name, best_dic = select_best_model_by_dic(model_paths)
 
-obs_df, ppc_df, sample_col = get_observed_and_ppc_data_from_all_chains(
-    model_paths=model_paths,
-    ppc_samples=ppc_sample,
-    check_cols=check_cols
+# ==========================================================
+# load observed data and posterior predictive data for best model
+# ==========================================================
+
+obs_df, ppc_df, sample_col = get_observed_and_ppc_data(
+    model=best_model,
+    ppc_samples=ppc_sample
 )
 
 if sub_col not in obs_df.columns:
@@ -970,18 +890,7 @@ ppc_df = attach_observed_columns_by_row_order(
 )
 
 # ==========================================================
-# optional single-chain extras
-# ==========================================================
-
-if run_single_chain_extras:
-    save_single_chain_extras(
-        model_paths=model_paths,
-        output_dir=output_dir,
-        ppc_samples=ppc_sample
-    )
-
-# ==========================================================
-# general PPC plots using combined chains
+# general PPC plots using best model only
 # ==========================================================
 
 plot_rt_distribution(
@@ -994,6 +903,23 @@ plot_response_distribution(
     obs_df=obs_df,
     ppc_df=ppc_df,
     save_path=os.path.join(output_dir, f"response_proportions_{analysis_name}.png")
+)
+
+save_builtin_hddm_plots(
+    model=best_model,
+    output_dir=output_dir
+)
+
+save_parameter_summary(
+    model=best_model,
+    save_path=os.path.join(output_dir, f"parameter_summary_{analysis_name}.csv")
+)
+
+save_post_pred_stats(
+    model=best_model,
+    obs_df=obs_df,
+    ppc_samples=ppc_sample,
+    output_dir=output_dir
 )
 
 # ==========================================================
@@ -1193,11 +1119,13 @@ rt_comparison.to_csv(
     index=False
 )
 
-print("\nAll requested combined-chain PPC plots and summaries were saved successfully.")
+print("\nAll requested PPC plots and summaries for the best chain were saved successfully.")
+print(f"Selected best model: {best_model_name}")
+print(f"Selected best DIC: {best_dic}")
 
 # ==========================================================
 # close
 # ==========================================================
 
-del obs_df, ppc_df
+del best_model, obs_df, ppc_df
 gc.collect()
