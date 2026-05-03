@@ -24,7 +24,7 @@ mkdir -p "$MPLCONFIGDIR"
 
 IMAGE="$HOME/containers/hddm_latest.sif"
 CODE_DIR="$HOME/projects/HDDM_Vero"
-DATA_DIR_HOST="/rds/homes/v/vaw508/projects/HDDM_Vero/data_sets/data_sets_Garcia"
+DATA_DIR_HOST="/rds/homes/v/vaw508/projects/HDDM_Vero/data_sets/data_sets_OV"
 OUT_DIR_HOST="/rds/projects/z/zhanglp-vwendler-core/HDDM_Vero/derivatives/hddm"
 
 mkdir -p "${OUT_DIR_HOST}"/{models,figures,logs}
@@ -34,10 +34,10 @@ apptainer exec --cleanenv \
   --bind "${DATA_DIR_HOST}:/data" \
   --bind "${OUT_DIR_HOST}:/out" \
   --env PROJECT_DIR="/workspace" \
-  --env DATA_FILE="/data/GarciaParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv" \
+  --env DATA_FILE="/data/OVParticipants_Eye_Response_Feed_Allfix_addm_OV_Abs_CCT.csv" \
   --env MODEL_DIR="/out/models" \
   --env FIG_DIR="/out/figures" \
   --env LOG_DIR="/out/logs" \
   --env N_JOBS="${SLURM_CPUS_PER_TASK}" \
   "${IMAGE}" \
-  python /workspace/aDDM_Garcia_run_all_mod.py
+  python /workspace/aDDM_OV_run_all_mod.py

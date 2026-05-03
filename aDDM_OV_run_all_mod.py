@@ -188,7 +188,7 @@ model_versions  = {
     "EE":     ["EE_0", "EE_1","EE_2","EE_3","EE_4","EE_5"],
     "For_paper": ["For_paper_1","For_paper_2","For_paper_3","For_paper_4","For_paper_5","For_paper_6","For_paper_7","For_paper_8","For_paper_9","For_paper_10","For_paper_11", "For_paper_12", "For_paper_13", "For_paper_14", "For_paper_15", "For_paper_16"],
     "LE_RL": ["LE_RL_1", "LE_RL_2"],
-    "Final":    ["Final_0", "Final_1", "Final_2", "Final_3"]
+    "Final":    ["Final_0", "Final_1", "Final_2", "Final_3", "Final_4", "Final_5", "Final_6", "Final_7"]
 
 }
 
@@ -205,7 +205,7 @@ RUN_ALL_MODELS  = True                                           # False = just 
 
 # selectivity
 start_phase = "Final"
-start_version = 2
+start_version = 4
 started = False
 
 # dir
@@ -459,8 +459,16 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
 
         return m, infdata
     
+
     elif phase == "Final":
+
         depends_on = {}
+        with_z = version in [0, 1, 4, 5]
+
+        include_params = ['a', 't', 'v']
+        if with_z:
+            include_params.append('z')
+
         if version == 0:
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
             reg_descr = [v_reg]
@@ -476,13 +484,30 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
             v_reg = {'model': 'v ~ 0 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
             reg_descr = [v_reg]
 
+        #with z
+        elif version == 4:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 5:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+
+        # without z + intercept (to check ppc)
+        elif version == 6:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        elif version == 7:
+            v_reg = {'model': 'v ~ 1 + ES_AttentionW + ES_InattentionW_E + ES_InattentionW_S', 'link_func': lambda x: x}
+            reg_descr = [v_reg]
+        
         else:
-            raise ValueError(f"Invalid version {version}")
-       
+            raise ValueError(f"Is this version correct ? ")   
+        
+
         m = hddm.models.HDDMRegressor(data, 
                                     reg_descr,
                                     p_outlier=.05, 
-                                    include=['a', 't', 'v'],   #'z'
+                                    include=include_params,   #'z'
                                     depends_on=depends_on,
                                     group_only_regressors=False,
                                     keep_regressor_trace=True
@@ -493,8 +518,8 @@ def run_model(trace_id, data, model_dir, model_name, version, phase, samples=600
                    dbname=os.path.join(model_dir, model_name + f'_db{trace_id}'), 
                    db='pickle',
                    return_infdata=True, loglike=True, ppc=True)
-        return m, infdata
         
+        return m, infdata
         
     elif phase == 'LE_RL':
         if version == 0:
