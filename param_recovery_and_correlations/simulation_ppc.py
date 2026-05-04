@@ -39,7 +39,7 @@ analysis_name = "best_chain"
 dwell_col = "DwellTimeAdvantage"
 sub_col = "subj_idx"
 
-ppc_sample = 2000
+ppc_sample = 1800
 quintiles = 5
 
 bootstrap_samp = 5000
